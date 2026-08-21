@@ -5,12 +5,19 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import CONF_RETENTION, DEFAULT_RETENTION, DOMAIN
+from .storage import BroadcastStore
+
+DATA_STORE = "store"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Voice Broadcast from a config entry."""
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {}
+    store = BroadcastStore(
+        hass, retention=entry.options.get(CONF_RETENTION, DEFAULT_RETENTION)
+    )
+    await store.async_load()
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {DATA_STORE: store}
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 

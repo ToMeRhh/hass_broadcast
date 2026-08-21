@@ -193,6 +193,12 @@ npm test                  # card tests
 npm run build              # bundle the card into custom_components/hass_broadcast/www/
 ```
 
+`custom_components/hass_broadcast/www/hass-broadcast-card.js` is a **build output that is
+committed to the repository**, because HACS installs the repository as-is and the integration
+serves that file directly — an uncommitted bundle means every dashboard gets a 404 instead of a
+card. Whenever anything under `frontend/src/` changes, run `npm run build` and commit the
+regenerated bundle in the same change.
+
 ## License
 
 MIT

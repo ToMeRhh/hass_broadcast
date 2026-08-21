@@ -11,6 +11,7 @@ import {
 } from "./api";
 import { INSECURE_CONTEXT_MESSAGE, micErrorMessage } from "./errors";
 import { Recorder } from "./recorder";
+import "./editor";
 
 const SUPPORT_PLAY_MEDIA = 512;
 

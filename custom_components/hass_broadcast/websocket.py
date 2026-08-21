@@ -32,7 +32,19 @@ async def ws_list(
     if store is None:
         connection.send_error(msg["id"], "not_setup", "Voice Broadcast is not set up")
         return
-    connection.send_result(msg["id"], {"messages": await store.async_list()})
+    messages = await store.async_list()
+    # Replace user_id with can_delete bool for API consumers
+    result_messages = []
+    for message in messages:
+        result_msg = dict(message)  # Create a copy to avoid mutating store's data
+        user_id = result_msg.pop("user_id", None)
+        # Can delete if user is admin or is the owner
+        can_delete = (
+            connection.user.is_admin or connection.user.id == user_id
+        )
+        result_msg["can_delete"] = can_delete
+        result_messages.append(result_msg)
+    connection.send_result(msg["id"], {"messages": result_messages})
 
 
 @websocket_api.websocket_command(
@@ -52,6 +64,21 @@ async def ws_delete(
     if store is None:
         connection.send_error(msg["id"], "not_setup", "Voice Broadcast is not set up")
         return
+    # Fetch the message to check ownership
+    message = await store.async_get(msg["message_id"])
+    # If not found, return success with deleted: false (not an error)
+    if message is None:
+        connection.send_result(msg["id"], {"deleted": False})
+        return
+    # Check authorization: user is admin or is the owner
+    if not (connection.user.is_admin or connection.user.id == message.get("user_id")):
+        connection.send_error(
+            msg["id"],
+            "not_authorized",
+            "You do not have permission to delete this recording"
+        )
+        return
+    # User is authorized, delete the recording
     deleted = await store.async_delete(msg["message_id"])
     connection.send_result(msg["id"], {"deleted": deleted})
 

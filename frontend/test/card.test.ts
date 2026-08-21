@@ -217,6 +217,84 @@ describe("card state machine", () => {
   });
 });
 
+describe("card send results", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** A card holding a recording, ready to send to two speakers. */
+  function cardWithRecording(response: any): { card: any; calls: any[] } {
+    const calls: any[] = [];
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", show_history: false });
+    card.blob = new Blob(["x"]);
+    card.duration = 2;
+    card.selected = ["media_player.kitchen", "media_player.broken"];
+    card.hass = {
+      auth: { data: { access_token: "tok" } },
+      states: {
+        "media_player.broken": { attributes: { friendly_name: "Garage" } },
+      },
+      callService: async (...args: any[]) => {
+        calls.push(args);
+        return response;
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      async () => ({ ok: true, json: async () => ({ message_id: "abc" }) }),
+    );
+    return { card, calls };
+  }
+
+  it("discards the recording only when every target played", async () => {
+    const { card } = cardWithRecording({ response: { failed: [] } });
+
+    await card.send();
+
+    expect(card.phase).toBe("idle");
+    expect(card.blob).toBeUndefined();
+    expect(card.error).toBeUndefined();
+  });
+
+  it("warns about the failed targets and keeps the recording on partial failure", async () => {
+    const { card } = cardWithRecording({
+      response: { failed: ["media_player.broken"] },
+    });
+
+    await card.send();
+
+    // Naming the target matters: "it worked" for a message half the house
+    // never heard is the failure mode this exists to prevent.
+    expect(card.error).toMatch(/Garage/);
+    expect(card.error).toMatch(/kept/);
+    expect(card.phase).toBe("preview");
+    expect(card.blob).toBeInstanceOf(Blob);
+  });
+
+  it("treats a total failure like a send error and keeps the blob", async () => {
+    const { card } = cardWithRecording({
+      response: { failed: ["media_player.kitchen", "media_player.broken"] },
+    });
+
+    await card.send();
+
+    expect(card.error).toMatch(/Could not play on any speaker/);
+    expect(card.phase).toBe("preview");
+    expect(card.blob).toBeInstanceOf(Blob);
+  });
+
+  it("reports failed targets when replaying from history", async () => {
+    const { card } = cardWithRecording({
+      response: { failed: ["media_player.broken"] },
+    });
+
+    await card.replay("abc123");
+
+    expect(card.error).toMatch(/Could not play on Garage/);
+  });
+});
+
 describe("card history rendering and deletion", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

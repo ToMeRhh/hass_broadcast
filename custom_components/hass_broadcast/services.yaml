@@ -1,6 +1,10 @@
 send:
   name: Send broadcast
   description: Play a recorded voice message on one or more media players.
+  # Optionally returns {"failed": [entity_id, ...]} listing the targets that
+  # could not play the message; the rest still played.
+  response:
+    optional: true
   fields:
     message_id:
       name: Message ID

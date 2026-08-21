@@ -180,3 +180,60 @@ async def test_one_failing_target_survives_non_home_assistant_error(
 
     assert played == ["media_player.kitchen"]
     assert "media_player.broken" in caplog.text
+
+
+async def test_send_reports_which_targets_failed(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    """The service response names the targets that could not play.
+
+    Without this the card cannot tell "played everywhere" from "played
+    nowhere" -- three unreachable speakers would look like a success.
+    """
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=1, user_id=None
+    )
+
+    async def handler(call) -> None:
+        if call.data["entity_id"] == "media_player.broken":
+            raise TimeoutError("device did not respond")
+
+    hass.services.async_register("media_player", "play_media", handler)
+
+    response = await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.broken", "media_player.kitchen"],
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    assert response == {"failed": ["media_player.broken"]}
+
+
+async def test_send_reports_no_failures_when_every_target_plays(
+    hass: HomeAssistant, setup_entry, play_calls
+) -> None:
+    """A fully successful broadcast reports an empty failure list."""
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=1, user_id=None
+    )
+
+    response = await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.kitchen", "media_player.office"],
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    assert response == {"failed": []}
+    assert len(play_calls) == 2

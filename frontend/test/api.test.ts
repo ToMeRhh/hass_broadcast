@@ -81,13 +81,43 @@ describe("api", () => {
     await expect(deleteMessage(hass, "abc")).rejects.toMatchObject({ code: "not_authorized" });
   });
 
-  it("sends a broadcast through the service", async () => {
+  it("sends a broadcast through the service, asking for the response", async () => {
     const hass = fakeHass();
     await sendBroadcast(hass, "abc", ["media_player.kitchen"], "plain");
-    expect(hass.callService).toHaveBeenCalledWith("hass_broadcast", "send", {
-      message_id: "abc",
-      targets: ["media_player.kitchen"],
-      mode: "plain",
+    expect(hass.callService).toHaveBeenCalledWith(
+      "hass_broadcast",
+      "send",
+      { message_id: "abc", targets: ["media_player.kitchen"], mode: "plain" },
+      undefined,
+      undefined,
+      true,
+    );
+  });
+
+  it("returns the targets the service reported as failed", async () => {
+    const hass = fakeHass();
+    hass.callService.mockResolvedValue({
+      response: { failed: ["media_player.broken"] },
     });
+
+    const result = await sendBroadcast(
+      hass,
+      "abc",
+      ["media_player.kitchen", "media_player.broken"],
+      "plain",
+    );
+
+    expect(result.failed).toEqual(["media_player.broken"]);
+  });
+
+  it("reports no failures when the service response is missing", async () => {
+    // An HA build that ignores returnResponse tells us nothing; that must not
+    // be read as "everything failed".
+    const hass = fakeHass();
+    hass.callService.mockResolvedValue(undefined);
+
+    const result = await sendBroadcast(hass, "abc", ["media_player.kitchen"], "plain");
+
+    expect(result.failed).toEqual([]);
   });
 });

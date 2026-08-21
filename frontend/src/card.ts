@@ -273,13 +273,25 @@ export class HassBroadcastCard extends LitElement {
     this.error = undefined;
     try {
       const id = await uploadRecording(this.hass, this.blob, this.duration);
-      await sendBroadcast(
+      const { failed } = await sendBroadcast(
         this.hass,
         id,
         this.selected,
         this.config.mode ?? "plain",
       );
-      this.discard();
+      if (failed.length === 0) {
+        this.discard();
+        await this.refreshHistory();
+        return;
+      }
+      // Some (or every) speaker could not play it. Keep the recording either
+      // way: discarding it here would throw away the only copy of a message
+      // that part of the house never heard, with nothing to retry from.
+      this.error =
+        failed.length >= this.selected.length
+          ? `Could not play on any speaker: ${this.describe(failed)}. The recording was kept — try again.`
+          : `Played, but not on ${this.describe(failed)}. The recording was kept so you can retry those.`;
+      this.phase = "preview";
       await this.refreshHistory();
     } catch (err: any) {
       // Keep the recording so it is not lost; the user can retry.
@@ -288,13 +300,32 @@ export class HassBroadcastCard extends LitElement {
     }
   }
 
+  /** Name entity ids the way the picker does, so a warning is readable. */
+  private describe(entityIds: string[]): string {
+    return entityIds
+      .map(
+        (entityId) =>
+          this.hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
+      )
+      .join(", ");
+  }
+
   private async replay(id: string): Promise<void> {
     if (this.selected.length === 0) {
       this.error = "Pick at least one speaker first.";
       return;
     }
     try {
-      await sendBroadcast(this.hass, id, this.selected, this.config.mode ?? "plain");
+      const { failed } = await sendBroadcast(
+        this.hass,
+        id,
+        this.selected,
+        this.config.mode ?? "plain",
+      );
+      this.error =
+        failed.length === 0
+          ? undefined
+          : `Could not play on ${this.describe(failed)}.`;
     } catch (err: any) {
       this.error = `Could not play: ${err?.message ?? err}`;
     }

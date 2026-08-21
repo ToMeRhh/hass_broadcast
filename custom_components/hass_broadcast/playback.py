@@ -16,7 +16,12 @@ from homeassistant.components.media_player import (
     MediaType,
 )
 from homeassistant.const import ATTR_ENTITY_ID
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+)
 from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
 
@@ -110,8 +115,13 @@ async def _async_send_to_target_isolated(
     content_id: str,
     mode: str,
     duration: float,
-) -> None:
+) -> str | None:
     """Play on one target, isolating its failures from the other targets.
+
+    Returns the entity id when that target failed, or None on success, so the
+    caller can report which targets failed instead of silently swallowing
+    them: broadcasting to three unreachable speakers must not look like a
+    success to the card.
 
     Broad `except Exception` is deliberate: with `blocking=True`,
     `ServiceRegistry._execute_service` propagates whatever a target service
@@ -128,10 +138,17 @@ async def _async_send_to_target_isolated(
         await _async_send_to_target(hass, entity_id, content_id, mode, duration)
     except Exception as err:  # noqa: BLE001 - intentional broad isolation
         _LOGGER.error("Broadcast to %s failed: %s", entity_id, err)
+        return entity_id
+    return None
 
 
-async def _async_handle_send(call: ServiceCall) -> None:
-    """Handle hass_broadcast.send."""
+async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
+    """Handle hass_broadcast.send.
+
+    Returns `{"failed": [entity_id, ...]}` -- empty when every target played.
+    The response is what lets the card surface per-target results instead of
+    reporting success for a broadcast nobody heard.
+    """
     hass = call.hass
     store = async_get_store(hass)
     if store is None:
@@ -152,12 +169,13 @@ async def _async_handle_send(call: ServiceCall) -> None:
     # target's delays, turning a broadcast into a slow relay. Each
     # coroutine keeps its own try/except (above) so one target's failure
     # cannot cancel or otherwise affect the others.
-    await asyncio.gather(
+    results = await asyncio.gather(
         *(
             _async_send_to_target_isolated(hass, entity_id, content_id, mode, duration)
             for entity_id in call.data["targets"]
         )
     )
+    return {"failed": [entity_id for entity_id in results if entity_id is not None]}
 
 
 def async_register_services(hass: HomeAssistant) -> None:
@@ -165,5 +183,12 @@ def async_register_services(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, SERVICE_SEND):
         return
     hass.services.async_register(
-        DOMAIN, SERVICE_SEND, _async_handle_send, schema=SEND_SCHEMA
+        DOMAIN,
+        SERVICE_SEND,
+        _async_handle_send,
+        schema=SEND_SCHEMA,
+        # OPTIONAL, not ONLY: the card asks for the response so it can report
+        # per-target failures, while automations that just want the broadcast
+        # can keep calling the service without `return_response`.
+        supports_response=SupportsResponse.OPTIONAL,
     )

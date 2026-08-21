@@ -54,15 +54,29 @@ export async function deleteMessage(hass: any, id: string): Promise<boolean> {
   return result.deleted;
 }
 
+/** Per-target outcome of one broadcast. `failed` lists the entity ids that
+ *  could not play it; the remaining targets did play. */
+export interface BroadcastResult {
+  failed: string[];
+}
+
 export async function sendBroadcast(
   hass: any,
   id: string,
   targets: string[],
   mode: BroadcastMode,
-): Promise<void> {
-  await hass.callService("hass_broadcast", "send", {
-    message_id: id,
-    targets,
-    mode,
-  });
+): Promise<BroadcastResult> {
+  const result = await hass.callService(
+    "hass_broadcast",
+    "send",
+    { message_id: id, targets, mode },
+    undefined, // target: entities are passed in the service data
+    undefined, // notifyOnError: keep the caller's default
+    true, // returnResponse: we need the per-target results
+  );
+  // Defensive: an older frontend that ignores `returnResponse` gives us no
+  // response at all. Treat "no information" as "nothing reported failed"
+  // rather than inventing failures.
+  const failed = result?.response?.failed;
+  return { failed: Array.isArray(failed) ? failed : [] };
 }

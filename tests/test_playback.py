@@ -1,5 +1,8 @@
 """Tests for the broadcast service."""
 
+import asyncio
+from contextlib import suppress
+
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -237,3 +240,124 @@ async def test_send_reports_no_failures_when_every_target_plays(
 
     assert response == {"failed": []}
     assert len(play_calls) == 2
+
+
+async def test_restore_mode_returns_before_the_restore_tail(
+    hass: HomeAssistant, setup_entry, play_calls
+) -> None:
+    """The service returns once playback is dispatched, not when it ends.
+
+    The restore tail waits out the whole message. Awaiting it inside the
+    handler pinned the card at phase = "sending" for 61+ seconds on a
+    one-minute recording, and a websocket reconnect in that window made the
+    card report a failure for a broadcast that had actually played.
+    """
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=60, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("media_player.kitchen", "playing", {"volume_level": 0.4})
+
+    await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.kitchen"],
+            "mode": "restore",
+        },
+        blocking=True,
+    )
+
+    # Returned promptly despite a 60s message, with the volume restore still
+    # pending in its own task.
+    assert len(play_calls) == 1
+    assert volume_calls == []
+
+    tail = next(
+        task
+        for task in asyncio.all_tasks()
+        if task.get_name().startswith(f"{DOMAIN} restore")
+    )
+    assert not tail.done()
+    tail.cancel()
+    with suppress(asyncio.CancelledError):
+        await tail
+
+
+async def test_restore_tail_puts_the_volume_back(
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch
+) -> None:
+    """The detached tail still restores the snapshotted volume."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
+
+    await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.kitchen"],
+            "mode": "restore",
+        },
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    assert len(volume_calls) == 1
+    assert volume_calls[0].data["volume_level"] == 0.4
+
+
+async def test_restore_tail_failure_is_logged_not_raised(
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, caplog
+) -> None:
+    """A failure in the detached tail is caught and logged.
+
+    Nothing awaits this task, so an escaping exception would surface as an
+    unhandled task exception at garbage-collection time rather than as a
+    reported failure.
+    """
+    from homeassistant.exceptions import HomeAssistantError
+
+    monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+
+    async def volume_handler(call) -> None:
+        raise HomeAssistantError("speaker went away")
+
+    hass.services.async_register("media_player", "volume_set", volume_handler)
+    hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
+
+    response = await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.kitchen"],
+            "mode": "restore",
+        },
+        blocking=True,
+        return_response=True,
+    )
+    await hass.async_block_till_done()
+
+    assert "media_player.kitchen" in caplog.text
+    assert "speaker went away" in caplog.text
+    # The message itself played; only the restore failed, so the target is
+    # deliberately not reported as failed.
+    assert response == {"failed": []}

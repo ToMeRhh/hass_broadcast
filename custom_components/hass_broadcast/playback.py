@@ -42,6 +42,10 @@ CHIME_DURATION_S = 0.3
 CHIME_LATENCY_MARGIN_S = 0.3
 CHIME_GAP_S = CHIME_DURATION_S + CHIME_LATENCY_MARGIN_S
 
+# Extra wait before restore mode puts the volume back, on top of the
+# message's own duration -- the same dispatch-latency guess as the chime gap.
+RESTORE_TAIL_MARGIN_S = 1
+
 SEND_SCHEMA = vol.Schema(
     {
         vol.Required("message_id"): cv.string,
@@ -91,7 +95,40 @@ async def _async_send_to_target(
     await _async_play(hass, entity_id, content_id)
 
     if snapshot is not None:
-        await asyncio.sleep(duration + 1)
+        # Dispatch-and-return: the tail waits out the whole message, so
+        # awaiting it here would keep the service call open for
+        # `duration + 1` seconds and pin the card at phase = "sending" for a
+        # minute on a one-minute recording -- with a websocket reconnect in
+        # that window making the card report a failure for a broadcast that
+        # actually played, inviting a duplicate send. Playback has already
+        # been dispatched at this point, so the caller has its answer.
+        hass.async_create_task(
+            _async_restore_tail(hass, entity_id, snapshot, duration),
+            f"{DOMAIN} restore {entity_id}",
+        )
+
+
+async def _async_restore_tail(
+    hass: HomeAssistant,
+    entity_id: str,
+    snapshot: dict[str, Any],
+    duration: float,
+) -> None:
+    """Wait out the message, then restore volume and best-effort resume.
+
+    Runs detached from the service call, so it owns its own error handling:
+    the same broad catch as `_async_send_to_target_isolated` (see its
+    docstring for why `Exception` and not `HomeAssistantError`), because an
+    escaping exception here would be an unhandled task exception rather than
+    a failure attributed to a target. `BaseException` stays uncaught so
+    shutdown cancellation still propagates.
+
+    A failure here is deliberately NOT reported in the service's `failed`
+    list: the message did play on this target: only putting the volume back
+    went wrong, and the send response has long since been returned.
+    """
+    try:
+        await asyncio.sleep(duration + RESTORE_TAIL_MARGIN_S)
         if snapshot["volume"] is not None:
             await hass.services.async_call(
                 MEDIA_PLAYER_DOMAIN,
@@ -107,6 +144,8 @@ async def _async_send_to_target(
                 {ATTR_ENTITY_ID: entity_id},
                 blocking=False,
             )
+    except Exception as err:  # noqa: BLE001 - detached task, must not escape
+        _LOGGER.error("Restoring %s after the broadcast failed: %s", entity_id, err)
 
 
 async def _async_send_to_target_isolated(
@@ -164,11 +203,11 @@ async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
     duration = float(message.get("duration") or 0)
 
     # Dispatched concurrently: sequential dispatch means each target's own
-    # mode-driven delays (chime gap, and especially restore's
-    # `duration + 1` post-playback wait) stack on top of every earlier
-    # target's delays, turning a broadcast into a slow relay. Each
-    # coroutine keeps its own try/except (above) so one target's failure
-    # cannot cancel or otherwise affect the others.
+    # mode-driven delay (the chime gap) stacks on top of every earlier
+    # target's, turning a broadcast into a slow relay. Each coroutine keeps
+    # its own try/except (above) so one target's failure cannot cancel or
+    # otherwise affect the others. Restore's post-playback wait is not in
+    # this gather at all — it runs as a detached task per target.
     results = await asyncio.gather(
         *(
             _async_send_to_target_isolated(hass, entity_id, content_id, mode, duration)

@@ -61,10 +61,23 @@ class BroadcastUploadView(HomeAssistantView):
                 {"message": "Missing file field"}, status=HTTPStatus.BAD_REQUEST
             )
 
-        raw = file_field.file.read() if hasattr(file_field, "file") else file_field
+        # `.file` is a real tempfile handle (aiohttp buffers multipart file
+        # fields to disk); `.read()` is a blocking syscall, so it must not
+        # run inline on the event loop.
+        raw = (
+            await hass.async_add_executor_job(file_field.file.read)
+            if hasattr(file_field, "file")
+            else file_field
+        )
         if isinstance(raw, str):
             raw = raw.encode()
 
+        # This is a post-buffer check: aiohttp/HA has already read the full
+        # body into `raw` by this point (bounded by HA's own 16 MB
+        # client_max_size), so it is not unbounded, but it does mean an
+        # oversized-but-under-16MB upload is fully buffered before being
+        # rejected here. Streaming/early-abort validation is out of scope
+        # for this task.
         if len(raw) > MAX_UPLOAD_BYTES:
             return web.json_response(
                 {"message": "Recording too large"},

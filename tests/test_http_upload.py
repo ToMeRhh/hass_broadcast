@@ -83,3 +83,27 @@ async def test_upload_stores_the_recording(
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     assert (await store.async_get(message_id))["duration"] == 2.0
+
+
+async def test_upload_survives_options_reload(
+    hass: HomeAssistant, setup_entry, hass_client
+) -> None:
+    """The endpoint keeps working after an options-triggered reload.
+
+    `_async_update_listener` calls `async_reload`, which re-runs
+    `async_setup_entry` (and therefore `async_register_views`) without ever
+    unregistering the view first. This asserts, empirically, that HA's
+    router tolerates re-registration rather than raising or duplicating the
+    route.
+    """
+    await hass.config_entries.async_reload(setup_entry.entry_id)
+    await hass.async_block_till_done()
+
+    client = await hass_client()
+    resp = await client.post(
+        "/api/hass_broadcast/upload",
+        data={"file": _wav_bytes(), "duration": "1.0"},
+    )
+    assert resp.status == HTTPStatus.OK
+    body = await resp.json()
+    assert "message_id" in body

@@ -1,0 +1,28 @@
+send:
+  name: Send broadcast
+  description: Play a recorded voice message on one or more media players.
+  fields:
+    message_id:
+      name: Message ID
+      description: The recording to play.
+      required: true
+      selector:
+        text:
+    targets:
+      name: Targets
+      description: Media players to play the message on.
+      required: true
+      selector:
+        entity:
+          multiple: true
+          domain: media_player
+    mode:
+      name: Mode
+      description: >-
+        plain plays the message. restore also snapshots and restores volume;
+        resuming an interrupted Cast session is best effort only. chime plays
+        an attention tone first.
+      default: plain
+      selector:
+        select:
+          options: [plain, restore, chime]

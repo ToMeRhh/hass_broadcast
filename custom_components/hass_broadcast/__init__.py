@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import CONF_RETENTION, DEFAULT_RETENTION, DOMAIN
 from .http import async_register_views
+from .playback import async_register_services
 from .storage import BroadcastStore
 
 DATA_STORE = "store"
@@ -19,6 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await store.async_load()
     async_register_views(hass)
+    async_register_services(hass)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {DATA_STORE: store}
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True

@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+frontend/dist/
+custom_components/hass_broadcast/www/*.js
+!custom_components/hass_broadcast/www/recorder-worklet.js
+.claude/
+.superpowers/

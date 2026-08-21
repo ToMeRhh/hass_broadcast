@@ -96,6 +96,32 @@ export class HassBroadcastCard extends LitElement {
     if (this.previewUrl) {
       URL.revokeObjectURL(this.previewUrl);
     }
+    // Torn down (dashboard navigation, view switch) while a recording is
+    // in progress. The MediaStream/AudioContext/worklet node stay alive
+    // until something calls Recorder.stop() — there is no side-effect-free
+    // "abandon" method, and Task 10's Recorder API is already reviewed and
+    // settled, so call stop() here and discard the resulting blob rather
+    // than leaking the mic open until a page reload. Skip this when
+    // `busy` is already true: a start()/stop() is already in flight (e.g.
+    // the user tapped stop and navigated away in the same tick) and will
+    // release the session itself once its own promise settles — calling
+    // stop() again here would race it and hit Recorder.stop()'s own
+    // "no active session" throw.
+    if (this.phase === "recording" && !this.busy) {
+      this.phase = "idle";
+      this.busy = true;
+      // disconnectedCallback is synchronous and cannot be awaited, so this
+      // is fire-and-forget. The rejection is still handled so teardown can
+      // never surface an unhandled promise rejection.
+      this.recorder
+        .stop()
+        .catch(() => {
+          // Nothing left to recover into once the card is torn down.
+        })
+        .finally(() => {
+          this.busy = false;
+        });
+    }
   }
 
   private clearTimer(): void {
@@ -181,6 +207,13 @@ export class HassBroadcastCard extends LitElement {
       this.previewUrl = URL.createObjectURL(blob);
       this.level = 0;
       this.phase = "preview";
+    } catch (err: any) {
+      // Don't strand the UI showing "recording" over a dead session — a
+      // second tap would just hit Recorder.stop()'s own "no active
+      // session" throw again. Whatever went wrong, the recording is gone
+      // either way, so surface it and reset to idle.
+      this.error = `Could not finish recording: ${err?.message ?? err}`;
+      this.phase = "idle";
     } finally {
       this.busy = false;
     }

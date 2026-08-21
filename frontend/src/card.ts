@@ -47,6 +47,12 @@ export class HassBroadcastCard extends LitElement {
   // the same moment as a manual stop. Recorder.stop() throws when there is
   // no active recording session, so these transitions must not race.
   private busy = false;
+  // Set in disconnectedCallback. That callback's own teardown only fires for
+  // phase === "recording", but during start() the phase is still "idle", so a
+  // teardown mid-start would be skipped entirely and startRecording would
+  // resume on a detached element — holding the microphone open and installing
+  // an interval that keeps the dead element alive.
+  private disconnected = false;
 
   static styles = css`
     ha-card { padding: 16px; }
@@ -86,6 +92,9 @@ export class HassBroadcastCard extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    // Reset for a re-attach (dashboard navigation moves the element rather
+    // than recreating it).
+    this.disconnected = false;
     if (!Recorder.isSupported()) {
       this.error = INSECURE_CONTEXT_MESSAGE;
     }
@@ -94,6 +103,7 @@ export class HassBroadcastCard extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.disconnected = true;
     this.clearTimer();
     if (this.previewUrl) {
       URL.revokeObjectURL(this.previewUrl);
@@ -176,6 +186,24 @@ export class HassBroadcastCard extends LitElement {
       return;
     } finally {
       this.busy = false;
+    }
+
+    // Torn down while start() was in flight. disconnectedCallback already ran
+    // (clearTimer with it), so transitioning here would strand a detached
+    // element with a live 1s interval and the microphone held open until the
+    // max-duration timer fired — up to 300s after the user navigated away.
+    // Release the session instead.
+    if (this.disconnected) {
+      this.busy = true;
+      void this.recorder
+        .stop()
+        .catch(() => {
+          // Nothing left to recover into once the card is torn down.
+        })
+        .finally(() => {
+          this.busy = false;
+        });
+      return;
     }
 
     this.phase = "recording";

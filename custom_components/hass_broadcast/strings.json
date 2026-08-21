@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Voice Broadcast",
+        "description": "Record voice messages in the dashboard and play them on your speakers."
+      }
+    },
+    "abort": {
+      "already_configured": "Voice Broadcast is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "retention": "Number of recordings to keep"
+        },
+        "data_description": {
+          "retention": "Older recordings are deleted automatically when this limit is exceeded."
+        }
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@ speakers — a simple intercom, without leaving the UI.
 ### HACS (recommended)
 
 1. In HACS, choose **Integrations → ⋮ → Custom repositories**.
-2. Add `https://github.com/tomerh/hass_broadcast` as an **Integration**.
+2. Add `https://github.com/ToMeRhh/hass_broadcast` as an **Integration**.
 3. Install **Voice Broadcast**, then restart Home Assistant.
 4. Go to **Settings → Devices & services → Add integration** and add **Voice Broadcast**.
 

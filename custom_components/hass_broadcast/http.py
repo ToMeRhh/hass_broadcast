@@ -108,6 +108,48 @@ class BroadcastUploadView(HomeAssistantView):
         return web.json_response({"message_id": message_id})
 
 
+CONTENT_TYPES = {"wav": "audio/wav", "mp3": "audio/mpeg"}
+
+
+class BroadcastMediaView(HomeAssistantView):
+    """Serve a stored recording.
+
+    requires_auth = True is deliberate: it makes Home Assistant's signed-path
+    middleware apply, which is how a Cast device fetches the file without the
+    recording being served unauthenticated.
+    """
+
+    url = "/api/hass_broadcast/media/{message_id}.{extension}"
+    name = "api:hass_broadcast:media"
+    requires_auth = True
+
+    async def get(
+        self, request: web.Request, message_id: str, extension: str
+    ) -> web.StreamResponse:
+        """Return the recording."""
+        hass: HomeAssistant = request.app["hass"]
+        entry_data = _first_entry_data(hass)
+        if entry_data is None:
+            return web.Response(status=HTTPStatus.NOT_FOUND)
+
+        from . import DATA_STORE
+
+        store = entry_data[DATA_STORE]
+        message = await store.async_get(message_id)
+        if message is None or message["extension"] != extension:
+            return web.Response(status=HTTPStatus.NOT_FOUND)
+
+        path = await store.async_path(message_id)
+        if path is None or not await hass.async_add_executor_job(path.is_file):
+            return web.Response(status=HTTPStatus.NOT_FOUND)
+
+        return web.FileResponse(
+            path,
+            headers={"Content-Type": CONTENT_TYPES.get(extension, "audio/wav")},
+        )
+
+
 def async_register_views(hass: HomeAssistant) -> None:
     """Register the HTTP views."""
     hass.http.register_view(BroadcastUploadView())
+    hass.http.register_view(BroadcastMediaView())

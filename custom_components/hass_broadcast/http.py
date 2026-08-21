@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from http import HTTPStatus
+import io
 import logging
 from typing import Any
+import wave
 
 from aiohttp import web
 
@@ -21,6 +23,27 @@ def _first_entry_data(hass: HomeAssistant) -> dict[str, Any] | None:
     """Return the data for the single config entry, if set up."""
     entries = hass.data.get(DOMAIN, {})
     return next(iter(entries.values()), None)
+
+
+def _parse_wav_duration(raw: bytes) -> float | None:
+    """Return the true duration of a WAV file in seconds, or None.
+
+    Runs synchronously (parsing an in-memory buffer, no I/O) but is called
+    via `hass.async_add_executor_job` since it's non-trivial CPU work that
+    shouldn't run inline on the event loop. Broad `except Exception` is
+    deliberate: the input is an untrusted client upload, and any parse
+    failure -- malformed header, truncated data, a "WAV" that isn't really
+    one -- should fall back to the client-supplied value rather than raise.
+    """
+    try:
+        with wave.open(io.BytesIO(raw), "rb") as reader:
+            frames = reader.getnframes()
+            rate = reader.getframerate()
+            if rate <= 0:
+                return None
+            return frames / rate
+    except Exception:  # noqa: BLE001 - untrusted input, fall back on any failure
+        return None
 
 
 class BroadcastUploadView(HomeAssistantView):
@@ -91,9 +114,19 @@ class BroadcastUploadView(HomeAssistantView):
             )
 
         try:
-            duration = float(data.get("duration", 0))
+            client_duration = float(data.get("duration", 0))
         except (TypeError, ValueError):
-            duration = 0.0
+            client_duration = 0.0
+
+        # Duration is derived server-side from the actual WAV data whenever
+        # possible: the client-supplied form field is untrusted and, in
+        # restore mode, an understated duration would restore volume while
+        # the message is still audibly playing. The client value is only a
+        # fallback for when parsing fails.
+        parsed_duration = await hass.async_add_executor_job(
+            _parse_wav_duration, raw
+        )
+        duration = parsed_duration if parsed_duration is not None else client_duration
 
         payload, extension = raw, "wav"
         if (mp3 := await async_transcode_to_mp3(hass, raw)) is not None:

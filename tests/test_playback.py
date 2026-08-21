@@ -51,10 +51,11 @@ async def test_send_fans_out_to_every_target(
     assert len(play_calls) == 2
     targets = {call.data["entity_id"] for call in play_calls}
     assert targets == {"media_player.kitchen", "media_player.office"}
-    assert play_calls[0].data["media_content_id"] == (
-        f"media-source://{DOMAIN}/{message_id}"
-    )
-    assert play_calls[0].data["media_content_type"] == "music"
+    # Targets are dispatched concurrently, so don't assume arrival order.
+    content_ids = {call.data["media_content_id"] for call in play_calls}
+    assert content_ids == {f"media-source://{DOMAIN}/{message_id}"}
+    content_types = {call.data["media_content_type"] for call in play_calls}
+    assert content_types == {"music"}
 
 
 async def test_send_rejects_unknown_message(
@@ -117,6 +118,46 @@ async def test_one_failing_target_does_not_stop_the_others(
         entity_id = call.data["entity_id"]
         if entity_id == "media_player.broken":
             raise HomeAssistantError("nope")
+        played.append(entity_id)
+
+    hass.services.async_register("media_player", "play_media", handler)
+
+    await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.broken", "media_player.kitchen"],
+        },
+        blocking=True,
+    )
+
+    assert played == ["media_player.kitchen"]
+    assert "media_player.broken" in caplog.text
+
+
+async def test_one_failing_target_survives_non_home_assistant_error(
+    hass: HomeAssistant, setup_entry, caplog
+) -> None:
+    """A target raising a non-HomeAssistantError still isolates cleanly.
+
+    With `blocking=True`, HA's service dispatch propagates whatever a
+    target handler raises without wrapping it in `HomeAssistantError` --
+    e.g. a slow/unreachable Cast device can raise `TimeoutError`. This
+    reproduces that: catching only `HomeAssistantError` would let this
+    abort the whole broadcast and leave later targets silent.
+    """
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=1, user_id=None
+    )
+
+    played: list[str] = []
+
+    async def handler(call) -> None:
+        entity_id = call.data["entity_id"]
+        if entity_id == "media_player.broken":
+            raise TimeoutError("device did not respond")
         played.append(entity_id)
 
     hass.services.async_register("media_player", "play_media", handler)

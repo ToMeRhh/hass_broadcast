@@ -27,6 +27,16 @@ _LOGGER = logging.getLogger(__name__)
 SERVICE_SEND = "send"
 CHIME_URL = "/api/hass_broadcast/static/chime.wav"
 
+# The chime asset (Step 1) is two tones totaling 0.12 + 0.18 = 0.3s.
+CHIME_DURATION_S = 0.3
+# Heuristic margin for Cast dispatch/start latency between issuing the chime
+# play_media call and the speaker audibly finishing it. `blocking=True` only
+# confirms the command was accepted, not that playback completed, so this is
+# a timing guess, not a completion guarantee. Polling for actual playback
+# state is out of scope here.
+CHIME_LATENCY_MARGIN_S = 0.3
+CHIME_GAP_S = CHIME_DURATION_S + CHIME_LATENCY_MARGIN_S
+
 SEND_SCHEMA = vol.Schema(
     {
         vol.Required("message_id"): cv.string,
@@ -79,7 +89,7 @@ async def _async_send_to_target(
 
     if mode == MODE_CHIME:
         await _async_play(hass, entity_id, CHIME_URL)
-        await asyncio.sleep(0.4)
+        await asyncio.sleep(CHIME_GAP_S)
 
     await _async_play(hass, entity_id, content_id)
 
@@ -102,6 +112,32 @@ async def _async_send_to_target(
             )
 
 
+async def _async_send_to_target_isolated(
+    hass: HomeAssistant,
+    entity_id: str,
+    content_id: str,
+    mode: str,
+    duration: float,
+) -> None:
+    """Play on one target, isolating its failures from the other targets.
+
+    Broad `except Exception` is deliberate: with `blocking=True`,
+    `ServiceRegistry._execute_service` propagates whatever a target service
+    raises without wrapping it in `HomeAssistantError`. A slow or
+    unreachable Cast device can raise `TimeoutError` (-> `OSError` ->
+    `Exception`), and malformed call data can raise `vol.Invalid` (->
+    `voluptuous.error.Error` -> `Exception`) -- neither is a
+    `HomeAssistantError`. The partial-failure guarantee ("remaining targets
+    still play") is unqualified, so the catch must cover any target
+    failure. `BaseException` (e.g. `asyncio.CancelledError`) is
+    deliberately NOT caught here so shutdown/cancellation still propagates.
+    """
+    try:
+        await _async_send_to_target(hass, entity_id, content_id, mode, duration)
+    except Exception as err:  # noqa: BLE001 - intentional broad isolation
+        _LOGGER.error("Broadcast to %s failed: %s", entity_id, err)
+
+
 async def _async_handle_send(call: ServiceCall) -> None:
     """Handle hass_broadcast.send."""
     hass = call.hass
@@ -118,11 +154,18 @@ async def _async_handle_send(call: ServiceCall) -> None:
     mode = call.data["mode"]
     duration = float(message.get("duration") or 0)
 
-    for entity_id in call.data["targets"]:
-        try:
-            await _async_send_to_target(hass, entity_id, content_id, mode, duration)
-        except HomeAssistantError as err:
-            _LOGGER.error("Broadcast to %s failed: %s", entity_id, err)
+    # Dispatched concurrently: sequential dispatch means each target's own
+    # mode-driven delays (chime gap, and especially restore's
+    # `duration + 1` post-playback wait) stack on top of every earlier
+    # target's delays, turning a broadcast into a slow relay. Each
+    # coroutine keeps its own try/except (above) so one target's failure
+    # cannot cancel or otherwise affect the others.
+    await asyncio.gather(
+        *(
+            _async_send_to_target_isolated(hass, entity_id, content_id, mode, duration)
+            for entity_id in call.data["targets"]
+        )
+    )
 
 
 def async_register_services(hass: HomeAssistant) -> None:

@@ -1,6 +1,8 @@
 """Tests for the upload endpoint."""
 
 from http import HTTPStatus
+import io
+import wave
 
 from homeassistant.core import HomeAssistant
 import pytest
@@ -22,6 +24,18 @@ async def setup_entry(hass: HomeAssistant) -> MockConfigEntry:
 def _wav_bytes() -> bytes:
     """Return a minimal valid WAV header plus a little silence."""
     return b"RIFF$\x00\x00\x00WAVEfmt " + b"\x00" * 32
+
+
+def _real_wav_bytes(*, seconds: float, rate: int = 16000) -> bytes:
+    """Return a genuine, parseable WAV of a known duration."""
+    frames = int(rate * seconds)
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as writer:
+        writer.setnchannels(1)
+        writer.setsampwidth(2)
+        writer.setframerate(rate)
+        writer.writeframes(b"\x00\x00" * frames)
+    return buf.getvalue()
 
 
 async def test_upload_requires_authentication(
@@ -83,6 +97,32 @@ async def test_upload_stores_the_recording(
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     assert (await store.async_get(message_id))["duration"] == 2.0
+
+
+async def test_upload_derives_duration_from_wav_data(
+    hass: HomeAssistant, setup_entry, hass_client
+) -> None:
+    """Stored duration comes from the WAV's real length, not the form field.
+
+    The client-supplied `duration` is untrusted (and here is deliberately
+    wrong); the server must parse the actual WAV frames/framerate instead.
+    """
+    from custom_components.hass_broadcast import DATA_STORE
+
+    client = await hass_client()
+    resp = await client.post(
+        "/api/hass_broadcast/upload",
+        data={
+            "file": _real_wav_bytes(seconds=2.5),
+            "duration": "999",  # deliberately wrong -- must be ignored
+        },
+    )
+    assert resp.status == HTTPStatus.OK
+    message_id = (await resp.json())["message_id"]
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    stored = await store.async_get(message_id)
+    assert stored["duration"] == pytest.approx(2.5)
 
 
 async def test_upload_survives_options_reload(

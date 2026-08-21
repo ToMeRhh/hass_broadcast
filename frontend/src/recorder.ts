@@ -82,12 +82,18 @@ export class Recorder {
     this.node?.port.close();
     this.node?.disconnect();
     this.stream?.getTracks().forEach((track) => track.stop());
-    await this.context?.close();
-    this.context = undefined;
-    this.stream = undefined;
-    this.node = undefined;
-    this.chunks = [];
-    this.active = false;
+    try {
+      await this.context?.close();
+    } catch {
+      // A context that refuses to close (usually already-closed) must not
+      // abort teardown or mask the caller's original error.
+    } finally {
+      this.context = undefined;
+      this.stream = undefined;
+      this.node = undefined;
+      this.chunks = [];
+      this.active = false;
+    }
   }
 }
 

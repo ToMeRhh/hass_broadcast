@@ -15,6 +15,22 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .http import CONTENT_TYPES
+from .storage import async_get_store
+
+
+def _title(message: dict) -> str:
+    """Return a display title for a recording.
+
+    One unparseable `created` must not take down browse for every other
+    recording: `parse_datetime` returns None for anything it cannot read, and
+    calling `.strftime` on that inside the children comprehension would raise
+    AttributeError for the whole listing. Fall back to the id, which is always
+    present and still identifies the row.
+    """
+    created = dt_util.parse_datetime(message.get("created") or "")
+    if created is None:
+        return str(message["id"])
+    return created.strftime("%Y-%m-%d %H:%M:%S")
 
 
 async def async_get_media_source(hass: HomeAssistant) -> BroadcastMediaSource:
@@ -32,16 +48,9 @@ class BroadcastMediaSource(MediaSource):
         super().__init__(DOMAIN)
         self.hass = hass
 
-    def _store(self):
-        """Return the store, or None when not set up."""
-        from . import DATA_STORE
-
-        entry_data = next(iter(self.hass.data.get(DOMAIN, {}).values()), None)
-        return entry_data[DATA_STORE] if entry_data else None
-
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve a recording to a playable URL."""
-        store = self._store()
+        store = async_get_store(self.hass)
         if store is None:
             raise Unresolvable("Voice Broadcast is not set up")
 
@@ -57,7 +66,7 @@ class BroadcastMediaSource(MediaSource):
 
     async def async_browse_media(self, item: MediaSourceItem) -> BrowseMediaSource:
         """List stored recordings."""
-        store = self._store()
+        store = async_get_store(self.hass)
         messages = await store.async_list() if store else []
 
         children = [
@@ -68,9 +77,7 @@ class BroadcastMediaSource(MediaSource):
                 media_content_type=CONTENT_TYPES.get(
                     message["extension"], "audio/wav"
                 ),
-                title=dt_util.parse_datetime(message["created"]).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                ),
+                title=_title(message),
                 can_play=True,
                 can_expand=False,
             )

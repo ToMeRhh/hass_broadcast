@@ -9,16 +9,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN
-
-
-def _store(hass: HomeAssistant):
-    """Return the store, or None when not set up."""
-    from . import DATA_STORE
-
-    entry_data = next(iter(hass.data.get(DOMAIN, {}).values()), None)
-    return entry_data[DATA_STORE] if entry_data else None
-
+from .storage import async_get_store
 
 @websocket_api.websocket_command({vol.Required("type"): "hass_broadcast/list"})
 @websocket_api.async_response
@@ -28,7 +19,7 @@ async def ws_list(
     msg: dict[str, Any],
 ) -> None:
     """Return stored recordings, newest first."""
-    store = _store(hass)
+    store = async_get_store(hass)
     if store is None:
         connection.send_error(msg["id"], "not_setup", "Voice Broadcast is not set up")
         return
@@ -60,7 +51,7 @@ async def ws_delete(
     msg: dict[str, Any],
 ) -> None:
     """Delete a recording."""
-    store = _store(hass)
+    store = async_get_store(hass)
     if store is None:
         connection.send_error(msg["id"], "not_setup", "Voice Broadcast is not set up")
         return

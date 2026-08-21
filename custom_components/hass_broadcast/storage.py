@@ -7,13 +7,26 @@ from pathlib import Path
 from typing import Any
 import uuid
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import STORAGE_DIR, STORAGE_KEY, STORAGE_VERSION
+from .const import DATA_STORE, DOMAIN, STORAGE_DIR, STORAGE_KEY, STORAGE_VERSION
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@callback
+def async_get_store(hass: HomeAssistant) -> BroadcastStore | None:
+    """Return the store for the single config entry, or None when not set up.
+
+    Only one entry can exist -- the config flow calls
+    `_abort_if_unique_id_configured` -- so taking the first entry's data is
+    unambiguous. This is the one place the lookup lives; http, media_source,
+    playback and websocket all call it.
+    """
+    entry_data = next(iter(hass.data.get(DOMAIN, {}).values()), None)
+    return entry_data[DATA_STORE] if entry_data else None
 
 
 class BroadcastStore:

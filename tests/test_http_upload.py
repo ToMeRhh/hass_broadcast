@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast.const import DOMAIN
+from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
 
 
 @pytest.fixture
@@ -82,12 +82,53 @@ async def test_upload_rejects_missing_file(
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
+async def test_upload_records_the_uploading_user(
+    hass: HomeAssistant,
+    setup_entry,
+    hass_client,
+    hass_read_only_user,
+    hass_read_only_access_token,
+) -> None:
+    """The uploader's user id is stored with the recording.
+
+    The whole ownership-based delete model reads this field: if uploads stop
+    recording who made them, every recording becomes undeletable by its own
+    owner (and the websocket delete check silently degrades to admin-only).
+    """
+    client = await hass_client(hass_read_only_access_token)
+    resp = await client.post(
+        "/api/hass_broadcast/upload",
+        data={"file": _wav_bytes(), "duration": "1.0"},
+    )
+    assert resp.status == HTTPStatus.OK
+    message_id = (await resp.json())["message_id"]
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    stored = await store.async_get(message_id)
+    assert stored["user_id"] == hass_read_only_user.id
+
+
+async def test_upload_rejects_non_wave_riff_file(
+    hass: HomeAssistant, setup_entry, hass_client
+) -> None:
+    """A RIFF file that is not a WAVE (e.g. WebP, AVI) is rejected.
+
+    "RIFF" alone is the container magic for a whole family of formats; only
+    the WAVE form type at bytes 8-12 makes it a WAV. Accepting one here means
+    serving it back later as audio/wav.
+    """
+    client = await hass_client()
+    webp = b"RIFF$\x00\x00\x00WEBPVP8 " + b"\x00" * 32
+    resp = await client.post(
+        "/api/hass_broadcast/upload", data={"file": webp, "duration": "1"}
+    )
+    assert resp.status == HTTPStatus.BAD_REQUEST
+
+
 async def test_upload_stores_the_recording(
     hass: HomeAssistant, setup_entry, hass_client
 ) -> None:
     """A successful upload is retrievable from the store."""
-    from custom_components.hass_broadcast import DATA_STORE
-
     client = await hass_client()
     resp = await client.post(
         "/api/hass_broadcast/upload",
@@ -107,8 +148,6 @@ async def test_upload_derives_duration_from_wav_data(
     The client-supplied `duration` is untrusted (and here is deliberately
     wrong); the server must parse the actual WAV frames/framerate instead.
     """
-    from custom_components.hass_broadcast import DATA_STORE
-
     client = await hass_client()
     resp = await client.post(
         "/api/hass_broadcast/upload",

@@ -9,20 +9,28 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_RETENTION, DEFAULT_RETENTION, DOMAIN
+from .const import (
+    CARD_URL,
+    CHIME_URL,
+    CONF_RETENTION,
+    DATA_STORE,
+    DEFAULT_RETENTION,
+    DOMAIN,
+    STATIC_URL,
+)
 from .http import async_register_views
 from .playback import async_register_services
 from .storage import BroadcastStore
 from .websocket import async_register_websocket_commands
 
-DATA_STORE = "store"
-
-STATIC_URL = "/api/hass_broadcast/static"
-CARD_URL = f"{STATIC_URL}/hass-broadcast-card.js"
-
 
 async def _async_register_static(hass: HomeAssistant) -> None:
     """Serve the card, worklet and chime, and register the card module."""
+    # This sentinel deliberately lives at hass.data["hass_broadcast_static_registered"],
+    # OUTSIDE hass.data[DOMAIN]. hass.data[DOMAIN] is a dict keyed by entry id
+    # whose values are entry data dicts, and every store lookup takes the first
+    # value in it -- putting a bare True in there would make those lookups
+    # return True and fail with TypeError on the DATA_STORE subscript.
     if hass.data.get(f"{DOMAIN}_static_registered"):
         return
     hass.data[f"{DOMAIN}_static_registered"] = True
@@ -31,9 +39,7 @@ async def _async_register_static(hass: HomeAssistant) -> None:
     await hass.http.async_register_static_paths(
         [
             StaticPathConfig(STATIC_URL, str(component_dir / "www"), False),
-            StaticPathConfig(
-                f"{STATIC_URL}/chime.wav", str(component_dir / "chime.wav"), True
-            ),
+            StaticPathConfig(CHIME_URL, str(component_dir / "chime.wav"), True),
         ]
     )
     add_extra_js_url(hass, CARD_URL)

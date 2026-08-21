@@ -4,25 +4,16 @@ from __future__ import annotations
 
 from http import HTTPStatus
 import io
-import logging
-from typing import Any
 import wave
 
 from aiohttp import web
 
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http import KEY_HASS_USER, HomeAssistantView
 from homeassistant.core import HomeAssistant
 
 from .audio_processing import async_transcode_to_mp3
-from .const import DOMAIN, MAX_UPLOAD_BYTES
-
-_LOGGER = logging.getLogger(__name__)
-
-
-def _first_entry_data(hass: HomeAssistant) -> dict[str, Any] | None:
-    """Return the data for the single config entry, if set up."""
-    entries = hass.data.get(DOMAIN, {})
-    return next(iter(entries.values()), None)
+from .const import MAX_UPLOAD_BYTES
+from .storage import async_get_store
 
 
 def _parse_wav_duration(raw: bytes) -> float | None:
@@ -60,16 +51,12 @@ class BroadcastUploadView(HomeAssistantView):
     async def post(self, request: web.Request) -> web.Response:
         """Store an uploaded recording."""
         hass: HomeAssistant = request.app["hass"]
-        entry_data = _first_entry_data(hass)
-        if entry_data is None:
+        store = async_get_store(hass)
+        if store is None:
             return web.json_response(
                 {"message": "Voice Broadcast is not set up"},
                 status=HTTPStatus.SERVICE_UNAVAILABLE,
             )
-
-        from . import DATA_STORE
-
-        store = entry_data[DATA_STORE]
 
         try:
             data = await request.post()
@@ -107,7 +94,11 @@ class BroadcastUploadView(HomeAssistantView):
                 status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
             )
 
-        if not raw.startswith(b"RIFF"):
+        # The RIFF magic alone is shared by the whole RIFF family (AVI, WebP,
+        # ANI); the WAVE form type at bytes 8-12 is what actually makes it a
+        # WAV. Without it a WebP would be accepted with 200 here and later
+        # served back as audio/wav.
+        if not (raw[:4] == b"RIFF" and raw[8:12] == b"WAVE"):
             return web.json_response(
                 {"message": "Only WAV uploads are accepted"},
                 status=HTTPStatus.BAD_REQUEST,
@@ -136,7 +127,12 @@ class BroadcastUploadView(HomeAssistantView):
             payload,
             extension=extension,
             duration=duration,
-            user_id=request["hass_user"].id if "hass_user" in request else None,
+            # KEY_HASS_USER rather than the "hass_user" literal: Home
+            # Assistant is migrating request keys to AppKey, and a moved key
+            # would make a literal lookup silently yield user_id=None on every
+            # upload -- quietly disabling the ownership model instead of
+            # failing loudly.
+            user_id=(user.id if (user := request.get(KEY_HASS_USER)) else None),
         )
         return web.json_response({"message_id": message_id})
 
@@ -161,13 +157,10 @@ class BroadcastMediaView(HomeAssistantView):
     ) -> web.StreamResponse:
         """Return the recording."""
         hass: HomeAssistant = request.app["hass"]
-        entry_data = _first_entry_data(hass)
-        if entry_data is None:
+        store = async_get_store(hass)
+        if store is None:
             return web.Response(status=HTTPStatus.NOT_FOUND)
 
-        from . import DATA_STORE
-
-        store = entry_data[DATA_STORE]
         message = await store.async_get(message_id)
         if message is None or message["extension"] != extension:
             return web.Response(status=HTTPStatus.NOT_FOUND)

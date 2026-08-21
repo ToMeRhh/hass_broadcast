@@ -4,8 +4,8 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast import DATA_STORE
-from custom_components.hass_broadcast.const import DOMAIN
+from custom_components.hass_broadcast import playback
+from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
 
 
 @pytest.fixture
@@ -75,9 +75,15 @@ async def test_send_rejects_unknown_message(
 
 
 async def test_chime_mode_plays_chime_first(
-    hass: HomeAssistant, setup_entry, play_calls
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch
 ) -> None:
-    """Chime mode issues the chime before the message."""
+    """Chime mode issues the chime before the message.
+
+    The real gap is a wall-clock guess at Cast dispatch latency; patch it to
+    zero rather than making every run of this test wait it out.
+    """
+    monkeypatch.setattr(playback, "CHIME_GAP_S", 0)
+
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None

@@ -6,8 +6,7 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast import DATA_STORE
-from custom_components.hass_broadcast.const import DOMAIN
+from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
 
 
 @pytest.fixture
@@ -41,6 +40,24 @@ async def test_unknown_recording_is_not_found(
     """An unknown id returns 404."""
     client = await hass_client()
     resp = await client.get("/api/hass_broadcast/media/deadbeef.wav")
+    assert resp.status == HTTPStatus.NOT_FOUND
+
+
+async def test_extension_mismatch_is_not_found(
+    hass: HomeAssistant, setup_entry, hass_client
+) -> None:
+    """Requesting the wrong extension for a real id returns 404.
+
+    The id exists but the stored file is a .wav; serving it for a .mp3
+    request would hand back WAV bytes labelled audio/mpeg.
+    """
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=1, user_id=None
+    )
+
+    client = await hass_client()
+    resp = await client.get(f"/api/hass_broadcast/media/{message_id}.mp3")
     assert resp.status == HTTPStatus.NOT_FOUND
 
 

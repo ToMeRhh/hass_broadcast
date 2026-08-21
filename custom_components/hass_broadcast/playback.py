@@ -20,12 +20,12 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, MODE_CHIME, MODE_PLAIN, MODE_RESTORE, MODES
+from .const import CHIME_URL, DOMAIN, MODE_CHIME, MODE_PLAIN, MODE_RESTORE, MODES
+from .storage import async_get_store
 
 _LOGGER = logging.getLogger(__name__)
 
 SERVICE_SEND = "send"
-CHIME_URL = "/api/hass_broadcast/static/chime.wav"
 
 # The chime asset (Step 1) is two tones totaling 0.12 + 0.18 = 0.3s.
 CHIME_DURATION_S = 0.3
@@ -44,14 +44,6 @@ SEND_SCHEMA = vol.Schema(
         vol.Optional("mode", default=MODE_PLAIN): vol.In(MODES),
     }
 )
-
-
-def _store(hass: HomeAssistant):
-    """Return the store, or None when not set up."""
-    from . import DATA_STORE
-
-    entry_data = next(iter(hass.data.get(DOMAIN, {}).values()), None)
-    return entry_data[DATA_STORE] if entry_data else None
 
 
 async def _async_play(
@@ -141,7 +133,7 @@ async def _async_send_to_target_isolated(
 async def _async_handle_send(call: ServiceCall) -> None:
     """Handle hass_broadcast.send."""
     hass = call.hass
-    store = _store(hass)
+    store = async_get_store(hass)
     if store is None:
         raise HomeAssistantError("Voice Broadcast is not set up")
 

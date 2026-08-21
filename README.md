@@ -177,14 +177,16 @@ the items below.
 | Nothing plays, no error | Cast could not fetch the URL — check `internal_url` (2) and Cloudflare Access (3) |
 | Speaker missing from the list | It does not advertise `PLAY_MEDIA` (4) |
 | Music does not resume after a broadcast | Expected on Cast — see restriction 6 |
-| Message clips the start, chime mode | Cast started playback slowly — see restriction 7 |
+| Chime sounds cut off before the message starts | Cast started playback slowly — see restriction 7 |
 | Delete button is missing on a recording | You are not the owner and not an administrator — see restriction 13 |
 
 ## Development
 
 ```bash
 pip install -r requirements_test.txt
-pytest tests/ -v          # integration tests
+python -m pytest tests/ -v   # integration tests — use `python -m pytest`, not bare `pytest`;
+                              # only `-m` puts the repo root on sys.path, which is what makes
+                              # `custom_components` importable from the test modules
 
 npm install
 npm test                  # card tests

@@ -9,6 +9,19 @@ interface CardConfig {
   show_history?: boolean;
 }
 
+/** Clamp max_duration to valid range [5, 300], defaulting to 60 for invalid input. */
+export function clampMaxDuration(value: any): number {
+  // Handle nullish and empty values
+  if (value === "" || value === null || value === undefined) {
+    return 60;
+  }
+  const num = Number(value);
+  // If NaN (truly unparseable), default to 60
+  if (isNaN(num)) return 60;
+  // Otherwise clamp to [5, 300]
+  return Math.min(300, Math.max(5, num));
+}
+
 @customElement("hass-broadcast-card-editor")
 export class HassBroadcastCardEditor extends LitElement {
   @property({ attribute: false }) hass?: any;
@@ -65,7 +78,7 @@ export class HassBroadcastCardEditor extends LitElement {
           .value=${String(this.config.max_duration ?? 60)}
           @change=${(e: Event) =>
             this.emit({
-              max_duration: Number((e.target as HTMLInputElement).value),
+              max_duration: clampMaxDuration((e.target as HTMLInputElement).value),
             })}
         />
       </div>

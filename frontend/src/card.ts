@@ -11,6 +11,7 @@ import {
 } from "./api";
 import { INSECURE_CONTEXT_MESSAGE, micErrorMessage } from "./errors";
 import { Recorder } from "./recorder";
+import { clampMaxDuration } from "./editor";
 import "./editor";
 
 const SUPPORT_PLAY_MEDIA = 512;
@@ -179,7 +180,7 @@ export class HassBroadcastCard extends LitElement {
 
     this.phase = "recording";
     this.elapsed = 0;
-    const limit = this.config.max_duration ?? 60;
+    const limit = clampMaxDuration(this.config.max_duration);
     this.timer = window.setInterval(() => {
       this.elapsed += 1;
       if (this.elapsed >= limit) {

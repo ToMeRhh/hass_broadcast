@@ -58,6 +58,23 @@ action:
       mode: plain
 ```
 
+A target that cannot play the message never aborts the others. The service optionally
+returns which ones failed, so an automation can react to a partial broadcast:
+
+```yaml
+action:
+  - service: hass_broadcast.send
+    data:
+      message_id: "{{ message_id }}"
+      targets: [media_player.kitchen, media_player.office]
+    response_variable: result
+  - condition: template
+    value_template: "{{ result.failed | count > 0 }}"
+  - service: persistent_notification.create
+    data:
+      message: "Broadcast did not reach: {{ result.failed | join(', ') }}"
+```
+
 ## Requirements and restrictions
 
 **Please read this section before filing a bug.** Most problems people hit are one of
@@ -106,7 +123,10 @@ the items below.
    playing. The card's `restore` mode is an *emulation*: it snapshots and restores the
    volume reliably, but it **cannot dependably resume an active Spotify, YouTube Music, or
    radio session** — that is a Cast limitation, not something this integration can fix.
-   `plain` is the default for exactly this reason. Treat `restore` as best-effort.
+   `plain` is the default for exactly this reason. Treat `restore` as best-effort. The
+   volume is put back roughly a second after the message should have finished, by a
+   background task: the card (or your automation) is released as soon as playback has been
+   dispatched and does not wait out the whole message.
 
 7. **In `chime` mode, the gap before the message is a timing heuristic, not a guarantee
    that the chime finished playing.** The card plays a short chime, waits a fixed interval
@@ -156,6 +176,11 @@ the items below.
     only shows a Delete button where the server has told it deletion is permitted; it never
     decides this on its own.
 
+    **Only deletion is ownership-restricted.** Every logged-in Home Assistant user can see
+    and play back *every* household member's recordings in the card's history and in the
+    media browser — ownership does not make a recording private, it only decides who may
+    remove it.
+
 14. **Any Home Assistant user who can see the card can record and broadcast.** Uploads
     require a valid login but are deliberately *not* restricted to administrators — Home
     Assistant's own media upload endpoint is admin-only, which would stop non-admin
@@ -167,6 +192,13 @@ the items below.
     Playback URLs are individually signed and short-lived, so recordings are never served
     unauthenticated. They are deliberately not placed in `config/www/`, which Home
     Assistant serves with no authentication whatsoever.
+
+15. **Removing the integration deletes your recordings.** Deleting the Voice Broadcast entry
+    in **Settings → Devices & services** purges `<config>/hass_broadcast/` and the
+    `.storage/hass_broadcast` metadata, so an uninstall does not leave voice messages behind
+    on disk or in future backups. The directory itself is only removed if it is empty, so
+    anything you put there yourself is left alone. Recordings already captured in *existing*
+    backups are of course unaffected.
 
 ## Troubleshooting
 

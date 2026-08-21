@@ -122,3 +122,31 @@ class BroadcastStore:
         self._messages.remove(message)
         await self._async_save()
         return True
+
+    async def async_remove_all(self) -> None:
+        """Delete every recording and the metadata store itself.
+
+        Called when the config entry is removed. Without it, uninstalling the
+        integration would silently leave every voice recording in
+        `<config>/hass_broadcast/` and its metadata in
+        `.storage/hass_broadcast` -- and therefore in every subsequent backup.
+        """
+        for message in list(self._messages):
+            await self._async_unlink(self._file_path(message))
+        self._messages = []
+        await self._store.async_remove()
+        await self.hass.async_add_executor_job(self._remove_dir)
+
+    def _remove_dir(self) -> None:
+        """Remove the recordings directory if nothing else is left in it.
+
+        `rmdir`, never a recursive delete: the directory is ours by
+        convention, not by guarantee, and anything a user put there must not
+        be swept away by an uninstall.
+        """
+        try:
+            self._dir.rmdir()
+        except OSError:
+            _LOGGER.debug(
+                "Left %s in place: it is missing or not empty", self._dir
+            )

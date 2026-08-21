@@ -66,6 +66,21 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Delete the recordings and metadata when the integration is removed.
+
+    Runs after `async_unload_entry`, which has already dropped the live
+    store, so this builds a throwaway one to reach the same files. Removing
+    the integration and leaving every household member's voice recordings on
+    disk -- and in every future backup -- is not a defensible default.
+    """
+    store = BroadcastStore(
+        hass, retention=entry.options.get(CONF_RETENTION, DEFAULT_RETENTION)
+    )
+    await store.async_load()
+    await store.async_remove_all()
+
+
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload the entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)

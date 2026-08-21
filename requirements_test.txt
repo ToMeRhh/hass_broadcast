@@ -1,1 +1,11 @@
-pytest-homeassistant-custom-component
+# Pinned: pytest-homeassistant-custom-component tracks Home Assistant
+# releases, and nothing else here pins the Home Assistant version under test,
+# so leaving it unpinned silently changes which HA the suite runs against.
+pytest-homeassistant-custom-component==0.13.205
+
+# manifest.json declares a dependency on `frontend`, so setting up the config
+# entry imports homeassistant.components.frontend, which imports hass_frontend.
+# pytest-homeassistant-custom-component does not depend on this package, so
+# without it a clean install fails every test with
+# ModuleNotFoundError: No module named 'hass_frontend'.
+home-assistant-frontend==20250109.2

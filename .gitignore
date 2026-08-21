@@ -7,3 +7,4 @@ custom_components/hass_broadcast/www/*.js
 !custom_components/hass_broadcast/www/recorder-worklet.js
 .claude/
 .superpowers/
+.venv/

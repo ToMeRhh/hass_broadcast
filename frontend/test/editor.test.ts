@@ -264,7 +264,7 @@ describe("editor record mode", () => {
 
     editor.setRecordMode("start_stop");
 
-    expect(configs.at(-1).record_mode).toBe("start_stop");
+    expect(configs[configs.length - 1].record_mode).toBe("start_stop");
   });
 
   it("shows push-to-talk as the current mode when the key is absent", () => {

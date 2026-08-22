@@ -587,14 +587,6 @@ export class HassBroadcastCard extends LitElement {
           ${this.status?.text ?? this.recordHint}
         </div>
 
-        <button
-          class="broadcast"
-          ?disabled=${!this.canBroadcast}
-          @click=${this.broadcast}
-        >
-          ${this.phase === "sending" ? "Broadcasting…" : "Broadcast"}
-        </button>
-
         <div class="targets">
           ${this.players.map(
             (entityId) => html`
@@ -608,6 +600,14 @@ export class HassBroadcastCard extends LitElement {
             `,
           )}
         </div>
+
+        <button
+          class="broadcast"
+          ?disabled=${!this.canBroadcast}
+          @click=${this.broadcast}
+        >
+          ${this.phase === "sending" ? "Broadcasting…" : "Broadcast"}
+        </button>
 
         ${this.config.show_history === false
           ? nothing

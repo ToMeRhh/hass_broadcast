@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+      # The card bundle is a committed build output -- installs get exactly
+      # what is in the repo, there is no build step on the user's machine. A
+      # source change without a rebuilt bundle ships nothing, and the symptom
+      # (the old card, silently) looks nothing like the cause.
+      - name: Rebuild the card bundle
+        run: npm run build
+      - name: Fail if the committed bundle is stale
+        run: |
+          if ! git diff --quiet -- custom_components/hass_broadcast/www/; then
+            git diff --stat -- custom_components/hass_broadcast/www/
+            echo "::error::The committed card bundle does not match frontend/src/. Run 'npm run build' and commit custom_components/hass_broadcast/www/."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements_test.txt
+      - run: pip install -r requirements_test.txt
+      - run: python -m pytest -q

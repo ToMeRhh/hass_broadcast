@@ -10,6 +10,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.hass_broadcast import playback
 from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
 
+# MediaPlayerEntityFeature.MEDIA_ANNOUNCE, spelled out so the test pins the
+# wire value rather than restating whatever the import happens to resolve to.
+ANNOUNCE_FEATURE = 1048576
+
 
 @pytest.fixture
 async def setup_entry(hass: HomeAssistant) -> MockConfigEntry:
@@ -361,3 +365,80 @@ async def test_restore_tail_failure_is_logged_not_raised(
     # The message itself played; only the restore failed, so the target is
     # deliberately not reported as failed.
     assert response == {"failed": []}
+
+
+async def test_restore_uses_native_announce_when_the_target_supports_it(
+    hass: HomeAssistant, setup_entry, play_calls
+) -> None:
+    """A player advertising MEDIA_ANNOUNCE ducks and resumes itself.
+
+    The sleep-based tail is a workaround for players that cannot do this: it
+    guesses when the message finished and puts the volume back. Where the
+    integration implements announce, that guess is both unnecessary and worse
+    than what the device does natively, so hand the work over.
+    """
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set(
+        "media_player.study",
+        "playing",
+        {"volume_level": 0.4, "supported_features": ANNOUNCE_FEATURE},
+    )
+
+    await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.study"],
+            "mode": "restore",
+        },
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    assert len(play_calls) == 1
+    assert play_calls[0].data.get("announce") is True
+    assert not volume_calls, "the device restores itself; don't also fight it"
+
+
+async def test_restore_falls_back_when_the_target_lacks_announce(
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch
+) -> None:
+    """Without the feature bit the sleep-based tail still runs."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    # PLAY_MEDIA only -- the announce bit is deliberately absent.
+    hass.states.async_set(
+        "media_player.kitchen",
+        "idle",
+        {"volume_level": 0.4, "supported_features": 512},
+    )
+
+    await hass.services.async_call(
+        DOMAIN,
+        "send",
+        {
+            "message_id": message_id,
+            "targets": ["media_player.kitchen"],
+            "mode": "restore",
+        },
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    assert "announce" not in play_calls[0].data
+    assert len(volume_calls) == 1
+    assert volume_calls[0].data["volume_level"] == 0.4

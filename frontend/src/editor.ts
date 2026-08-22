@@ -229,8 +229,10 @@ export class HassBroadcastCardEditor extends LitElement {
           <option value="chime">Chime — attention tone, then the message</option>
         </select>
         <div class="hint">
-          Google Cast has no native announce support, so Restore cannot reliably
-          resume an interrupted Spotify or YouTube session. It does restore volume.
+          Restore uses a speaker's native announce support when it has any, which
+          ducks and resumes whatever was playing. Speakers without it — Google Cast
+          among them — get volume restored, but an interrupted Spotify or YouTube
+          session may not resume.
         </div>
       </div>
 

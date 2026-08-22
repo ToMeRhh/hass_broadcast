@@ -57,6 +57,7 @@ concurrently — they all start together rather than one after another.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
+| `title` | `Voice Broadcast` | Card heading. Editable from the card editor's **Card name** field; blank restores the default |
 | `targets` | `[]` | Speakers selected when the card loads |
 | `mode` | `plain` | `plain`, `restore`, or `chime` — see [Behavioural restrictions](#behavioural-restrictions) below |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to the range **5–300**; values outside that range are pulled back to the nearest bound, and invalid values fall back to 60. |

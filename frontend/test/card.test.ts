@@ -309,6 +309,25 @@ describe("card history rendering and deletion", () => {
     extension: "wav",
   });
 
+  it("renders the configured card name, falling back to the default", () => {
+    const card = newCard();
+
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    expect(renderedText(card.render())).toContain("Voice Broadcast");
+
+    card.setConfig({
+      type: "custom:hass-broadcast-card",
+      title: "Kitchen intercom",
+    });
+    const named = renderedText(card.render());
+    expect(named).toContain("Kitchen intercom");
+    expect(named).not.toContain("Voice Broadcast");
+
+    // A name of nothing but whitespace is not a name.
+    card.setConfig({ type: "custom:hass-broadcast-card", title: "   " });
+    expect(renderedText(card.render())).toContain("Voice Broadcast");
+  });
+
   it("offers a delete control only when the server says can_delete", () => {
     const card = newCard();
     card.setConfig({ type: "custom:hass-broadcast-card" });

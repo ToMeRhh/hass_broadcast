@@ -15,9 +15,12 @@ import { clampMaxDuration } from "./editor";
 import "./editor";
 
 const SUPPORT_PLAY_MEDIA = 512;
+const DEFAULT_TITLE = "Voice Broadcast";
 
 interface CardConfig {
   type: string;
+  /** Card heading, renamable from the editor. Blank falls back to DEFAULT_TITLE. */
+  title?: string;
   targets?: string[];
   mode?: BroadcastMode;
   max_duration?: number;
@@ -63,6 +66,24 @@ export class HassBroadcastCard extends LitElement {
     .meter { flex: 1; height: 6px; background: var(--divider-color, #ddd); border-radius: 3px; overflow: hidden; }
     .meter > div { height: 100%; background: var(--primary-color); transition: width 80ms linear; }
     .error { color: var(--error-color, #db4437); margin-bottom: 12px; }
+    /* Preview actions: centred, and spaced away from the speaker list below. */
+    .actions { display: flex; justify-content: center; align-items: center; gap: 12px;
+      margin: 4px 0 24px; }
+    .action { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font: inherit; font-size: 0.95em; font-weight: 500; line-height: 1;
+      padding: 10px 22px; border-radius: 20px; border: 1px solid transparent;
+      cursor: pointer; transition: background 120ms ease, box-shadow 120ms ease; }
+    .action:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+    .send { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+    .send:hover { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+    /* Play triangle, drawn from borders so it inherits the label colour. */
+    .send .play { width: 0; height: 0; border-left: 9px solid currentColor;
+      border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+    .discard { background: none; color: var(--secondary-text-color);
+      border-color: var(--divider-color, #ddd); }
+    .discard:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+      color: var(--primary-text-color); }
     .targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
     .chip { padding: 6px 12px; border-radius: 16px; cursor: pointer;
       border: 1px solid var(--divider-color, #ddd); background: none; color: var(--primary-text-color); }
@@ -353,7 +374,7 @@ export class HassBroadcastCard extends LitElement {
   render() {
     const recording = this.phase === "recording";
     return html`
-      <ha-card header="Voice Broadcast">
+      <ha-card .header=${this.config.title?.trim() || DEFAULT_TITLE}>
         ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
 
         <div class="row">
@@ -372,9 +393,11 @@ export class HassBroadcastCard extends LitElement {
         ${this.phase === "preview" && this.previewUrl
           ? html`
               <audio controls src=${this.previewUrl}></audio>
-              <div class="row">
-                <button @click=${this.send}>Send</button>
-                <button @click=${this.discard}>Discard</button>
+              <div class="actions">
+                <button class="action send" @click=${this.send}>
+                  <span class="play" aria-hidden="true"></span>Send
+                </button>
+                <button class="action discard" @click=${this.discard}>Discard</button>
               </div>
             `
           : nothing}

@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 
 interface CardConfig {
   type: string;
+  title?: string;
   targets?: string[];
   mode?: string;
   max_duration?: number;
@@ -31,6 +32,10 @@ export class HassBroadcastCardEditor extends LitElement {
     .field { display: block; margin-bottom: 12px; }
     label { display: block; margin-bottom: 4px; font-weight: 500; }
     .hint { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 4px; }
+    input[type="text"], input[type="number"], select { width: 100%; box-sizing: border-box;
+      padding: 8px; border-radius: 4px; border: 1px solid var(--divider-color, #ddd);
+      background: var(--card-background-color, #fff); color: var(--primary-text-color);
+      font: inherit; }
   `;
 
   setConfig(config: CardConfig): void {
@@ -50,6 +55,22 @@ export class HassBroadcastCardEditor extends LitElement {
 
   render() {
     return html`
+      <div class="field">
+        <label for="title">Card name</label>
+        <input
+          id="title"
+          type="text"
+          placeholder="Voice Broadcast"
+          .value=${this.config.title ?? ""}
+          @change=${(e: Event) =>
+            this.emit({
+              // Blank means "no custom name" — drop the key so the card falls
+              // back to its default heading instead of rendering an empty one.
+              title: (e.target as HTMLInputElement).value.trim() || undefined,
+            })}
+        />
+      </div>
+
       <div class="field">
         <label for="mode">Playback mode</label>
         <select

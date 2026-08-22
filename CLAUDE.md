@@ -10,7 +10,16 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (54)
 npm test                        # card tests, vitest (87)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
+npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
+npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 ```
+
+`npm run dev` renders the real card and editor against a mocked `hass`, with
+live reload and switches for the states that are painful to reach on a live
+install (mic denied, partial broadcast failure, empty history, latency). Real
+microphone capture works because `localhost` is a secure context. It is a
+separate esbuild entry point and never touches the shipped bundle. Iterate on
+card UI there rather than by deploying to Home Assistant.
 
 Use `.venv/bin/python`, not a bare `python`. The test env pins
 `pytest-homeassistant-custom-component`, which is what pins the Home Assistant
@@ -81,6 +90,7 @@ commits `chore: release vX.Y.Z`, pushes an annotated tag, and publishes a GitHub
 release with generated notes. Don't tag or bump by hand; the workflow keeps the
 manifest version, the tag, and the release in agreement.
 
-The repo commits directly to `master` with Conventional Commit subjects
-(`fix:`, `feat:`, `docs:`, `refactor:`, `chore:`). History is linear; there are no
-merge commits.
+Commit subjects follow Conventional Commits (`fix:`, `feat:`, `docs:`,
+`refactor:`, `chore:`). Some work lands directly on `master`, some goes through a
+branch and a pull request — either is fine, so follow whatever the current task
+asks for rather than assuming one of them.

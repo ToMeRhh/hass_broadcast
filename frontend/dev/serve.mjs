@@ -5,7 +5,9 @@
 // node's own http/fs is enough, and a dev-only tool should not add packages.
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { networkInterfaces } from "node:os";
 import { extname, join, normalize, resolve } from "node:path";
+import { parseArgs } from "node:util";
 import * as esbuild from "esbuild";
 
 const ROOT = resolve(import.meta.dirname, "../..");
@@ -14,7 +16,24 @@ const BUILD_DIR = join(DEV_DIR, ".build");
 // The recorder hardcodes /api/hass_broadcast/static/recorder-worklet.js, so the
 // harness has to serve that exact path or real microphone capture cannot work.
 const STATIC_DIR = join(ROOT, "custom_components/hass_broadcast/www");
-const PORT = Number(process.env.PORT ?? 8099);
+
+// npm run dev -- --host 192.168.1.157 --port 9000, or HOST=... PORT=... npm run dev.
+// The default binds every interface, so the harness is reachable from other
+// devices on the network without any flag.
+let flags;
+try {
+  ({ values: flags } = parseArgs({
+    options: { host: { type: "string" }, port: { type: "string" } },
+    strict: true,
+  }));
+} catch (error) {
+  // A stack trace is the wrong answer to a mistyped flag on a dev tool.
+  console.error(`\n  ${error.message}`);
+  console.error("  usage: npm run dev -- [--host <address>] [--port <number>]\n");
+  process.exit(1);
+}
+const HOST = flags.host ?? process.env.HOST ?? "0.0.0.0";
+const PORT = Number(flags.port ?? process.env.PORT ?? 8099);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -110,7 +129,25 @@ createServer(async (req, res) => {
     return;
   }
   res.writeHead(404).end("not found");
-}).listen(PORT, () => {
-  console.log(`\n  Voice Broadcast card harness → http://localhost:${PORT}\n`);
-  console.log("  localhost counts as a secure context, so the microphone really records.\n");
+}).listen(PORT, HOST, () => {
+  console.log("\n  Voice Broadcast card harness\n");
+  for (const address of addresses()) {
+    console.log(`    ${address}`);
+  }
+  // Worth repeating on every start: on any other address the browser hides
+  // getUserMedia, so the card shows its insecure-context error rather than
+  // recording. Layout is still reviewable there; the microphone is not.
+  console.log("\n  Recording only works over localhost — the microphone needs a secure context.\n");
 });
+
+/** Every URL this server can be reached on, so a phone or tablet has one to type. */
+function addresses() {
+  if (HOST !== "0.0.0.0" && HOST !== "::") {
+    return [`http://${HOST.includes(":") ? `[${HOST}]` : HOST}:${PORT}`];
+  }
+  const external = Object.values(networkInterfaces())
+    .flat()
+    .filter((item) => item && item.family === "IPv4" && !item.internal)
+    .map((item) => `http://${item.address}:${PORT}`);
+  return [`http://localhost:${PORT}`, ...external];
+}

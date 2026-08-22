@@ -10,7 +10,8 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (54)
 npm test                        # card tests, vitest (87)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
-npm run dev                     # card dev harness at localhost:8099 (frontend/dev/README.md)
+npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
+npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 ```
 
 `npm run dev` renders the real card and editor against a mocked `hass`, with

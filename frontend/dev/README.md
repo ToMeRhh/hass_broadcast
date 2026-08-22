@@ -1,8 +1,18 @@
 # Card dev harness
 
 ```bash
-npm run dev     # → http://localhost:8099
+npm run dev                                        # → http://localhost:8099
+npm run dev -- --host 127.0.0.1 --port 9000        # or HOST=... PORT=... npm run dev
 ```
+
+The default binds every interface and prints each URL it can be reached on, so
+another device on the network can open it without a flag. Pass `--host` to
+narrow that — `--host 127.0.0.1` keeps it to this machine.
+
+Recording, though, only works over `localhost`: any other address is not a
+secure context, so the browser hides `getUserMedia` and the card shows its
+insecure-context error. A phone on the LAN can review layout and spacing; it
+cannot exercise the microphone.
 
 Renders the real `hass-broadcast-card` and the real `hass-broadcast-card-editor`
 against a mocked `hass`, so the UI can be iterated on without deploying to Home

@@ -34,7 +34,7 @@ const INSECURE = !window.isSecureContext;
 const scenario: Scenario = { ...DEFAULT_SCENARIO, fakeRecorder: INSECURE };
 const backend = new MockBackend(scenario);
 const hass = createMockHass(backend);
-installFetchMock(backend);
+installFetchMock(backend, scenario);
 installMicMock(() => scenario.micDenied);
 installRecorderMock({
   useFake: () => INSECURE || scenario.fakeRecorder,
@@ -238,6 +238,7 @@ export class DevApp extends LitElement {
         ${this.toggle("uploadFails", "Upload fails (500)")}
         ${this.toggle("sendThrows", "Broadcast call throws")}
         ${this.toggle("deleteForbidden", "Delete not authorized")}
+        ${this.toggle("mediaFails", "Loading a recent message fails")}
 
         <h2>Broadcast result</h2>
         <select

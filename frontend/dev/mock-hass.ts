@@ -37,6 +37,8 @@ export interface Scenario {
   broadcast: BroadcastOutcome;
   /** hass_broadcast/delete rejects with not_authorized. */
   deleteForbidden: boolean;
+  /** GET /media answers 404, so a history entry cannot be loaded. */
+  mediaFails: boolean;
   history: HistorySize;
   /** Milliseconds of fake latency on every call, to see pending states. */
   latency: number;
@@ -49,6 +51,7 @@ export const DEFAULT_SCENARIO: Scenario = {
   sendThrows: false,
   broadcast: "ok",
   deleteForbidden: false,
+  mediaFails: false,
   history: "seeded",
   latency: 250,
 };
@@ -256,7 +259,7 @@ export function createMockHass(backend: MockBackend): any {
  * Routes the card's two HTTP calls at the in-memory backend. Everything else
  * (the bundle, the worklet) falls through to the dev server untouched.
  */
-export function installFetchMock(backend: MockBackend): void {
+export function installFetchMock(backend: MockBackend, scenario: Scenario): void {
   const original = window.fetch.bind(window);
   window.fetch = async (input: any, init?: any) => {
     const url = typeof input === "string" ? input : (input?.url ?? String(input));
@@ -279,6 +282,9 @@ export function installFetchMock(backend: MockBackend): void {
 
     const media = /\/api\/hass_broadcast\/media\/([^./]+)\./.exec(url);
     if (media) {
+      if (scenario.mediaFails) {
+        return new Response("not found", { status: 404 });
+      }
       const blob = backend.mediaFor(media[1]);
       return blob
         ? new Response(blob, { status: 200, headers: { "Content-Type": "audio/wav" } })

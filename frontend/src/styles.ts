@@ -152,4 +152,116 @@ export const cardStyles = css`
     outline: 3px solid var(--primary-color);
     outline-offset: 4px;
   }
+
+  /* --- sections ---------------------------------------------------- */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 8px 0 6px;
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+  }
+  .section-head .count {
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .empty {
+    padding: 12px 0;
+    font-size: 0.9em;
+    color: var(--secondary-text-color);
+  }
+
+  /* --- speakers: rows ---------------------------------------------- */
+  .target-rows {
+    max-height: 208px;
+    overflow-y: auto;
+  }
+  .target-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 8px;
+    font: inherit;
+    text-align: left;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .target-row[data-on="true"] {
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+  }
+  .target-name {
+    flex: 1;
+  }
+  .target-note {
+    font-size: 0.8em;
+    color: var(--secondary-text-color);
+  }
+  .target-check {
+    width: 20px;
+    text-align: center;
+    color: var(--primary-color);
+  }
+
+  /* --- speakers: chips --------------------------------------------- */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    padding: 8px 14px;
+    font: inherit;
+    border-radius: 18px;
+    border: 1px solid var(--divider-color, #ddd);
+    background: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .chip[data-on="true"] {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-primary-color, #fff);
+  }
+
+  /* --- speakers: dropdown ------------------------------------------ */
+  .dropdown {
+    position: relative;
+  }
+  .dropdown-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px;
+    font: inherit;
+    text-align: left;
+    border: 1px solid var(--divider-color, #ddd);
+    border-radius: 8px;
+    background: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .dropdown-panel {
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 4px;
+    padding: 4px;
+    border: 1px solid var(--divider-color, #ddd);
+    border-radius: 8px;
+    background: var(--card-background-color, #fff);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  }
 `;

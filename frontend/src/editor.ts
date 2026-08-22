@@ -263,6 +263,20 @@ export class HassBroadcastCardEditor extends LitElement {
       </div>
 
       <div class="field">
+        <label for="player-list">Speaker list style</label>
+        <select
+          id="player-list"
+          .value=${this.config.player_list ?? "rows"}
+          @change=${(e: Event) =>
+            this.emit({ player_list: (e.target as HTMLSelectElement).value as any })}
+        >
+          <option value="rows">List — one row per speaker</option>
+          <option value="chips">Chips — compact pills</option>
+          <option value="dropdown">Dropdown — a single summary line</option>
+        </select>
+      </div>
+
+      <div class="field">
         <label for="mode">Playback mode</label>
         <select
           id="mode"

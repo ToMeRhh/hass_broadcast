@@ -24,6 +24,7 @@ import {
 import { BAR_COUNT, LevelEnvelope, silence } from "./levels";
 import { cardStyles } from "./styles";
 import { playerRow } from "./ui/player";
+import { targetList } from "./ui/targets";
 import { visualizer } from "./ui/visualizer";
 
 const DEFAULT_TITLE = "Voice Broadcast";
@@ -73,6 +74,7 @@ export class HassBroadcastCard extends LitElement {
   @state() private loadingId?: string;
   @state() private position = 0;
   @state() private playing = false;
+  @state() private pickerOpen = false;
 
   private audio?: HTMLAudioElement;
 
@@ -587,19 +589,21 @@ export class HassBroadcastCard extends LitElement {
           ${this.status?.text ?? this.recordHint}
         </div>
 
-        <div class="targets">
-          ${this.players.map(
-            (entityId) => html`
-              <button
-                class="chip"
-                data-on=${this.selected.includes(entityId)}
-                @click=${() => this.toggleTarget(entityId)}
-              >
-                ${this.hass.states[entityId].attributes.friendly_name ?? entityId}
-              </button>
-            `,
-          )}
-        </div>
+        ${targetList({
+          players: this.players.map((entityId) => ({
+            entityId,
+            name:
+              this.hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
+            available: this.hass?.states?.[entityId]?.state !== "unavailable",
+          })),
+          selected: this.selected,
+          style: this.config.player_list ?? "rows",
+          open: this.pickerOpen,
+          onToggle: (entityId) => this.toggleTarget(entityId),
+          onOpenChange: (open) => {
+            this.pickerOpen = open;
+          },
+        })}
 
         <button
           class="broadcast"

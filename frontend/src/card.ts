@@ -11,10 +11,10 @@ import {
 } from "./api";
 import { INSECURE_CONTEXT_MESSAGE, micErrorMessage } from "./errors";
 import { Recorder } from "./recorder";
+import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
 import { clampMaxDuration } from "./editor";
 import "./editor";
 
-const SUPPORT_PLAY_MEDIA = 512;
 const DEFAULT_TITLE = "Voice Broadcast";
 
 interface CardConfig {
@@ -22,6 +22,10 @@ interface CardConfig {
   /** Card heading, renamable from the editor. Blank falls back to DEFAULT_TITLE. */
   title?: string;
   targets?: string[];
+  /** Only these speakers appear on the card. Empty means "every one found". */
+  show_players?: string[];
+  /** Speakers to leave off the card, applied after show_players. */
+  hide_players?: string[];
   mode?: BroadcastMode;
   max_duration?: number;
   show_history?: boolean;
@@ -176,17 +180,24 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private get players(): string[] {
-    if (!this.hass) {
-      return [];
-    }
-    return Object.keys(this.hass.states)
-      .filter((entityId) => entityId.startsWith("media_player."))
-      .filter(
-        (entityId) =>
-          (this.hass.states[entityId].attributes.supported_features &
-            SUPPORT_PLAY_MEDIA) !== 0,
-      )
-      .sort();
+    return visiblePlayers(
+      discoverPlayers(this.hass),
+      this.config.show_players,
+      this.config.hide_players,
+    );
+  }
+
+  /**
+   * The speakers a broadcast actually goes to. `targets` is saved config and
+   * may name a speaker the filters have since removed from the card; sending
+   * to one nobody can see is the failure mode this guards.
+   */
+  private get targets(): string[] {
+    return allowedTargets(
+      this.selected,
+      this.config.show_players,
+      this.config.hide_players,
+    );
   }
 
   private async startRecording(): Promise<void> {
@@ -286,7 +297,8 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private async send(): Promise<void> {
-    if (!this.blob || this.selected.length === 0) {
+    const targets = this.targets;
+    if (!this.blob || targets.length === 0) {
       this.error = "Pick at least one speaker first.";
       return;
     }
@@ -297,7 +309,7 @@ export class HassBroadcastCard extends LitElement {
       const { failed } = await sendBroadcast(
         this.hass,
         id,
-        this.selected,
+        targets,
         this.config.mode ?? "plain",
       );
       if (failed.length === 0) {
@@ -309,7 +321,7 @@ export class HassBroadcastCard extends LitElement {
       // way: discarding it here would throw away the only copy of a message
       // that part of the house never heard, with nothing to retry from.
       this.error =
-        failed.length >= this.selected.length
+        failed.length >= targets.length
           ? `Could not play on any speaker: ${this.describe(failed)}. The recording was kept — try again.`
           : `Played, but not on ${this.describe(failed)}. The recording was kept so you can retry those.`;
       this.phase = "preview";
@@ -332,7 +344,8 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private async replay(id: string): Promise<void> {
-    if (this.selected.length === 0) {
+    const targets = this.targets;
+    if (targets.length === 0) {
       this.error = "Pick at least one speaker first.";
       return;
     }
@@ -340,7 +353,7 @@ export class HassBroadcastCard extends LitElement {
       const { failed } = await sendBroadcast(
         this.hass,
         id,
-        this.selected,
+        targets,
         this.config.mode ?? "plain",
       );
       this.error =

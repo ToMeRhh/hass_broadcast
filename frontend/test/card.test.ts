@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderedText } from "./helpers";
+
 // The default vitest environment is plain Node, and that is enough: Lit ships
 // @lit-labs/ssr-dom-shim, so a @customElement-decorated component constructs
 // and runs its lifecycle callbacks without a DOM (editor.test.ts already
@@ -73,28 +75,6 @@ function makeCard(supported = true): { card: any; recorder: FakeRecorder } {
   card.recorder = recorder;
   card.connectedCallback();
   return { card, recorder };
-}
-
-/**
- * Flatten a Lit TemplateResult tree into its literal text. Enough to assert
- * which branches a render produced without pulling in a DOM renderer.
- */
-function renderedText(node: any): string {
-  if (node === null || node === undefined || typeof node === "function") {
-    return "";
-  }
-  if (Array.isArray(node)) {
-    return node.map(renderedText).join("");
-  }
-  if (typeof node === "object" && "strings" in node && "values" in node) {
-    return (node.strings as string[])
-      .map((part, index) => part + renderedText(node.values[index]))
-      .join("");
-  }
-  if (typeof node === "symbol") {
-    return "";
-  }
-  return String(node);
 }
 
 describe("card state machine", () => {
@@ -292,6 +272,85 @@ describe("card send results", () => {
     await card.replay("abc123");
 
     expect(card.error).toMatch(/Could not play on Garage/);
+  });
+});
+
+describe("card speaker filtering", () => {
+  /** Three playable speakers, so show/hide have something to choose from. */
+  function cardWithSpeakers(config: any): any {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", ...config });
+    card.hass = {
+      states: {
+        "media_player.attic": {
+          attributes: { supported_features: 512, friendly_name: "Attic" },
+        },
+        "media_player.kitchen": {
+          attributes: { supported_features: 512, friendly_name: "Kitchen" },
+        },
+        "media_player.tv": {
+          attributes: { supported_features: 4, friendly_name: "TV" },
+        },
+      },
+    };
+    return card;
+  }
+
+  it("offers every playable speaker when neither list is configured", () => {
+    const card = cardWithSpeakers({});
+
+    expect(card.players).toEqual([
+      "media_player.attic",
+      "media_player.kitchen",
+    ]);
+  });
+
+  it("offers only the speakers on the show list", () => {
+    const card = cardWithSpeakers({ show_players: ["media_player.kitchen"] });
+
+    expect(card.players).toEqual(["media_player.kitchen"]);
+  });
+
+  it("leaves out the speakers on the hide list", () => {
+    const card = cardWithSpeakers({ hide_players: ["media_player.kitchen"] });
+
+    expect(card.players).toEqual(["media_player.attic"]);
+  });
+
+  it("does not broadcast to a preselected speaker that is now hidden", async () => {
+    const calls: any[] = [];
+    const card = cardWithSpeakers({
+      targets: ["media_player.attic", "media_player.kitchen"],
+      hide_players: ["media_player.attic"],
+    });
+    card.hass.auth = { data: { access_token: "tok" } };
+    card.hass.callService = async (...args: any[]) => {
+      calls.push(args);
+      return { response: { failed: [] } };
+    };
+    card.blob = new Blob(["x"]);
+    card.duration = 2;
+    vi.stubGlobal("fetch", async () => ({
+      ok: true,
+      json: async () => ({ message_id: "abc" }),
+    }));
+
+    await card.send();
+
+    expect(calls[0][2].targets).toEqual(["media_player.kitchen"]);
+    vi.unstubAllGlobals();
+  });
+
+  it("refuses to send when every preselected speaker is hidden", async () => {
+    const card = cardWithSpeakers({
+      targets: ["media_player.attic"],
+      hide_players: ["media_player.attic"],
+    });
+    card.blob = new Blob(["x"]);
+
+    await card.send();
+
+    expect(card.error).toMatch(/Pick at least one speaker/);
   });
 });
 

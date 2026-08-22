@@ -256,6 +256,36 @@ describe("card broadcasting", () => {
     expect(state.calls[1][2].message_id).toBe("abc");
   });
 
+  it("does not resurrect a clip cleared mid-upload", async () => {
+    // Finding 9: tapping ✕ during a long upload runs clearClip(), but the
+    // in-flight upload's resolution used to reassign this.clip
+    // unconditionally, bringing back a clip that now holds a revoked URL.
+    let resolveFetch: (value: any) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const card = newCard();
+    card.hass = { auth: { data: { access_token: "tok" } } };
+    const clip = {
+      source: { kind: "fresh" as const, blob: new Blob(["x"]) },
+      url: "blob:preview",
+      duration: 2,
+      peaks: [],
+    };
+    card.clip = clip;
+
+    const pending = card.messageId(clip);
+    card.clearClip();
+    resolveFetch({ ok: true, json: async () => ({ message_id: "abc" }) });
+    await pending;
+
+    expect(card.clip).toBeUndefined();
+  });
+
   it("broadcasts a stored clip without uploading anything", async () => {
     const state = cardWithClip({ response: { failed: [] } });
     state.card.clip = {
@@ -389,6 +419,69 @@ describe("card loading a message from history", () => {
     expect(card.clip).toBe(existing);
     expect(card.status.kind).toBe("error");
     expect(card.status.text).toMatch(/404/);
+  });
+});
+
+describe("card render reflects phase, not just the clip", () => {
+  // Finding 3: render() derived progress/seekable/enabled from `this.clip`
+  // alone. Recording a second message while one was loaded left the old
+  // clip's transport live: a seekable strip that moved the old clip's
+  // position, and an enabled Play/✕ over a clip that was no longer current.
+  function cardWithLoadedClip(): any {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", show_history: false });
+    card.clip = {
+      source: { kind: "stored", id: "x" },
+      url: "blob:x",
+      duration: 5,
+      peaks: [0.5, 0.5],
+    };
+    return card;
+  }
+
+  it("stops treating the loaded clip as current while a new take records", () => {
+    const card = cardWithLoadedClip();
+    card.phase = "recording";
+
+    const html = renderedText(card.render());
+
+    expect(html).not.toContain("seekable");
+    expect(html).toContain("data-enabled=false");
+  });
+
+  it("restores the loaded clip's transport once idle again", () => {
+    const card = cardWithLoadedClip();
+    card.phase = "idle";
+
+    const html = renderedText(card.render());
+
+    expect(html).toContain("seekable");
+    expect(html).toContain("data-enabled=true");
+  });
+});
+
+describe("card teardown", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("clears the loaded clip on disconnect, not just its object URL", () => {
+    // Finding 6: dashboard navigation moves the element rather than
+    // recreating it, so on re-attach a clip left in place renders an
+    // enabled Play/Broadcast over an already-revoked object URL.
+    const { card } = makeCard();
+    card.clip = {
+      source: { kind: "fresh", blob: new Blob(["x"]) },
+      url: "blob:x",
+      duration: 2,
+      peaks: [0.5],
+    };
+    card.bars = [0.5];
+
+    card.disconnectedCallback();
+
+    expect(card.clip).toBeUndefined();
+    expect(card.bars).toEqual([]);
   });
 });
 
@@ -636,6 +729,33 @@ describe("push to talk", () => {
     await card.onPressStart(press);
 
     expect(card.clip).toBeDefined();
+  });
+
+  it("ignores a second pointer landing while the first press's start() is still opening the mic", async () => {
+    // Finding 13: onPressStart reset stopRequested on every call, including a
+    // second concurrent pointer. A second finger landing mid-open cleared
+    // the first finger's pending stop request, and the take ran to
+    // max_duration instead of stopping when expected.
+    const { card, recorder } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    let releaseStart: () => void = () => {};
+    recorder.startImpl = () =>
+      new Promise<void>((resolve) => {
+        releaseStart = resolve;
+      });
+
+    const firstPress = card.onPressStart(press);
+    // First finger releases before the mic finishes opening.
+    await card.onPressEnd();
+    // A second finger lands while start() is still in flight.
+    const secondPress = card.onPressStart(press);
+    releaseStart();
+    await firstPress;
+    await secondPress;
+    await Promise.resolve();
+
+    expect(card.phase).toBe("idle");
+    expect(recorder.stopped).toBe(1);
   });
 
   it("toggles rather than holds in start-stop mode", async () => {

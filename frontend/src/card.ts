@@ -138,6 +138,12 @@ export class HassBroadcastCard extends LitElement {
     this.clearTimer();
     this.stopPlayback();
     revokeClip(this.clip);
+    // Dashboard navigation moves the element rather than recreating it, so
+    // on re-attach connectedCallback runs again on this same instance. A
+    // clip left in place would render an enabled Play/Broadcast over the
+    // object URL just revoked above.
+    this.clip = undefined;
+    this.bars = [];
     // Torn down (dashboard navigation, view switch) while a recording is
     // in progress. The MediaStream/AudioContext/worklet node stay alive
     // until something calls Recorder.stop() — there is no side-effect-free
@@ -217,9 +223,6 @@ export class HassBroadcastCard extends LitElement {
    * closes it.
    */
   private async onPressStart(event: Event): Promise<void> {
-    // Without this a long press on a phone selects text, opens the context
-    // menu, or starts a scroll — all of which cancel the gesture mid-message.
-    event.preventDefault();
     if (this.phase === "sending" || !Recorder.isSupported()) {
       return;
     }
@@ -227,6 +230,19 @@ export class HassBroadcastCard extends LitElement {
       await (this.phase === "recording"
         ? this.stopRecording()
         : this.startRecording());
+      return;
+    }
+    // Without this a long press on a phone selects text, opens the context
+    // menu, or starts a scroll — all of which cancel the gesture mid-message.
+    // Scoped to push-to-talk: in start-stop a plain click already works, and
+    // calling this unconditionally at the top of the method (as it used to)
+    // stopped the button ever taking focus in start-stop mode.
+    event.preventDefault();
+    if (this.busy) {
+      // A second pointer (e.g. another finger) landed while this press's
+      // own start()/stop() is still in flight. Handling it as a normal press
+      // would reset stopRequested below and clobber the first press's
+      // pending stop, or open a second concurrent recording session.
       return;
     }
     this.stopRequested = false;
@@ -445,7 +461,13 @@ export class HassBroadcastCard extends LitElement {
     }
     const blob = (clip.source as { kind: "fresh"; blob: Blob }).blob;
     const id = await uploadRecording(this.hass, blob, clip.duration);
-    this.clip = { ...clip, source: { kind: "stored", id } };
+    // The upload can outlive the clip it was for: a ✕ tap mid-upload runs
+    // clearClip() before this resolves. Only rewrite the source if this is
+    // still the clip the card is holding, or a cleared clip comes back
+    // holding an already-revoked object URL.
+    if (this.clip === clip) {
+      this.clip = { ...clip, source: { kind: "stored", id } };
+    }
     return id;
   }
 
@@ -556,13 +578,19 @@ export class HassBroadcastCard extends LitElement {
       <ha-card .header=${this.config.title?.trim() || DEFAULT_TITLE}>
         ${visualizer({
           bars: this.bars.length ? this.bars : silence(BAR_COUNT),
-          progress: this.clip ? this.position / (this.clip.duration || 1) : undefined,
-          seekable: this.clip !== undefined,
+          progress:
+            this.phase === "recording"
+              ? undefined
+              : this.clip
+                ? this.position / (this.clip.duration || 1)
+                : undefined,
+          seekable: this.phase === "idle" && this.clip !== undefined,
+          recording: this.phase === "recording",
           onSeek: (fraction) => this.seek(fraction),
         })}
 
         ${playerRow({
-          enabled: this.clip !== undefined,
+          enabled: this.phase === "idle" && this.clip !== undefined,
           playing: this.playing,
           position: this.position,
           duration: this.clip?.duration ?? 0,

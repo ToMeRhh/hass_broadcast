@@ -7,6 +7,13 @@ export interface VisualizerProps {
   progress?: number;
   /** True when a clip is loaded and the strip can be scrubbed. */
   seekable: boolean;
+  /**
+   * True while a take is actually being recorded. Keys the live-tail
+   * styling — deliberately not derived from `progress === undefined`, which
+   * is also true at rest with nothing loaded, and would paint the idle
+   * baseline in the recording accent color.
+   */
+  recording: boolean;
   onSeek: (fraction: number) => void;
 }
 
@@ -41,11 +48,7 @@ export function visualizer(props: VisualizerProps): TemplateResult {
       ${props.bars.map(
         (value, index) => html`
           <div
-            class="bar ${played(index)
-              ? "played"
-              : props.progress === undefined
-                ? "live"
-                : ""}"
+            class="bar ${played(index) ? "played" : props.recording ? "live" : ""}"
             style="height:${Math.max(2, Math.round(value * 100))}%"
           ></div>
         `,

@@ -117,9 +117,4 @@ export class LevelEnvelope {
     const recent = this.peaks.slice(-count);
     return [...silence(count - recent.length), ...recent];
   }
-
-  /** The whole run fitted to `count` bars. */
-  resampled(count: number): number[] {
-    return resample(this.peaks, count);
-  }
 }

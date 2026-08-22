@@ -1,4 +1,11 @@
-/** Wrap Int16 PCM in a WAV/LPCM container. Cast plays this natively. */
+/**
+ * Wrap Int16 PCM in a WAV/LPCM container.
+ *
+ * Capture stays raw PCM rather than using MediaRecorder because browsers
+ * disagree on what MediaRecorder emits (Chrome Opus, Safari AAC). WAV is the
+ * upload format, not necessarily the broadcast format: the integration
+ * transcodes to MP3 on the way in when ffmpeg is available.
+ */
 export function encodeWav(samples: Int16Array, sampleRate: number): Blob {
   const dataBytes = samples.length * 2;
   const buffer = new ArrayBuffer(44 + dataBytes);

@@ -9,13 +9,15 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components.media_player import (
+    ATTR_MEDIA_ANNOUNCE,
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
     DOMAIN as MEDIA_PLAYER_DOMAIN,
     SERVICE_PLAY_MEDIA,
+    MediaPlayerEntityFeature,
     MediaType,
 )
-from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.const import ATTR_ENTITY_ID, ATTR_SUPPORTED_FEATURES
 from homeassistant.core import (
     HomeAssistant,
     ServiceCall,
@@ -34,7 +36,7 @@ SERVICE_SEND = "send"
 
 # The chime asset (Step 1) is two tones totaling 0.12 + 0.18 = 0.3s.
 CHIME_DURATION_S = 0.3
-# Heuristic margin for Cast dispatch/start latency between issuing the chime
+# Heuristic margin for dispatch/start latency between issuing the chime
 # play_media call and the speaker audibly finishing it. `blocking=True` only
 # confirms the command was accepted, not that playback completed, so this is
 # a timing guess, not a completion guarantee. Polling for actual playback
@@ -55,18 +57,43 @@ SEND_SCHEMA = vol.Schema(
 )
 
 
+def _supports_announce(state: Any | None) -> bool:
+    """Return whether this target implements native announce.
+
+    Read from the entity's advertised `supported_features` rather than from
+    its platform: the capability varies by integration (Sonos, Music
+    Assistant and ESPHome media players implement it, Cast does not), and
+    matching on device type would go stale every time an integration gains
+    support. The card already picks targets the same way, off the PLAY_MEDIA
+    bit.
+    """
+    if state is None:
+        return False
+    features = state.attributes.get(ATTR_SUPPORTED_FEATURES) or 0
+    return bool(features & MediaPlayerEntityFeature.MEDIA_ANNOUNCE)
+
+
 async def _async_play(
-    hass: HomeAssistant, entity_id: str, content_id: str
+    hass: HomeAssistant,
+    entity_id: str,
+    content_id: str,
+    announce: bool = False,
 ) -> None:
     """Issue one play_media call."""
+    data: dict[str, Any] = {
+        ATTR_ENTITY_ID: entity_id,
+        ATTR_MEDIA_CONTENT_ID: content_id,
+        ATTR_MEDIA_CONTENT_TYPE: MediaType.MUSIC,
+    }
+    # Only set when announcing: passing announce=False explicitly is not the
+    # same as omitting it for every integration, and plain broadcasts must
+    # keep behaving exactly as they did.
+    if announce:
+        data[ATTR_MEDIA_ANNOUNCE] = True
     await hass.services.async_call(
         MEDIA_PLAYER_DOMAIN,
         SERVICE_PLAY_MEDIA,
-        {
-            ATTR_ENTITY_ID: entity_id,
-            ATTR_MEDIA_CONTENT_ID: content_id,
-            ATTR_MEDIA_CONTENT_TYPE: MediaType.MUSIC,
-        },
+        data,
         blocking=True,
     )
 
@@ -79,20 +106,27 @@ async def _async_send_to_target(
     duration: float,
 ) -> None:
     """Play a message on one target according to the mode."""
+    state = hass.states.get(entity_id)
+
+    # Restore mode means "duck, play, put it back". Where the target's own
+    # integration implements that, let it: the device knows when playback
+    # actually ended, while the fallback below can only guess from the
+    # message duration and sleep. Prefer the native path and skip the
+    # snapshot entirely, so the two mechanisms never both act on one target.
+    announce = mode == MODE_RESTORE and _supports_announce(state)
+
     snapshot: dict[str, Any] | None = None
-    if mode == MODE_RESTORE:
-        state = hass.states.get(entity_id)
-        if state is not None:
-            snapshot = {
-                "volume": state.attributes.get("volume_level"),
-                "state": state.state,
-            }
+    if mode == MODE_RESTORE and not announce and state is not None:
+        snapshot = {
+            "volume": state.attributes.get("volume_level"),
+            "state": state.state,
+        }
 
     if mode == MODE_CHIME:
         await _async_play(hass, entity_id, CHIME_URL)
         await asyncio.sleep(CHIME_GAP_S)
 
-    await _async_play(hass, entity_id, content_id)
+    await _async_play(hass, entity_id, content_id, announce=announce)
 
     if snapshot is not None:
         # Dispatch-and-return: the tail waits out the whole message, so
@@ -137,7 +171,9 @@ async def _async_restore_tail(
                 blocking=True,
             )
         if snapshot["state"] == "playing":
-            # Best effort only: Cast cannot reliably resume an app session.
+            # Best effort only: this path exists precisely because the target
+            # has no native announce, and such players (Cast among them)
+            # cannot reliably resume an interrupted app session.
             await hass.services.async_call(
                 MEDIA_PLAYER_DOMAIN,
                 "media_play",

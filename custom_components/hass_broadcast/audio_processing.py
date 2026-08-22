@@ -1,4 +1,4 @@
-"""Optional MP3 transcoding. Never required — WAV is already Cast-safe."""
+"""Transcode recordings to MP3, the one format every media player decodes."""
 
 from __future__ import annotations
 
@@ -10,16 +10,34 @@ from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
+# MPEG-1 Layer III defines 32/44.1/48 kHz only. Capture is 16 kHz, so without
+# an explicit rate ffmpeg emits MPEG-2 Layer III -- still "an MP3", but the
+# low-sample-rate variant that embedded hardware decoders are least reliable
+# at. Resampling costs a few KB on a voice message and is what makes the
+# output the format every player actually handles.
+SAMPLE_RATE = "44100"
+
 
 async def async_transcode_to_mp3(hass: HomeAssistant, wav_data: bytes) -> bytes | None:
-    """Transcode WAV to MP3 if ffmpeg is available.
+    """Transcode WAV to MP3, or return None if ffmpeg cannot do it.
 
-    Returns None when ffmpeg is missing or the transcode fails; callers keep
-    the original WAV, which Cast plays natively.
+    Home Assistant never transcodes on the playback path: `play_media` hands
+    the target a URL and the speaker's own firmware fetches and decodes it.
+    So the bytes we store are the bytes the hardware has to understand, and
+    MP3 is the widest-support choice across Cast, Sonos, DLNA, AirPlay and
+    ESPHome media players alike.
+
+    Returning None is the degraded path, not an error: callers keep the
+    original WAV, which most players also handle. ffmpeg stays an
+    optimization rather than a dependency.
     """
     ffmpeg = await hass.async_add_executor_job(shutil.which, "ffmpeg")
     if ffmpeg is None:
-        _LOGGER.debug("ffmpeg not found; keeping WAV")
+        _LOGGER.warning(
+            "ffmpeg was not found on PATH, so recordings are stored as WAV "
+            "instead of MP3. Playback still works on most speakers; install "
+            "ffmpeg if a target rejects the recording"
+        )
         return None
 
     try:
@@ -29,6 +47,7 @@ async def async_transcode_to_mp3(hass: HomeAssistant, wav_data: bytes) -> bytes 
             "-loglevel", "error",
             "-i", "pipe:0",
             "-codec:a", "libmp3lame",
+            "-ar", SAMPLE_RATE,
             "-b:a", "64k",
             "-f", "mp3",
             "pipe:1",
@@ -38,11 +57,13 @@ async def async_transcode_to_mp3(hass: HomeAssistant, wav_data: bytes) -> bytes 
         )
         stdout, stderr = await process.communicate(wav_data)
     except OSError as err:
-        _LOGGER.debug("ffmpeg could not be started: %s", err)
+        _LOGGER.warning("ffmpeg could not be started (%s); keeping WAV", err)
         return None
 
     if process.returncode != 0 or not stdout:
-        _LOGGER.debug("ffmpeg failed (%s): %s", process.returncode, stderr)
+        _LOGGER.warning(
+            "ffmpeg failed (%s), keeping WAV: %s", process.returncode, stderr
+        )
         return None
 
     return stdout

@@ -158,7 +158,10 @@ export class MockBackend {
     this.messages = seedHistory(this.scenario.history);
     this.audio.clear();
     this.messages.forEach((message, index) => {
-      this.audio.set(message.id, fakeSpeech(Math.min(message.duration, 4), 320 + index * 40));
+      // Must match `message.duration` exactly: the card's player scales its
+      // readout and waveform playhead off that metadata field, so audio
+      // shorter than it claims stops dead while the playhead keeps travelling.
+      this.audio.set(message.id, fakeSpeech(message.duration, 320 + index * 40));
     });
   }
 

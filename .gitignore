@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 node_modules/
 frontend/dist/
+frontend/dev/.build/
 custom_components/hass_broadcast/www/*.js
 !custom_components/hass_broadcast/www/recorder-worklet.js
 !custom_components/hass_broadcast/www/hass-broadcast-card.js

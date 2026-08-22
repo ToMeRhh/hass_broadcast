@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node frontend/build.mjs",
+    "dev": "node frontend/dev/serve.mjs",
     "test": "vitest run"
   },
   "devDependencies": {

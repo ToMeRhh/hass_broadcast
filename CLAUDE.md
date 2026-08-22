@@ -10,7 +10,15 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (54)
 npm test                        # card tests, vitest (87)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
+npm run dev                     # card dev harness at localhost:8099 (frontend/dev/README.md)
 ```
+
+`npm run dev` renders the real card and editor against a mocked `hass`, with
+live reload and switches for the states that are painful to reach on a live
+install (mic denied, partial broadcast failure, empty history, latency). Real
+microphone capture works because `localhost` is a secure context. It is a
+separate esbuild entry point and never touches the shipped bundle. Iterate on
+card UI there rather than by deploying to Home Assistant.
 
 Use `.venv/bin/python`, not a bare `python`. The test env pins
 `pytest-homeassistant-custom-component`, which is what pins the Home Assistant

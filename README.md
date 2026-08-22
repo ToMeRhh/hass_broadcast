@@ -41,14 +41,18 @@ lovelace:
 
 Add the **Voice Broadcast** card to any dashboard. Then:
 
-1. Press the round record button and speak.
-2. Press it again to stop. The recording plays back locally so you can check it.
+1. Hold the round record button and speak, then let go to stop. (The button
+   defaults to this hold-to-talk behaviour; switch it to tap-to-start,
+   tap-to-stop instead from the card editor's **Recording** field.)
+2. The recording plays back locally so you can check it before sending.
 3. Select one or more speakers.
-4. Press **Send**.
+4. Press **Broadcast**.
 
-Recent recordings appear below the card and can be replayed. A recording can be
-deleted by its owner or by an administrator — see [Deletion permissions](#deletion-permissions)
-below; the delete button only appears when the server says you are allowed to use it.
+Recent recordings appear below the card. Tapping one loads it into the card —
+exactly as if you had just recorded it, ready to play back or send — rather
+than broadcasting it immediately. A recording can be deleted by its owner or
+by an administrator — see [Deletion permissions](#deletion-permissions) below;
+the delete button only appears when the server says you are allowed to use it.
 
 When you broadcast to multiple speakers, playback is dispatched to all of them
 concurrently — they all start together rather than one after another.
@@ -64,6 +68,8 @@ concurrently — they all start together rather than one after another.
 | `mode` | `plain` | `plain`, `restore`, or `chime` — see [Behavioural restrictions](#behavioural-restrictions) below |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to the range **5–300**; values outside that range are pulled back to the nearest bound, and invalid values fall back to 60. |
 | `show_history` | `true` | Show the list of recent recordings |
+| `record_mode` | `push_to_talk` | How the record button behaves: `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop). Editable from the card editor's **Recording** field |
+| `player_list` | `rows` | How the speaker list is drawn: `rows` (one row per speaker), `chips` (compact pills), or `dropdown` (a summary line that opens a panel of the same rows). Editable from the card editor's **Speaker list style** field |
 
 ### Using it from an automation
 

@@ -17,8 +17,25 @@ speakers — a simple intercom, without leaving the UI.
 Copy `custom_components/hass_broadcast/` into your Home Assistant `config/custom_components/`
 directory and restart, then add the integration as above.
 
-You do **not** need to add a Lovelace resource — the integration serves and registers
-the card itself.
+You do **not** need to add a Lovelace resource by hand — the integration serves the
+card bundle and registers the resource for you, pointing at
+`/api/hass_broadcast/static/hass-broadcast-card.js?v=<version>`. The version query
+string means an upgrade re-fetches the bundle instead of serving a cached copy.
+The resource is deleted again when the integration is removed.
+
+If your Lovelace runs in **YAML mode**, resources are yours to manage and the
+integration will not write to them. It falls back to loading the card as a frontend
+module, which works in desktop browsers but is not reliably picked up by the Home
+Assistant companion apps. If the card renders as `Custom element doesn't exist:
+hass-broadcast-card.` on mobile, add the resource yourself:
+
+```yaml
+lovelace:
+  mode: yaml
+  resources:
+    - url: /api/hass_broadcast/static/hass-broadcast-card.js
+      type: module
+```
 
 ## Usage
 

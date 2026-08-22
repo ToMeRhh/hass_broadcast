@@ -28,10 +28,16 @@ async def test_chime_is_served(
     assert resp.status == HTTPStatus.OK
 
 
-async def test_card_module_is_registered(hass: HomeAssistant, setup_entry) -> None:
-    """The card JS is registered as a frontend extra module."""
-    from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
+async def test_card_bundle_is_served(
+    hass: HomeAssistant, setup_entry, hass_client_no_auth
+) -> None:
+    """The card bundle is reachable at the URL the frontend is pointed at."""
+    resp = await (await hass_client_no_auth()).get(
+        "/api/hass_broadcast/static/hass-broadcast-card.js"
+    )
+    assert resp.status == HTTPStatus.OK
 
-    manager = hass.data.get(DATA_EXTRA_MODULE_URL)
-    assert manager is not None
-    assert any("hass-broadcast-card.js" in url for url in manager.urls)
+
+# How the frontend is told to *load* that bundle is covered by
+# tests/test_card_resource.py -- it is registered as a Lovelace resource, not
+# as a frontend extra module, for reasons documented there.

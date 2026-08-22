@@ -15,7 +15,16 @@ export const cardStyles = css`
 
   /* --- status line ------------------------------------------------ */
   .status {
-    min-height: 20px;
+    /* Fixed, clipped single line: the messages routed here (send failures
+       naming several speakers, upload errors) are long and variable-length
+       and would otherwise wrap to two or three lines at phone width,
+       pushing everything below down — the exact reflow this redesign
+       exists to remove. The full text is still reachable via the
+       "title" attribute. */
+    height: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 0.85em;
     line-height: 20px;
     text-align: center;
@@ -38,7 +47,10 @@ export const cardStyles = css`
     padding: 0 4px;
     border-radius: 10px;
     background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-    touch-action: none;
+    /* Seeking is horizontal-only; a full-width band that blocked all
+       touch-action trapped vertical scroll on phones even when idle and
+       non-seekable. Vertical panning is left to the browser. */
+    touch-action: pan-y;
   }
   .wave.seekable {
     cursor: pointer;

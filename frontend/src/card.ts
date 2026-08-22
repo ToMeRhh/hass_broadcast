@@ -573,6 +573,27 @@ export class HassBroadcastCard extends LitElement {
       : "Tap to record";
   }
 
+  /**
+   * The record button's title/aria-label. Deliberately static within a
+   * phase — unlike `recordHint`, which counts elapsed seconds. Some screen
+   * readers re-announce a changed aria-label on the focused element, so a
+   * label that ticked once a second narrated the whole take; the timer
+   * lives only in the status line (`aria-live="polite"` there instead).
+   */
+  private get recordLabel(): string {
+    if (this.phase === "sending") {
+      return "Broadcasting";
+    }
+    if (this.phase === "recording") {
+      return this.recordMode === "push_to_talk"
+        ? "Recording — release to stop"
+        : "Recording — tap to stop";
+    }
+    return this.recordMode === "push_to_talk"
+      ? "Hold to talk"
+      : "Tap to record";
+  }
+
   render() {
     return html`
       <ha-card .header=${this.config.title?.trim() || DEFAULT_TITLE}>
@@ -619,11 +640,15 @@ export class HassBroadcastCard extends LitElement {
                 void this.onPressEnd();
               }
             }}
-            title=${this.recordHint}
-            aria-label=${this.recordHint}
+            title=${this.recordLabel}
+            aria-label=${this.recordLabel}
           ></button>
         </div>
-        <div class="status ${this.status?.kind ?? "info"}">
+        <div
+          class="status ${this.status?.kind ?? "info"}"
+          title=${this.status?.text ?? this.recordHint}
+          aria-live="polite"
+        >
           ${this.status?.text ?? this.recordHint}
         </div>
 

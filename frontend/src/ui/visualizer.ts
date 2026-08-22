@@ -36,12 +36,39 @@ function fractionOf(event: PointerEvent): number {
 export function visualizer(props: VisualizerProps): TemplateResult {
   const played = (index: number) =>
     props.progress !== undefined && index / props.bars.length < props.progress;
+  const seekTo = (event: PointerEvent) => {
+    if (props.seekable) {
+      props.onSeek(fractionOf(event));
+    }
+  };
   return html`
     <div
       class="wave ${props.seekable ? "seekable" : ""}"
       @pointerdown=${(event: PointerEvent) => {
+        if (!props.seekable) {
+          return;
+        }
+        // Captures the pointer so pointermove keeps arriving here even if
+        // the finger/cursor drifts off the strip mid-drag.
+        (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+        seekTo(event);
+      }}
+      @pointermove=${(event: PointerEvent) => {
+        // event.buttons is 0 for a hover move with nothing pressed; only a
+        // pointer that is still down (mouse button held, or a touch
+        // contact) should scrub the playhead.
+        if (props.seekable && event.buttons > 0) {
+          seekTo(event);
+        }
+      }}
+      @pointerup=${(event: PointerEvent) => {
         if (props.seekable) {
-          props.onSeek(fractionOf(event));
+          (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+        }
+      }}
+      @pointercancel=${(event: PointerEvent) => {
+        if (props.seekable) {
+          (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
         }
       }}
     >

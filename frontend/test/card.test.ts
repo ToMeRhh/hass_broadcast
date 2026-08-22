@@ -508,7 +508,7 @@ describe("card history rendering and deletion", () => {
     const text = renderedText(card.render());
     expect(text).not.toContain("Delete");
     // The row itself is still there — only the control is gated.
-    expect(text).toContain("Load");
+    expect(text).toContain("0:02");
   });
 
   it("explains a not_authorized rejection from the server", async () => {

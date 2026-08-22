@@ -23,6 +23,7 @@ import {
 } from "./clip";
 import { BAR_COUNT, LevelEnvelope, silence } from "./levels";
 import { cardStyles } from "./styles";
+import { historySection } from "./ui/history";
 import { playerRow } from "./ui/player";
 import { targetList } from "./ui/targets";
 import { visualizer } from "./ui/visualizer";
@@ -615,21 +616,13 @@ export class HassBroadcastCard extends LitElement {
 
         ${this.config.show_history === false
           ? nothing
-          : html`
-              <div class="history">
-                ${this.history.map(
-                  (message) => html`
-                    <div class="history-row">
-                      <span>${new Date(message.created).toLocaleString()}</span>
-                      <button @click=${() => this.loadMessage(message)}>Load</button>
-                      ${message.can_delete
-                        ? html`<button @click=${() => this.deleteRecording(message.id)}>Delete</button>`
-                        : nothing}
-                    </div>
-                  `,
-                )}
-              </div>
-            `}
+          : historySection({
+              messages: this.history,
+              loadedId: this.clip ? storedId(this.clip) : undefined,
+              loadingId: this.loadingId,
+              onLoad: (message) => void this.loadMessage(message),
+              onDelete: (id) => void this.deleteRecording(id),
+            })}
       </ha-card>
     `;
   }

@@ -264,4 +264,42 @@ export const cardStyles = css`
     background: var(--card-background-color, #fff);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   }
+
+  /* --- history ----------------------------------------------------- */
+  .history {
+    border-top: 1px solid var(--divider-color, #ddd);
+    margin-top: 8px;
+    padding-top: 4px;
+  }
+  .history-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 8px;
+  }
+  .history-row[data-loaded="true"] {
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+  }
+  .history-row[data-loading="true"] {
+    opacity: 0.5;
+  }
+  .history-load {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 1;
+    padding: 10px 8px;
+    font: inherit;
+    text-align: left;
+    border: none;
+    background: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .history-length {
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    color: var(--secondary-text-color);
+  }
 `;

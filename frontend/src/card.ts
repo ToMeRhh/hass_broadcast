@@ -1,4 +1,4 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import {
@@ -21,7 +21,9 @@ import {
   revokeClip,
   storedId,
 } from "./clip";
-import { BAR_COUNT, LevelEnvelope } from "./levels";
+import { BAR_COUNT, LevelEnvelope, silence } from "./levels";
+import { cardStyles } from "./styles";
+import { visualizer } from "./ui/visualizer";
 
 const DEFAULT_TITLE = "Voice Broadcast";
 
@@ -65,6 +67,7 @@ export class HassBroadcastCard extends LitElement {
   @state() private bars: number[] = [];
   /** The history row currently being fetched, for its pending state. */
   @state() private loadingId?: string;
+  @state() private position = 0;
 
   private recorder = new Recorder();
   private envelope = new LevelEnvelope();
@@ -81,42 +84,7 @@ export class HassBroadcastCard extends LitElement {
   // an interval that keeps the dead element alive.
   private disconnected = false;
 
-  static styles = css`
-    ha-card { padding: 16px; }
-    .row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .record { border: none; border-radius: 50%; width: 56px; height: 56px;
-      background: var(--error-color, #db4437); color: #fff; cursor: pointer; font-size: 22px; }
-    .record[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .meter { flex: 1; height: 6px; background: var(--divider-color, #ddd); border-radius: 3px; overflow: hidden; }
-    .meter > div { height: 100%; background: var(--primary-color); transition: width 80ms linear; }
-    .error { color: var(--error-color, #db4437); margin-bottom: 12px; }
-    /* Preview actions: centred, and spaced away from the speaker list below. */
-    .actions { display: flex; justify-content: center; align-items: center; gap: 12px;
-      margin: 4px 0 24px; }
-    .action { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      font: inherit; font-size: 0.95em; font-weight: 500; line-height: 1;
-      padding: 10px 22px; border-radius: 20px; border: 1px solid transparent;
-      cursor: pointer; transition: background 120ms ease, box-shadow 120ms ease; }
-    .action:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-    .send { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
-    .send:hover { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
-    /* Play triangle, drawn from borders so it inherits the label colour. */
-    .send .play { width: 0; height: 0; border-left: 9px solid currentColor;
-      border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-    .discard { background: none; color: var(--secondary-text-color);
-      border-color: var(--divider-color, #ddd); }
-    .discard:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-      color: var(--primary-text-color); }
-    .targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .chip { padding: 6px 12px; border-radius: 16px; cursor: pointer;
-      border: 1px solid var(--divider-color, #ddd); background: none; color: var(--primary-text-color); }
-    .chip[data-on="true"] { background: var(--primary-color); color: var(--text-primary-color, #fff); }
-    .history { border-top: 1px solid var(--divider-color, #ddd); margin-top: 12px; padding-top: 8px; }
-    .history-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
-    .history-row span { flex: 1; font-size: 0.9em; }
-    audio { width: 100%; margin-bottom: 12px; }
-  `;
+  static styles = cardStyles;
 
   setConfig(config: CardConfig): void {
     this.config = config;
@@ -311,6 +279,12 @@ export class HassBroadcastCard extends LitElement {
     this.bars = [];
   }
 
+  private seek(fraction: number): void {
+    if (this.clip) {
+      this.position = fraction * this.clip.duration;
+    }
+  }
+
   private fail(text: string): void {
     this.status = { kind: "error", text };
   }
@@ -432,16 +406,22 @@ export class HassBroadcastCard extends LitElement {
         ${this.status ? html`<div class="status ${this.status.kind}">${this.status.text}</div>` : nothing}
 
         <div class="row">
-          <button
-            class="record"
-            ?disabled=${!Recorder.isSupported() || this.phase === "sending"}
-            @click=${recording ? this.stopRecording : this.startRecording}
-            title=${recording ? "Stop" : "Record"}
-          >
-            ${recording ? "■" : "●"}
-          </button>
-          <div class="meter"><div style="width:${Math.round((this.bars[this.bars.length - 1] ?? 0) * 100)}%"></div></div>
-          <span>${recording ? `${this.elapsed}s` : ""}</span>
+          ${visualizer({
+            bars: this.bars.length ? this.bars : silence(BAR_COUNT),
+            progress: this.clip ? this.position / (this.clip.duration || 1) : undefined,
+            seekable: this.clip !== undefined,
+            onSeek: (fraction) => this.seek(fraction),
+          })}
+          <div class="record-row">
+            <button
+              class="record"
+              ?disabled=${!Recorder.isSupported() || this.phase === "sending"}
+              @click=${recording ? this.stopRecording : this.startRecording}
+              title=${recording ? "Stop" : "Record"}
+            >
+              ${recording ? "■" : "●"}
+            </button>
+          </div>
         </div>
 
         ${this.clip

@@ -96,7 +96,7 @@ describe("card state machine", () => {
     await card.startRecording();
     expect(card.phase).toBe("recording");
     expect(recorder.started).toBe(1);
-    expect(card.error).toBeUndefined();
+    expect(card.status).toBeUndefined();
 
     await card.stopRecording();
     expect(card.phase).toBe("idle");

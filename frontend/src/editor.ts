@@ -12,6 +12,10 @@ interface CardConfig {
   mode?: string;
   max_duration?: number;
   show_history?: boolean;
+  /** How the record button behaves. Absent means push-to-talk. */
+  record_mode?: "push_to_talk" | "start_stop";
+  /** Which speaker-list style the card draws. Absent means rows. */
+  player_list?: "rows" | "chips" | "dropdown";
 }
 
 /** One row of a speaker checkbox list. */
@@ -124,6 +128,12 @@ export class HassBroadcastCardEditor extends LitElement {
     .players label { display: flex; align-items: center; gap: 8px; font-weight: normal;
       margin: 0; padding: 4px 0; }
     .missing { color: var(--secondary-text-color); }
+    .segmented { display: flex; gap: 6px; }
+    .segmented button { flex: 1; padding: 8px; font: inherit; cursor: pointer;
+      border: 1px solid var(--divider-color, #ddd); border-radius: 6px;
+      background: none; color: var(--primary-text-color); }
+    .segmented button[data-on="true"] { background: var(--primary-color);
+      color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
   `;
 
   setConfig(config: CardConfig): void {
@@ -139,6 +149,17 @@ export class HassBroadcastCardEditor extends LitElement {
         composed: true,
       }),
     );
+  }
+
+  /** The mode the card behaves as, with the key absent meaning push-to-talk. */
+  private get currentRecordMode(): "push_to_talk" | "start_stop" {
+    return this.config.record_mode === "start_stop"
+      ? "start_stop"
+      : "push_to_talk";
+  }
+
+  private setRecordMode(mode: "push_to_talk" | "start_stop"): void {
+    this.emit({ record_mode: mode });
   }
 
   /**
@@ -214,6 +235,31 @@ export class HassBroadcastCardEditor extends LitElement {
               title: (e.target as HTMLInputElement).value.trim() || undefined,
             })}
         />
+      </div>
+
+      <div class="field">
+        <label>Recording</label>
+        <div class="segmented">
+          ${(
+            [
+              ["push_to_talk", "Push to talk"],
+              ["start_stop", "Tap to start and stop"],
+            ] as const
+          ).map(
+            ([value, label]) => html`
+              <button
+                type="button"
+                data-on=${this.currentRecordMode === value}
+                @click=${() => this.setRecordMode(value)}
+              >
+                ${label}
+              </button>
+            `,
+          )}
+        </div>
+        <div class="hint">
+          Push to talk records only while the button is held.
+        </div>
       </div>
 
       <div class="field">

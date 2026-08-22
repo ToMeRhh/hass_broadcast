@@ -28,6 +28,9 @@ import { visualizer } from "./ui/visualizer";
 
 const DEFAULT_TITLE = "Voice Broadcast";
 
+/** Below this, a push-to-talk press is a mis-tap rather than a message. */
+const MIN_PRESS_SECONDS = 0.4;
+
 interface CardConfig {
   type: string;
   /** Card heading, renamable from the editor. Blank falls back to DEFAULT_TITLE. */
@@ -87,6 +90,8 @@ export class HassBroadcastCard extends LitElement {
   // resume on a detached element — holding the microphone open and installing
   // an interval that keeps the dead element alive.
   private disconnected = false;
+  /** Set when the button is released before start() has resolved. */
+  private stopRequested = false;
 
   static styles = cardStyles;
 
@@ -104,7 +109,13 @@ export class HassBroadcastCard extends LitElement {
   }
 
   static getStubConfig(): CardConfig {
-    return { type: "custom:hass-broadcast-card", targets: [], mode: "plain" };
+    return {
+      type: "custom:hass-broadcast-card",
+      targets: [],
+      mode: "plain",
+      record_mode: "push_to_talk",
+      player_list: "rows",
+    };
   }
 
   connectedCallback(): void {
@@ -191,6 +202,51 @@ export class HassBroadcastCard extends LitElement {
     );
   }
 
+  private get recordMode(): "push_to_talk" | "start_stop" {
+    return this.config.record_mode === "start_stop"
+      ? "start_stop"
+      : "push_to_talk";
+  }
+
+  /**
+   * Pointer down on the record button. In start-stop this is the whole
+   * interaction; in push-to-talk it opens the microphone and `onPressEnd`
+   * closes it.
+   */
+  private async onPressStart(event: Event): Promise<void> {
+    // Without this a long press on a phone selects text, opens the context
+    // menu, or starts a scroll — all of which cancel the gesture mid-message.
+    event.preventDefault();
+    if (this.phase === "sending" || !Recorder.isSupported()) {
+      return;
+    }
+    if (this.recordMode === "start_stop") {
+      await (this.phase === "recording"
+        ? this.stopRecording()
+        : this.startRecording());
+      return;
+    }
+    this.stopRequested = false;
+    await this.startRecording();
+    // Released while the microphone was still opening: stop now that there
+    // is a session to stop.
+    if (this.stopRequested && this.phase === "recording") {
+      await this.stopRecording();
+    }
+  }
+
+  /** Pointer up, cancel, or leave. Only push-to-talk cares. */
+  private async onPressEnd(): Promise<void> {
+    if (this.recordMode !== "push_to_talk") {
+      return;
+    }
+    if (this.phase !== "recording") {
+      this.stopRequested = true;
+      return;
+    }
+    await this.stopRecording();
+  }
+
   private async startRecording(): Promise<void> {
     // Ignore a re-entrant call (double-tap) while a start/stop is already
     // in flight, or if we are already recording.
@@ -255,6 +311,13 @@ export class HassBroadcastCard extends LitElement {
     this.clearTimer();
     try {
       const { blob, duration } = await this.recorder.stop();
+      if (this.recordMode === "push_to_talk" && duration < MIN_PRESS_SECONDS) {
+        // A tap, not a message. Saying so beats loading a clip of silence
+        // that the user then has to work out how to get rid of.
+        this.phase = "idle";
+        this.fail("Hold the button while you speak.");
+        return;
+      }
       this.setClip(freshClip(blob, duration, this.envelope.all()));
       this.phase = "idle";
     } catch (err: any) {
@@ -463,30 +526,28 @@ export class HassBroadcastCard extends LitElement {
     }
   }
 
+  /** What the status line says when there is nothing more urgent to report. */
+  private get recordHint(): string {
+    if (this.phase === "recording") {
+      return `Recording… ${this.elapsed}s`;
+    }
+    if (this.phase === "sending") {
+      return "Broadcasting…";
+    }
+    return this.recordMode === "push_to_talk"
+      ? "Hold to talk"
+      : "Tap to record";
+  }
+
   render() {
-    const recording = this.phase === "recording";
     return html`
       <ha-card .header=${this.config.title?.trim() || DEFAULT_TITLE}>
-        ${this.status ? html`<div class="status ${this.status.kind}">${this.status.text}</div>` : nothing}
-
-        <div class="row">
-          ${visualizer({
-            bars: this.bars.length ? this.bars : silence(BAR_COUNT),
-            progress: this.clip ? this.position / (this.clip.duration || 1) : undefined,
-            seekable: this.clip !== undefined,
-            onSeek: (fraction) => this.seek(fraction),
-          })}
-          <div class="record-row">
-            <button
-              class="record"
-              ?disabled=${!Recorder.isSupported() || this.phase === "sending"}
-              @click=${recording ? this.stopRecording : this.startRecording}
-              title=${recording ? "Stop" : "Record"}
-            >
-              ${recording ? "■" : "●"}
-            </button>
-          </div>
-        </div>
+        ${visualizer({
+          bars: this.bars.length ? this.bars : silence(BAR_COUNT),
+          progress: this.clip ? this.position / (this.clip.duration || 1) : undefined,
+          seekable: this.clip !== undefined,
+          onSeek: (fraction) => this.seek(fraction),
+        })}
 
         ${playerRow({
           enabled: this.clip !== undefined,
@@ -496,6 +557,35 @@ export class HassBroadcastCard extends LitElement {
           onToggle: () => this.togglePlay(),
           onClear: () => this.clearClip(),
         })}
+
+        <div class="record-row">
+          <button
+            class="record"
+            data-recording=${this.phase === "recording"}
+            ?disabled=${!Recorder.isSupported() || this.phase === "sending"}
+            @pointerdown=${this.onPressStart}
+            @pointerup=${this.onPressEnd}
+            @pointercancel=${this.onPressEnd}
+            @pointerleave=${this.onPressEnd}
+            @contextmenu=${(event: Event) => event.preventDefault()}
+            @keydown=${(event: KeyboardEvent) => {
+              // Auto-repeat would otherwise restart the take ~30 times a second.
+              if (!event.repeat && (event.key === " " || event.key === "Enter")) {
+                void this.onPressStart(event);
+              }
+            }}
+            @keyup=${(event: KeyboardEvent) => {
+              if (event.key === " " || event.key === "Enter") {
+                void this.onPressEnd();
+              }
+            }}
+            title=${this.recordHint}
+            aria-label=${this.recordHint}
+          ></button>
+        </div>
+        <div class="status ${this.status?.kind ?? "info"}">
+          ${this.status?.text ?? this.recordHint}
+        </div>
 
         <button
           class="broadcast"

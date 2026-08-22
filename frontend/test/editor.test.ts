@@ -239,3 +239,38 @@ describe("editor rendering", () => {
     expect(renderedText(editor.render())).toMatch(/not available/);
   });
 });
+
+describe("editor record mode", () => {
+  /**
+   * An editor whose emitted configs are captured. Overriding dispatchEvent
+   * rather than listening keeps this independent of what event plumbing
+   * Lit's SSR DOM shim happens to provide outside a browser.
+   */
+  function newEditor(config: any = { type: "custom:hass-broadcast-card" }): {
+    editor: any;
+    configs: any[];
+  } {
+    const editor: any = new HassBroadcastCardEditor();
+    editor.createRenderRoot = () => editor;
+    editor.performUpdate = () => {};
+    editor.setConfig(config);
+    const configs: any[] = [];
+    editor.dispatchEvent = (event: any) => configs.push(event.detail.config);
+    return { editor, configs };
+  }
+
+  it("writes record_mode when a mode is picked", () => {
+    const { editor, configs } = newEditor();
+
+    editor.setRecordMode("start_stop");
+
+    expect(configs.at(-1).record_mode).toBe("start_stop");
+  });
+
+  it("shows push-to-talk as the current mode when the key is absent", () => {
+    const { editor } = newEditor();
+
+    expect(renderedText(editor.render())).toContain("Push to talk");
+    expect(editor.currentRecordMode).toBe("push_to_talk");
+  });
+});

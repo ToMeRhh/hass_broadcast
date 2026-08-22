@@ -543,3 +543,98 @@ describe("card history rendering and deletion", () => {
     expect(card.status.text).toMatch(/Could not delete: connection lost/);
   });
 });
+
+describe("push to talk", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    (globalThis as any).isSecureContext = undefined;
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    (globalThis as any).isSecureContext = undefined;
+  });
+
+  const press = { preventDefault: () => {} } as any;
+
+  it("is what a card gets with no record_mode configured", () => {
+    const { card } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    expect(card.recordMode).toBe("push_to_talk");
+
+    card.setConfig({ type: "custom:hass-broadcast-card", record_mode: "start_stop" });
+    expect(card.recordMode).toBe("start_stop");
+  });
+
+  it("records for as long as the button is held", async () => {
+    const { card, recorder } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+
+    await card.onPressStart(press);
+    expect(card.phase).toBe("recording");
+
+    await card.onPressEnd();
+    expect(recorder.stopped).toBe(1);
+    expect(card.clip).toBeDefined();
+  });
+
+  it("stops a take released before the microphone finished opening", async () => {
+    const { card, recorder } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    let releaseStart: () => void = () => {};
+    recorder.startImpl = () =>
+      new Promise<void>((resolve) => {
+        releaseStart = resolve;
+      });
+
+    const pending = card.onPressStart(press);
+    // Released while getUserMedia is still pending: without the deferred
+    // stop this leaves the microphone open and the card recording forever.
+    await card.onPressEnd();
+    releaseStart();
+    await pending;
+    await Promise.resolve();
+
+    expect(recorder.stopped).toBe(1);
+    expect(card.phase).toBe("idle");
+  });
+
+  it("discards a tap too short to be speech", async () => {
+    const { card, recorder } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+
+    await card.onPressStart(press);
+    await card.onPressEnd();
+
+    expect(card.clip).toBeUndefined();
+    expect(card.status.text).toMatch(/Hold/);
+  });
+
+  it("keeps a short recording in start-stop mode, where it was deliberate", async () => {
+    const { card, recorder } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", record_mode: "start_stop" });
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+
+    await card.onPressStart(press);
+    await card.onPressStart(press);
+
+    expect(card.clip).toBeDefined();
+  });
+
+  it("toggles rather than holds in start-stop mode", async () => {
+    const { card, recorder } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", record_mode: "start_stop" });
+
+    await card.onPressStart(press);
+    expect(card.phase).toBe("recording");
+    // A release must do nothing at all here, or the button records for
+    // exactly as long as the click lasts.
+    await card.onPressEnd();
+    expect(card.phase).toBe("recording");
+    expect(recorder.stopped).toBe(0);
+
+    await card.onPressStart(press);
+    expect(recorder.stopped).toBe(1);
+  });
+});

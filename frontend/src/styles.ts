@@ -118,4 +118,38 @@ export const cardStyles = css`
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
+
+  /* --- record button ----------------------------------------------- */
+  .record-row {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 4px;
+  }
+  .record {
+    width: 96px;
+    height: 96px;
+    border: none;
+    border-radius: 50%;
+    background: var(--error-color, #db4437);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    /* Stops the browser claiming the gesture as a scroll or a long-press. */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .record[data-recording="true"] {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 8px rgba(219, 68, 55, 0.25);
+  }
+  .record[disabled] {
+    background: var(--disabled-text-color, #bdbdbd);
+    box-shadow: none;
+    cursor: default;
+  }
+  .record:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 4px;
+  }
 `;

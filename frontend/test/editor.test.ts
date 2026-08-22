@@ -285,6 +285,9 @@ describe("editor record mode and list style", () => {
   it("shows rows as the style when the key is absent", () => {
     const { editor } = newEditor();
 
-    expect(renderedText(editor.render())).toContain("Speaker list style");
+    // The select's `.value` property binding, not just the field's label —
+    // the previous assertion only checked the label text and could not
+    // fail no matter which style ended up selected.
+    expect(renderedText(editor.render())).toContain(".value=rows");
   });
 });

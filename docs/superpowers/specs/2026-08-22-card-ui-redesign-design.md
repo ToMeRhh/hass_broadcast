@@ -150,7 +150,11 @@ Keeping it is consistent with history loading, allows sending the same message t
 another speaker, and avoids a reflow. `✕` clears it.
 
 **Broadcast is enabled** iff a clip is loaded, at least one allowed target is
-selected, and `phase !== "sending"`. It is rendered in every state.
+selected, and `phase === "idle"` — not merely `phase !== "sending"`: broadcasting
+while a take is recording strands the recorder, because every stop path
+(`onPressEnd`, the `max_duration` timer) is gated on `phase === "recording"`, and
+sending flips phase away from it before the take can ever be stopped. It is
+rendered in every state.
 
 ## Recording interaction
 

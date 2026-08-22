@@ -308,6 +308,22 @@ describe("card broadcasting", () => {
     card.clip = undefined;
     expect(card.canBroadcast).toBe(false);
   });
+
+  it("cannot broadcast mid-take, and broadcasting mid-take neither sends nor changes phase", async () => {
+    // Finding 1: canBroadcast only excluded phase === "sending", so a clip
+    // loaded (e.g. from history) plus an in-progress recording left
+    // Broadcast live. Tapping it stranded the recorder — every stop path is
+    // gated on phase === "recording", and sending flips phase away from it.
+    const { card, calls } = cardWithClip({ response: { failed: [] } });
+    card.phase = "recording";
+
+    expect(card.canBroadcast).toBe(false);
+
+    await card.broadcast();
+
+    expect(calls).toHaveLength(0);
+    expect(card.phase).toBe("recording");
+  });
 });
 
 describe("card loading a message from history", () => {

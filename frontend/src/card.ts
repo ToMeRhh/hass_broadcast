@@ -429,7 +429,7 @@ export class HassBroadcastCard extends LitElement {
     return (
       this.clip !== undefined &&
       this.targets.length > 0 &&
-      this.phase !== "sending"
+      this.phase === "idle"
     );
   }
 
@@ -450,6 +450,15 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private async broadcast(): Promise<void> {
+    // Broadcast is only ever rendered enabled at phase === "idle" (see
+    // canBroadcast), but broadcast() is also reachable directly (tests,
+    // and any stale event still in flight), so re-check here too: sending
+    // mid-take would flip phase to "sending" and then "idle" while the
+    // recorder is still active, and every stop path is gated on
+    // phase === "recording" — the recorder would never be told to stop.
+    if (this.phase !== "idle") {
+      return;
+    }
     const clip = this.clip;
     if (!clip) {
       this.fail("Record a message or pick one from below first.");

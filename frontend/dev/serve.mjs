@@ -134,10 +134,10 @@ createServer(async (req, res) => {
   for (const address of addresses()) {
     console.log(`    ${address}`);
   }
-  // Worth repeating on every start: on any other address the browser hides
-  // getUserMedia, so the card shows its insecure-context error rather than
-  // recording. Layout is still reviewable there; the microphone is not.
-  console.log("\n  Recording only works over localhost — the microphone needs a secure context.\n");
+  // Worth repeating on every start, because the difference is invisible in the
+  // UI: only localhost is a secure context, so anywhere else the browser hides
+  // getUserMedia and the harness substitutes a simulated recorder.
+  console.log("\n  Real microphone on localhost; simulated recording on every other address.\n");
 });
 
 /** Every URL this server can be reached on, so a phone or tablet has one to type. */

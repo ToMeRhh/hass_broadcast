@@ -90,6 +90,7 @@ commits `chore: release vX.Y.Z`, pushes an annotated tag, and publishes a GitHub
 release with generated notes. Don't tag or bump by hand; the workflow keeps the
 manifest version, the tag, and the release in agreement.
 
-The repo commits directly to `master` with Conventional Commit subjects
-(`fix:`, `feat:`, `docs:`, `refactor:`, `chore:`). History is linear; there are no
-merge commits.
+Commit subjects follow Conventional Commits (`fix:`, `feat:`, `docs:`,
+`refactor:`, `chore:`). Some work lands directly on `master`, some goes through a
+branch and a pull request — either is fine, so follow whatever the current task
+asks for rather than assuming one of them.

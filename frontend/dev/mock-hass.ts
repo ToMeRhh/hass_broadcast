@@ -22,7 +22,12 @@ export type BroadcastOutcome = "ok" | "partial" | "all-fail";
 export type HistorySize = "seeded" | "empty" | "many";
 
 export interface Scenario {
-  /** getUserMedia rejects with NotAllowedError. */
+  /**
+   * Simulate the microphone instead of using it. Forced on outside a secure
+   * context, where the browser hides getUserMedia entirely.
+   */
+  fakeRecorder: boolean;
+  /** Recording is refused, as a denied microphone permission would be. */
   micDenied: boolean;
   /** POST /upload answers 500. */
   uploadFails: boolean;
@@ -38,6 +43,7 @@ export interface Scenario {
 }
 
 export const DEFAULT_SCENARIO: Scenario = {
+  fakeRecorder: false,
   micDenied: false,
   uploadFails: false,
   sendThrows: false,
@@ -85,14 +91,20 @@ export const FAKE_ENTITIES: FakeEntity[] = [
   entity("media_player.old_receiver", "Hi-Fi Receiver", "off", 0),
 ];
 
-/** A short tone, so seeded history entries actually play something. */
-function fakeAudio(seconds: number, hz: number): Blob {
+/**
+ * Synthetic audio for anything the harness has to invent: seeded history
+ * entries, and recordings made by the fake recorder. A tone modulated at a
+ * syllable-ish rate, so it is obviously not real speech but has the same shape
+ * — audible pauses, a fade at the end rather than a hard clip.
+ */
+export function fakeSpeech(seconds: number, hz = 340): Blob {
   const rate = 16000;
-  const samples = new Int16Array(Math.round(rate * seconds));
+  const samples = new Int16Array(Math.round(rate * Math.max(seconds, 0.2)));
   for (let i = 0; i < samples.length; i++) {
-    // Fade the tone out so it sounds like speech ending, not a hard clip.
-    const fade = 1 - i / samples.length;
-    samples[i] = Math.round(Math.sin((2 * Math.PI * hz * i) / rate) * 8000 * fade);
+    const t = i / rate;
+    const syllables = Math.max(0, Math.sin(t * Math.PI * 2.6));
+    const fade = Math.min(1, (samples.length - i) / (rate * 0.15));
+    samples[i] = Math.round(Math.sin(2 * Math.PI * hz * t) * 7000 * syllables * fade);
   }
   return encodeWav(samples, rate);
 }
@@ -143,7 +155,7 @@ export class MockBackend {
     this.messages = seedHistory(this.scenario.history);
     this.audio.clear();
     this.messages.forEach((message, index) => {
-      this.audio.set(message.id, fakeAudio(Math.min(message.duration, 4), 320 + index * 40));
+      this.audio.set(message.id, fakeSpeech(Math.min(message.duration, 4), 320 + index * 40));
     });
   }
 
@@ -274,23 +286,5 @@ export function installFetchMock(backend: MockBackend): void {
     }
 
     return original(input, init);
-  };
-}
-
-/**
- * Lets the harness force a microphone denial. Real capture is used otherwise —
- * localhost is a secure context, so the worklet and WAV encoder run for real.
- */
-export function installMicMock(isDenied: () => boolean): void {
-  const media = navigator.mediaDevices;
-  if (!media) {
-    return;
-  }
-  const original = media.getUserMedia.bind(media);
-  media.getUserMedia = async (constraints?: MediaStreamConstraints) => {
-    if (isDenied()) {
-      throw new DOMException("Permission denied", "NotAllowedError");
-    }
-    return original(constraints);
   };
 }

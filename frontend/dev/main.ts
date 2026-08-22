@@ -3,11 +3,12 @@
  * against a mocked Home Assistant, next to controls for the states that are
  * tedious to reproduce on a live install.
  */
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import "../src/card";
 import "../src/editor";
+import { installMicMock, installRecorderMock } from "./fake-recorder";
 import { applyTheme } from "./ha-stubs";
 import {
   DEFAULT_SCENARIO,
@@ -15,7 +16,6 @@ import {
   Scenario,
   createMockHass,
   installFetchMock,
-  installMicMock,
 } from "./mock-hass";
 
 /** Widths worth checking: HA companion app, tablet column, desktop sidebar view. */
@@ -25,11 +25,21 @@ const WIDTHS = [
   { label: "Desktop", value: 620 },
 ];
 
-const scenario: Scenario = { ...DEFAULT_SCENARIO };
+/**
+ * Off localhost the browser hides getUserMedia, so there is no real recording
+ * to be had and the fake is the only way to see the recording UI at all.
+ */
+const INSECURE = !window.isSecureContext;
+
+const scenario: Scenario = { ...DEFAULT_SCENARIO, fakeRecorder: INSECURE };
 const backend = new MockBackend(scenario);
 const hass = createMockHass(backend);
 installFetchMock(backend);
 installMicMock(() => scenario.micDenied);
+installRecorderMock({
+  useFake: () => INSECURE || scenario.fakeRecorder,
+  micDenied: () => scenario.micDenied,
+});
 
 @customElement("dev-app")
 export class DevApp extends LitElement {
@@ -204,8 +214,27 @@ export class DevApp extends LitElement {
           )}
         </div>
 
+        <h2>Microphone</h2>
+        <label>
+          <input
+            type="checkbox"
+            ?disabled=${INSECURE}
+            .checked=${INSECURE || this.scenario.fakeRecorder}
+            @change=${(e: Event) =>
+              this.patchScenario({ fakeRecorder: (e.target as HTMLInputElement).checked })}
+          />
+          Simulated recording
+        </label>
+        ${INSECURE
+          ? html`<div class="note">
+              Forced on: <code>${location.host}</code> is not a secure context, so
+              the browser hides the microphone. Recordings are synthetic but go
+              through upload, history and playback for real.
+            </div>`
+          : nothing}
+
         <h2>Failure modes</h2>
-        ${this.toggle("micDenied", "Microphone denied")}
+        ${this.toggle("micDenied", "Recording refused (permission denied)")}
         ${this.toggle("uploadFails", "Upload fails (500)")}
         ${this.toggle("sendThrows", "Broadcast call throws")}
         ${this.toggle("deleteForbidden", "Delete not authorized")}
@@ -250,8 +279,7 @@ export class DevApp extends LitElement {
 
         <div class="note">
           This is the real editor element. Changes apply to the card on the left
-          immediately. The microphone records for real —
-          <code>localhost</code> is a secure context.
+          immediately.
         </div>
       </div>
     `;

@@ -23,6 +23,7 @@ import {
 } from "./clip";
 import { BAR_COUNT, LevelEnvelope, silence } from "./levels";
 import { cardStyles } from "./styles";
+import { playerRow } from "./ui/player";
 import { visualizer } from "./ui/visualizer";
 
 const DEFAULT_TITLE = "Voice Broadcast";
@@ -68,6 +69,9 @@ export class HassBroadcastCard extends LitElement {
   /** The history row currently being fetched, for its pending state. */
   @state() private loadingId?: string;
   @state() private position = 0;
+  @state() private playing = false;
+
+  private audio?: HTMLAudioElement;
 
   private recorder = new Recorder();
   private envelope = new LevelEnvelope();
@@ -118,6 +122,7 @@ export class HassBroadcastCard extends LitElement {
     super.disconnectedCallback();
     this.disconnected = true;
     this.clearTimer();
+    this.stopPlayback();
     revokeClip(this.clip);
     // Torn down (dashboard navigation, view switch) while a recording is
     // in progress. The MediaStream/AudioContext/worklet node stay alive
@@ -266,6 +271,7 @@ export class HassBroadcastCard extends LitElement {
 
   /** Swap in a new clip, releasing the one it replaces. */
   private setClip(clip: Clip): void {
+    this.stopPlayback();
     if (this.clip && this.clip !== clip) {
       revokeClip(this.clip);
     }
@@ -274,15 +280,73 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private clearClip(): void {
+    this.stopPlayback();
     revokeClip(this.clip);
     this.clip = undefined;
     this.bars = [];
   }
 
   private seek(fraction: number): void {
-    if (this.clip) {
-      this.position = fraction * this.clip.duration;
+    if (!this.clip) {
+      return;
     }
+    this.position = fraction * this.clip.duration;
+    const audio = this.ensureAudio();
+    if (audio && audio.src === this.clip.url) {
+      audio.currentTime = this.position;
+    }
+  }
+
+  /**
+   * The `<audio>` element is created on demand and never rendered: the card
+   * draws its own transport, and the tests run in plain Node where `Audio`
+   * does not exist at all.
+   */
+  private ensureAudio(): HTMLAudioElement | undefined {
+    if (typeof Audio === "undefined") {
+      return undefined;
+    }
+    if (!this.audio) {
+      this.audio = new Audio();
+      this.audio.addEventListener("timeupdate", () => {
+        this.position = this.audio?.currentTime ?? 0;
+      });
+      this.audio.addEventListener("ended", () => {
+        this.playing = false;
+        this.position = 0;
+      });
+    }
+    return this.audio;
+  }
+
+  private togglePlay(): void {
+    const audio = this.ensureAudio();
+    if (!audio || !this.clip) {
+      return;
+    }
+    if (this.playing) {
+      audio.pause();
+      this.playing = false;
+      return;
+    }
+    if (audio.src !== this.clip.url) {
+      audio.src = this.clip.url;
+      audio.currentTime = this.position;
+    }
+    void audio.play().then(
+      () => {
+        this.playing = true;
+      },
+      (err: any) => {
+        this.fail(`Could not play that here: ${err?.message ?? err}`);
+      },
+    );
+  }
+
+  private stopPlayback(): void {
+    this.audio?.pause();
+    this.playing = false;
+    this.position = 0;
   }
 
   private fail(text: string): void {
@@ -424,14 +488,22 @@ export class HassBroadcastCard extends LitElement {
           </div>
         </div>
 
-        ${this.clip
-          ? html`
-              <div class="actions">
-                <button class="action send" @click=${this.broadcast}>Broadcast</button>
-                <button class="action discard" @click=${this.clearClip}>Clear</button>
-              </div>
-            `
-          : nothing}
+        ${playerRow({
+          enabled: this.clip !== undefined,
+          playing: this.playing,
+          position: this.position,
+          duration: this.clip?.duration ?? 0,
+          onToggle: () => this.togglePlay(),
+          onClear: () => this.clearClip(),
+        })}
+
+        <button
+          class="broadcast"
+          ?disabled=${!this.canBroadcast}
+          @click=${this.broadcast}
+        >
+          ${this.phase === "sending" ? "Broadcasting…" : "Broadcast"}
+        </button>
 
         <div class="targets">
           ${this.players.map(

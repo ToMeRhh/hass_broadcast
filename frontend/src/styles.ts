@@ -56,4 +56,66 @@ export const cardStyles = css`
   .bar.played {
     background: var(--primary-color, #03a9f4);
   }
+
+  /* --- player row -------------------------------------------------- */
+  .player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 40px;
+    padding: 0 4px;
+  }
+  .player .time {
+    flex: 1;
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    color: var(--secondary-text-color);
+  }
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .icon:hover:not([disabled]) {
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+  }
+  .icon[disabled] {
+    color: var(--disabled-text-color, #bdbdbd);
+    cursor: default;
+  }
+  .icon:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* --- broadcast --------------------------------------------------- */
+  .broadcast {
+    display: block;
+    width: 100%;
+    margin: 16px 0;
+    padding: 14px;
+    font: inherit;
+    font-weight: 500;
+    border: none;
+    border-radius: 24px;
+    background: var(--primary-color, #03a9f4);
+    color: var(--text-primary-color, #fff);
+    cursor: pointer;
+  }
+  .broadcast[disabled] {
+    background: var(--disabled-text-color, #bdbdbd);
+    cursor: default;
+  }
+  .broadcast:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
 `;

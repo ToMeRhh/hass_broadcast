@@ -47,6 +47,31 @@ export function playerOptions(
   }));
 }
 
+/** How many speakers a summary line names before it starts counting. */
+const SUMMARY_NAMES = 3;
+
+/**
+ * The one-line description of a list, shown on its collapsed summary.
+ * `emptyLabel` differs per list: an unpicked show list means every player,
+ * an unpicked hide list means none.
+ */
+export function selectionSummary(
+  chosen: string[] | undefined,
+  options: PlayerOption[],
+  emptyLabel: string,
+): string {
+  if (!chosen?.length) {
+    return emptyLabel;
+  }
+  const names = chosen.map(
+    (entityId) =>
+      options.find((option) => option.entityId === entityId)?.name ?? entityId,
+  );
+  const shown = names.slice(0, SUMMARY_NAMES).join(", ");
+  const rest = names.length - SUMMARY_NAMES;
+  return rest > 0 ? `${shown} +${rest} more` : shown;
+}
+
 /**
  * Add or remove one entity from a configured list. An emptied list comes back
  * as undefined so the key is dropped: an empty list and a missing one mean the
@@ -92,7 +117,10 @@ export class HassBroadcastCardEditor extends LitElement {
       background: var(--card-background-color, #fff); color: var(--primary-text-color);
       font: inherit; }
     .players { border: 1px solid var(--divider-color, #ddd); border-radius: 4px;
-      padding: 8px; max-height: 220px; overflow-y: auto; }
+      padding: 8px; }
+    summary { cursor: pointer; font-weight: 500; }
+    .rows { max-height: 220px; overflow-y: auto; margin-top: 8px;
+      border-top: 1px solid var(--divider-color, #ddd); padding-top: 4px; }
     .players label { display: flex; align-items: center; gap: 8px; font-weight: normal;
       margin: 0; padding: 4px 0; }
     .missing { color: var(--secondary-text-color); }
@@ -114,18 +142,36 @@ export class HassBroadcastCardEditor extends LitElement {
   }
 
   /**
-   * One checkbox list over `options`, writing the entity ids into `key`.
+   * One collapsed speaker list, writing the entity ids it selects into `key`.
+   * `emptyLabel` says what an unpicked list means — the two lists disagree.
    */
+  private playerSection(
+    key: "show_players" | "hide_players",
+    label: string,
+    emptyLabel: string,
+    options: PlayerOption[],
+  ) {
+    const chosen = this.config[key] ?? [];
+    return html`
+      <details class="players">
+        <summary>
+          ${label} — ${selectionSummary(chosen, options, emptyLabel)}
+        </summary>
+        ${options.length === 0
+          ? html`<div class="hint">No media players found.</div>`
+          : this.playerList(key, options)}
+      </details>
+    `;
+  }
+
+  /** The selectable rows inside one section. */
   private playerList(
     key: "show_players" | "hide_players",
     options: PlayerOption[],
   ) {
-    if (options.length === 0) {
-      return html`<div class="hint">No media players found.</div>`;
-    }
     const chosen = this.config[key] ?? [];
     return html`
-      <div class="players">
+      <div class="rows">
         ${options.map(
           (option) => html`
             <label>
@@ -189,17 +235,25 @@ export class HassBroadcastCardEditor extends LitElement {
       </div>
 
       <div class="field">
-        <label>Players to show</label>
-        ${this.playerList("show_players", options)}
+        ${this.playerSection(
+          "show_players",
+          "Players to show",
+          "every player",
+          options,
+        )}
         <div class="hint">
-          With nothing checked, the card offers every media player that
+          With nothing selected, the card offers every media player that
           supports playback.
         </div>
       </div>
 
       <div class="field">
-        <label>Players to hide</label>
-        ${this.playerList("hide_players", options)}
+        ${this.playerSection(
+          "hide_players",
+          "Players to hide",
+          "none",
+          options,
+        )}
         <div class="hint">Removed after the list above.</div>
       </div>
 

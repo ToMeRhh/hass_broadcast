@@ -4,6 +4,7 @@ import {
   HassBroadcastCardEditor,
   clampMaxDuration,
   playerOptions,
+  selectionSummary,
   toggleInList,
 } from "../src/editor";
 import { renderedText } from "./helpers";
@@ -76,6 +77,48 @@ describe("toggleInList", () => {
     expect(
       toggleInList(["media_player.attic"], "media_player.attic", false),
     ).toBeUndefined();
+  });
+});
+
+describe("selectionSummary", () => {
+  const options = [
+    { entityId: "media_player.attic", name: "Attic", available: true },
+    { entityId: "media_player.kitchen", name: "Kitchen", available: true },
+    { entityId: "media_player.bedroom", name: "Bedroom", available: true },
+    { entityId: "media_player.shed", name: "Shed", available: true },
+  ];
+
+  it("uses the given wording when nothing is picked", () => {
+    expect(selectionSummary(undefined, options, "every player")).toBe(
+      "every player",
+    );
+    expect(selectionSummary([], options, "none")).toBe("none");
+  });
+
+  it("names the picked speakers", () => {
+    expect(
+      selectionSummary(
+        ["media_player.attic", "media_player.kitchen"],
+        options,
+        "none",
+      ),
+    ).toBe("Attic, Kitchen");
+  });
+
+  it("counts the rest once the line would get long", () => {
+    expect(
+      selectionSummary(
+        options.map((option) => option.entityId),
+        options,
+        "none",
+      ),
+    ).toBe("Attic, Kitchen, Bedroom +1 more");
+  });
+
+  it("falls back to the entity id for a speaker it cannot name", () => {
+    expect(selectionSummary(["media_player.gone"], options, "none")).toBe(
+      "media_player.gone",
+    );
   });
 });
 
@@ -157,6 +200,27 @@ describe("editor rendering", () => {
     expect(text).toContain("Players to show");
     expect(text).toContain("Players to hide");
     expect(text.match(/Attic/g)).toHaveLength(2);
+  });
+
+  it("collapses each list into a summary of what is picked", () => {
+    const editor = newEditor(hass);
+    editor.setConfig({
+      type: "custom:hass-broadcast-card",
+      show_players: ["media_player.attic"],
+    });
+    const text = renderedText(editor.render());
+
+    // Closed by default: a <details> with no open attribute.
+    expect(text).toContain("<details");
+    expect(text).not.toContain("<details open");
+    expect(text).toContain("Players to show — Attic");
+    expect(text).toContain("Players to hide — none");
+  });
+
+  it("says the card shows everything while the show list is empty", () => {
+    const text = renderedText(newEditor(hass).render());
+
+    expect(text).toContain("Players to show — every player");
   });
 
   it("says so when there are no speakers to pick from", () => {

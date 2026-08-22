@@ -8,7 +8,7 @@ Lovelace card and play it on media players. Python integration in
 
 ```bash
 .venv/bin/python -m pytest -q   # integration tests (54)
-npm test                        # card tests, vitest (87)
+npm test                        # card tests, vitest (84)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars

@@ -59,6 +59,8 @@ concurrently — they all start together rather than one after another.
 | --- | --- | --- |
 | `title` | `Voice Broadcast` | Card heading. Editable from the card editor's **Card name** field; blank restores the default |
 | `targets` | `[]` | Speakers selected when the card loads |
+| `show_players` | `[]` | Only these speakers appear on the card, in the order listed. Empty means every media player that supports playback. A speaker named here appears even while it is unavailable |
+| `hide_players` | `[]` | Speakers to leave off the card. Applied after `show_players`, so it wins over it. A speaker removed by either list is never broadcast to, even if `targets` still names it |
 | `mode` | `plain` | `plain`, `restore`, or `chime` — see [Behavioural restrictions](#behavioural-restrictions) below |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to the range **5–300**; values outside that range are pulled back to the nearest bound, and invalid values fall back to 60. |
 | `show_history` | `true` | Show the list of recent recordings |

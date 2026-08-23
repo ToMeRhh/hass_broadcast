@@ -1,12 +1,10 @@
-"""The hass_broadcast.send service."""
+"""Playing a recorded message on media players."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 from typing import Any
-
-import voluptuous as vol
 
 from homeassistant.components.media_player import (
     ATTR_MEDIA_ANNOUNCE,
@@ -18,21 +16,11 @@ from homeassistant.components.media_player import (
     MediaType,
 )
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_SUPPORTED_FEATURES
-from homeassistant.core import (
-    HomeAssistant,
-    ServiceCall,
-    ServiceResponse,
-    SupportsResponse,
-)
-from homeassistant.exceptions import HomeAssistantError
-import homeassistant.helpers.config_validation as cv
+from homeassistant.core import HomeAssistant
 
-from .const import CHIME_URL, DOMAIN, MODE_CHIME, MODE_PLAIN, MODE_RESTORE, MODES
-from .storage import async_get_store
+from .const import CHIME_URL, DOMAIN, MODE_CHIME, MODE_RESTORE
 
 _LOGGER = logging.getLogger(__name__)
-
-SERVICE_SEND = "send"
 
 # The chime asset (Step 1) is two tones totaling 0.12 + 0.18 = 0.3s.
 CHIME_DURATION_S = 0.3
@@ -47,14 +35,6 @@ CHIME_GAP_S = CHIME_DURATION_S + CHIME_LATENCY_MARGIN_S
 # Extra wait before restore mode puts the volume back, on top of the
 # message's own duration -- the same dispatch-latency guess as the chime gap.
 RESTORE_TAIL_MARGIN_S = 1
-
-SEND_SCHEMA = vol.Schema(
-    {
-        vol.Required("message_id"): cv.string,
-        vol.Required("targets"): vol.All(cv.ensure_list, [cv.entity_id]),
-        vol.Optional("mode", default=MODE_PLAIN): vol.In(MODES),
-    }
-)
 
 
 def _supports_announce(state: Any | None) -> bool:
@@ -217,25 +197,24 @@ async def _async_send_to_target_isolated(
     return None
 
 
-async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
-    """Handle hass_broadcast.send.
+async def async_broadcast(
+    hass: HomeAssistant,
+    message: dict[str, Any],
+    targets: list[str],
+    mode: str,
+) -> list[str]:
+    """Play `message` on every target; return the ids that could not play.
 
-    Returns `{"failed": [entity_id, ...]}` -- empty when every target played.
-    The response is what lets the card surface per-target results instead of
-    reporting success for a broadcast nobody heard.
+    Takes an already-loaded message rather than an id: the caller looked it
+    up to answer "does this recording exist?", and re-reading the store here
+    would duplicate that lookup and its failure mode. Keeps this module free
+    of storage concerns.
+
+    An empty return means every target played. The per-target result is what
+    lets the card surface partial failures instead of reporting success for a
+    broadcast nobody heard.
     """
-    hass = call.hass
-    store = async_get_store(hass)
-    if store is None:
-        raise HomeAssistantError("Voice Broadcast is not set up")
-
-    message_id = call.data["message_id"]
-    message = await store.async_get(message_id)
-    if message is None:
-        raise HomeAssistantError(f"Unknown recording {message_id}")
-
-    content_id = f"media-source://{DOMAIN}/{message_id}"
-    mode = call.data["mode"]
+    content_id = f"media-source://{DOMAIN}/{message['id']}"
     duration = float(message.get("duration") or 0)
 
     # Dispatched concurrently: sequential dispatch means each target's own
@@ -243,27 +222,11 @@ async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
     # target's, turning a broadcast into a slow relay. Each coroutine keeps
     # its own try/except (above) so one target's failure cannot cancel or
     # otherwise affect the others. Restore's post-playback wait is not in
-    # this gather at all — it runs as a detached task per target.
+    # this gather at all -- it runs as a detached task per target.
     results = await asyncio.gather(
         *(
             _async_send_to_target_isolated(hass, entity_id, content_id, mode, duration)
-            for entity_id in call.data["targets"]
+            for entity_id in targets
         )
     )
-    return {"failed": [entity_id for entity_id in results if entity_id is not None]}
-
-
-def async_register_services(hass: HomeAssistant) -> None:
-    """Register the broadcast services."""
-    if hass.services.has_service(DOMAIN, SERVICE_SEND):
-        return
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_SEND,
-        _async_handle_send,
-        schema=SEND_SCHEMA,
-        # OPTIONAL, not ONLY: the card asks for the response so it can report
-        # per-target failures, while automations that just want the broadcast
-        # can keep calling the service without `return_response`.
-        supports_response=SupportsResponse.OPTIONAL,
-    )
+    return [entity_id for entity_id in results if entity_id is not None]

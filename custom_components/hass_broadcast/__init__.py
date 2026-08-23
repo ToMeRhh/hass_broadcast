@@ -22,7 +22,6 @@ from .const import (
     STATIC_URL,
 )
 from .http import async_register_views
-from .playback import async_register_services
 from .storage import BroadcastStore
 from .websocket import async_register_websocket_commands
 
@@ -156,7 +155,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await store.async_load()
     await _async_register_static(hass)
     async_register_views(hass)
-    async_register_services(hass)
     async_register_websocket_commands(hass)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {DATA_STORE: store}
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

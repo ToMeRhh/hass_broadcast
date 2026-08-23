@@ -219,9 +219,11 @@ describe("card broadcasting", () => {
       states: {
         "media_player.broken": { attributes: { friendly_name: "Garage" } },
       },
-      callService: async (...args: any[]) => {
-        calls.push(args);
-        return response;
+      connection: {
+        sendMessagePromise: async (message: any) => {
+          calls.push(message);
+          return response;
+        },
       },
     };
     vi.stubGlobal("fetch", async () => {
@@ -232,7 +234,7 @@ describe("card broadcasting", () => {
   }
 
   it("keeps the clip loaded after every target played", async () => {
-    const { card } = cardWithClip({ response: { failed: [] } });
+    const { card } = cardWithClip({ failed: [] });
 
     await card.broadcast();
 
@@ -244,7 +246,7 @@ describe("card broadcasting", () => {
   });
 
   it("uploads a fresh clip once and reuses the id on retry", async () => {
-    const state = cardWithClip({ response: { failed: ["media_player.broken"] } });
+    const state = cardWithClip({ failed: ["media_player.broken"] });
 
     await state.card.broadcast();
     expect(state.uploads).toBe(1);
@@ -253,7 +255,7 @@ describe("card broadcasting", () => {
 
     await state.card.broadcast();
     expect(state.uploads).toBe(1);
-    expect(state.calls[1][2].message_id).toBe("abc");
+    expect(state.calls[1].message_id).toBe("abc");
   });
 
   it("does not resurrect a clip cleared mid-upload", async () => {
@@ -287,7 +289,7 @@ describe("card broadcasting", () => {
   });
 
   it("broadcasts a stored clip without uploading anything", async () => {
-    const state = cardWithClip({ response: { failed: [] } });
+    const state = cardWithClip({ failed: [] });
     state.card.clip = {
       source: { kind: "stored", id: "from-history" },
       url: "blob:preview",
@@ -298,13 +300,11 @@ describe("card broadcasting", () => {
     await state.card.broadcast();
 
     expect(state.uploads).toBe(0);
-    expect(state.calls[0][2].message_id).toBe("from-history");
+    expect(state.calls[0].message_id).toBe("from-history");
   });
 
   it("warns about the failed targets and keeps the clip on partial failure", async () => {
-    const { card } = cardWithClip({
-      response: { failed: ["media_player.broken"] },
-    });
+    const { card } = cardWithClip({ failed: ["media_player.broken"] });
 
     await card.broadcast();
 
@@ -318,7 +318,7 @@ describe("card broadcasting", () => {
 
   it("treats a total failure like a send error and keeps the clip", async () => {
     const { card } = cardWithClip({
-      response: { failed: ["media_player.kitchen", "media_player.broken"] },
+      failed: ["media_player.kitchen", "media_player.broken"],
     });
 
     await card.broadcast();
@@ -328,7 +328,7 @@ describe("card broadcasting", () => {
   });
 
   it("cannot broadcast with nothing loaded or nobody selected", () => {
-    const { card } = cardWithClip({ response: { failed: [] } });
+    const { card } = cardWithClip({ failed: [] });
     expect(card.canBroadcast).toBe(true);
 
     card.selected = [];
@@ -344,7 +344,7 @@ describe("card broadcasting", () => {
     // loaded (e.g. from history) plus an in-progress recording left
     // Broadcast live. Tapping it stranded the recorder — every stop path is
     // gated on phase === "recording", and sending flips phase away from it.
-    const { card, calls } = cardWithClip({ response: { failed: [] } });
+    const { card, calls } = cardWithClip({ failed: [] });
     card.phase = "recording";
 
     expect(card.canBroadcast).toBe(false);
@@ -539,9 +539,11 @@ describe("card speaker filtering", () => {
       hide_players: ["media_player.attic"],
     });
     card.hass.auth = { data: { access_token: "tok" } };
-    card.hass.callService = async (...args: any[]) => {
-      calls.push(args);
-      return { response: { failed: [] } };
+    card.hass.connection = {
+      sendMessagePromise: async (message: any) => {
+        calls.push(message);
+        return { failed: [] };
+      },
     };
     card.clip = {
       source: { kind: "fresh", blob: new Blob(["x"]) },
@@ -556,7 +558,7 @@ describe("card speaker filtering", () => {
 
     await card.broadcast();
 
-    expect(calls[0][2].targets).toEqual(["media_player.kitchen"]);
+    expect(calls[0].targets).toEqual(["media_player.kitchen"]);
     vi.unstubAllGlobals();
   });
 

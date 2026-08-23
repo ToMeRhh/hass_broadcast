@@ -8,7 +8,10 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+import homeassistant.helpers.config_validation as cv
 
+from .const import MODE_PLAIN, MODES
+from .playback import async_broadcast
 from .storage import async_get_store
 
 @websocket_api.websocket_command({vol.Required("type"): "hass_broadcast/list"})
@@ -74,8 +77,49 @@ async def ws_delete(
     connection.send_result(msg["id"], {"deleted": deleted})
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "hass_broadcast/send",
+        vol.Required("message_id"): str,
+        vol.Required("targets"): [cv.entity_id],
+        vol.Optional("mode", default=MODE_PLAIN): vol.In(MODES),
+    }
+)
+@websocket_api.async_response
+async def ws_send(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Broadcast a recording to media players.
+
+    Deliberately NOT a Home Assistant service. Registering one publishes it to
+    Developer Tools and the automation editor -- there is no private service --
+    and `message_id` is an opaque storage id no automation author can obtain.
+    This is card RPC, so it belongs on the websocket beside list and delete.
+
+    Returns once playback has been dispatched, not when it ends: restore mode's
+    volume tail runs as a detached task and deliberately outlives this reply.
+    """
+    store = async_get_store(hass)
+    if store is None:
+        connection.send_error(msg["id"], "not_setup", "Voice Broadcast is not set up")
+        return
+
+    message = await store.async_get(msg["message_id"])
+    if message is None:
+        connection.send_error(
+            msg["id"], "not_found", f"Unknown recording {msg['message_id']}"
+        )
+        return
+
+    failed = await async_broadcast(hass, message, msg["targets"], msg["mode"])
+    connection.send_result(msg["id"], {"failed": failed})
+
+
 @callback
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
     """Register the websocket commands."""
     websocket_api.async_register_command(hass, ws_list)
     websocket_api.async_register_command(hass, ws_delete)
+    websocket_api.async_register_command(hass, ws_send)

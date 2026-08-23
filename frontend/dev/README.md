@@ -24,8 +24,8 @@ round-trip, and — on `localhost` — microphone capture and the AudioWorklet.
 `custom_components/hass_broadcast/www/`, which is the exact path `Recorder`
 hardcodes for the worklet.
 
-**Faked** (`mock-hass.ts`): the entity list, `hass_broadcast.send`, the
-`hass_broadcast/list` and `/delete` websocket calls, and the `/upload` and
+**Faked** (`mock-hass.ts`): the entity list, the `hass_broadcast/send`,
+`/list`, and `/delete` websocket calls, and the `/upload` and
 `/media/<id>.wav` HTTP endpoints. Uploads are kept in memory and served back
 from `/media`, so a recording made in the harness round-trips through history
 and plays back the way it would on a live install. Seeded history entries carry

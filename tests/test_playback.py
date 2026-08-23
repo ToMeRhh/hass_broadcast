@@ -1,4 +1,4 @@
-"""Tests for the broadcast service."""
+"""Tests for broadcasting a recording to media players."""
 
 import asyncio
 from contextlib import suppress
@@ -36,8 +36,28 @@ def play_calls(hass: HomeAssistant):
     return async_mock_service(hass, "media_player", "play_media")
 
 
+async def _send(
+    client,
+    message_id: str,
+    targets: list[str],
+    mode: str | None = None,
+    msg_id: int = 1,
+) -> dict:
+    """Issue hass_broadcast/send and return the reply message."""
+    payload = {
+        "id": msg_id,
+        "type": "hass_broadcast/send",
+        "message_id": message_id,
+        "targets": targets,
+    }
+    if mode is not None:
+        payload["mode"] = mode
+    await client.send_json(payload)
+    return await client.receive_json()
+
+
 async def test_send_fans_out_to_every_target(
-    hass: HomeAssistant, setup_entry, play_calls
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """Each target receives a play_media call with the media source id."""
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -45,16 +65,12 @@ async def test_send_fans_out_to_every_target(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen", "media_player.office"],
-        },
-        blocking=True,
+    client = await hass_ws_client(hass)
+    msg = await _send(
+        client, message_id, ["media_player.kitchen", "media_player.office"]
     )
 
+    assert msg["success"] is True
     assert len(play_calls) == 2
     targets = {call.data["entity_id"] for call in play_calls}
     assert targets == {"media_player.kitchen", "media_player.office"}
@@ -66,23 +82,19 @@ async def test_send_fans_out_to_every_target(
 
 
 async def test_send_rejects_unknown_message(
-    hass: HomeAssistant, setup_entry, play_calls
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
-    """An unknown message id raises and plays nothing."""
-    from homeassistant.exceptions import HomeAssistantError
+    """An unknown message id is reported as an error and plays nothing."""
+    client = await hass_ws_client(hass)
+    msg = await _send(client, "nope", ["media_player.kitchen"])
 
-    with pytest.raises(HomeAssistantError):
-        await hass.services.async_call(
-            DOMAIN,
-            "send",
-            {"message_id": "nope", "targets": ["media_player.kitchen"]},
-            blocking=True,
-        )
+    assert msg["success"] is False
+    assert msg["error"]["code"] == "not_found"
     assert len(play_calls) == 0
 
 
 async def test_chime_mode_plays_chime_first(
-    hass: HomeAssistant, setup_entry, play_calls, monkeypatch
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """Chime mode issues the chime before the message.
 
@@ -96,17 +108,10 @@ async def test_chime_mode_plays_chime_first(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen"],
-            "mode": "chime",
-        },
-        blocking=True,
-    )
+    client = await hass_ws_client(hass)
+    msg = await _send(client, message_id, ["media_player.kitchen"], mode="chime")
 
+    assert msg["success"] is True
     assert len(play_calls) == 2
     assert play_calls[0].data["media_content_id"].endswith("chime.wav")
     assert play_calls[1].data["media_content_id"] == (
@@ -115,7 +120,7 @@ async def test_chime_mode_plays_chime_first(
 
 
 async def test_one_failing_target_does_not_stop_the_others(
-    hass: HomeAssistant, setup_entry, caplog
+    hass: HomeAssistant, setup_entry, caplog, hass_ws_client
 ) -> None:
     """A target that errors is logged; remaining targets still play."""
     from homeassistant.exceptions import HomeAssistantError
@@ -135,22 +140,18 @@ async def test_one_failing_target_does_not_stop_the_others(
 
     hass.services.async_register("media_player", "play_media", handler)
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.broken", "media_player.kitchen"],
-        },
-        blocking=True,
+    client = await hass_ws_client(hass)
+    msg = await _send(
+        client, message_id, ["media_player.broken", "media_player.kitchen"]
     )
 
+    assert msg["success"] is True
     assert played == ["media_player.kitchen"]
     assert "media_player.broken" in caplog.text
 
 
 async def test_one_failing_target_survives_non_home_assistant_error(
-    hass: HomeAssistant, setup_entry, caplog
+    hass: HomeAssistant, setup_entry, caplog, hass_ws_client
 ) -> None:
     """A target raising a non-HomeAssistantError still isolates cleanly.
 
@@ -175,24 +176,20 @@ async def test_one_failing_target_survives_non_home_assistant_error(
 
     hass.services.async_register("media_player", "play_media", handler)
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.broken", "media_player.kitchen"],
-        },
-        blocking=True,
+    client = await hass_ws_client(hass)
+    msg = await _send(
+        client, message_id, ["media_player.broken", "media_player.kitchen"]
     )
 
+    assert msg["success"] is True
     assert played == ["media_player.kitchen"]
     assert "media_player.broken" in caplog.text
 
 
 async def test_send_reports_which_targets_failed(
-    hass: HomeAssistant, setup_entry
+    hass: HomeAssistant, setup_entry, hass_ws_client
 ) -> None:
-    """The service response names the targets that could not play.
+    """The reply names the targets that could not play.
 
     Without this the card cannot tell "played everywhere" from "played
     nowhere" -- three unreachable speakers would look like a success.
@@ -208,22 +205,16 @@ async def test_send_reports_which_targets_failed(
 
     hass.services.async_register("media_player", "play_media", handler)
 
-    response = await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.broken", "media_player.kitchen"],
-        },
-        blocking=True,
-        return_response=True,
+    client = await hass_ws_client(hass)
+    msg = await _send(
+        client, message_id, ["media_player.broken", "media_player.kitchen"]
     )
 
-    assert response == {"failed": ["media_player.broken"]}
+    assert msg["result"] == {"failed": ["media_player.broken"]}
 
 
 async def test_send_reports_no_failures_when_every_target_plays(
-    hass: HomeAssistant, setup_entry, play_calls
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """A fully successful broadcast reports an empty failure list."""
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -231,23 +222,17 @@ async def test_send_reports_no_failures_when_every_target_plays(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
 
-    response = await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen", "media_player.office"],
-        },
-        blocking=True,
-        return_response=True,
+    client = await hass_ws_client(hass)
+    msg = await _send(
+        client, message_id, ["media_player.kitchen", "media_player.office"]
     )
 
-    assert response == {"failed": []}
+    assert msg["result"] == {"failed": []}
     assert len(play_calls) == 2
 
 
 async def test_restore_mode_returns_before_the_restore_tail(
-    hass: HomeAssistant, setup_entry, play_calls
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """The service returns once playback is dispatched, not when it ends.
 
@@ -265,16 +250,8 @@ async def test_restore_mode_returns_before_the_restore_tail(
     volume_calls = async_mock_service(hass, "media_player", "volume_set")
     hass.states.async_set("media_player.kitchen", "playing", {"volume_level": 0.4})
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen"],
-            "mode": "restore",
-        },
-        blocking=True,
-    )
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.kitchen"], mode="restore")
 
     # Returned promptly despite a 60s message, with the volume restore still
     # pending in its own task.
@@ -293,7 +270,7 @@ async def test_restore_mode_returns_before_the_restore_tail(
 
 
 async def test_restore_tail_puts_the_volume_back(
-    hass: HomeAssistant, setup_entry, play_calls, monkeypatch
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """The detached tail still restores the snapshotted volume."""
     from pytest_homeassistant_custom_component.common import async_mock_service
@@ -307,16 +284,8 @@ async def test_restore_tail_puts_the_volume_back(
     volume_calls = async_mock_service(hass, "media_player", "volume_set")
     hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen"],
-            "mode": "restore",
-        },
-        blocking=True,
-    )
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.kitchen"], mode="restore")
     await hass.async_block_till_done()
 
     assert len(volume_calls) == 1
@@ -324,7 +293,7 @@ async def test_restore_tail_puts_the_volume_back(
 
 
 async def test_restore_tail_failure_is_logged_not_raised(
-    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, caplog
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, caplog, hass_ws_client
 ) -> None:
     """A failure in the detached tail is caught and logged.
 
@@ -347,28 +316,19 @@ async def test_restore_tail_failure_is_logged_not_raised(
     hass.services.async_register("media_player", "volume_set", volume_handler)
     hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
 
-    response = await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen"],
-            "mode": "restore",
-        },
-        blocking=True,
-        return_response=True,
-    )
+    client = await hass_ws_client(hass)
+    msg = await _send(client, message_id, ["media_player.kitchen"], mode="restore")
     await hass.async_block_till_done()
 
     assert "media_player.kitchen" in caplog.text
     assert "speaker went away" in caplog.text
     # The message itself played; only the restore failed, so the target is
     # deliberately not reported as failed.
-    assert response == {"failed": []}
+    assert msg["result"] == {"failed": []}
 
 
 async def test_restore_uses_native_announce_when_the_target_supports_it(
-    hass: HomeAssistant, setup_entry, play_calls
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """A player advertising MEDIA_ANNOUNCE ducks and resumes itself.
 
@@ -390,16 +350,8 @@ async def test_restore_uses_native_announce_when_the_target_supports_it(
         {"volume_level": 0.4, "supported_features": ANNOUNCE_FEATURE},
     )
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.study"],
-            "mode": "restore",
-        },
-        blocking=True,
-    )
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.study"], mode="restore")
     await hass.async_block_till_done()
 
     assert len(play_calls) == 1
@@ -408,7 +360,7 @@ async def test_restore_uses_native_announce_when_the_target_supports_it(
 
 
 async def test_restore_falls_back_when_the_target_lacks_announce(
-    hass: HomeAssistant, setup_entry, play_calls, monkeypatch
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """Without the feature bit the sleep-based tail still runs."""
     from pytest_homeassistant_custom_component.common import async_mock_service
@@ -427,18 +379,27 @@ async def test_restore_falls_back_when_the_target_lacks_announce(
         {"volume_level": 0.4, "supported_features": 512},
     )
 
-    await hass.services.async_call(
-        DOMAIN,
-        "send",
-        {
-            "message_id": message_id,
-            "targets": ["media_player.kitchen"],
-            "mode": "restore",
-        },
-        blocking=True,
-    )
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.kitchen"], mode="restore")
     await hass.async_block_till_done()
 
     assert "announce" not in play_calls[0].data
     assert len(volume_calls) == 1
     assert volume_calls[0].data["volume_level"] == 0.4
+
+
+async def test_no_broadcast_service_is_registered(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    """Broadcasting is card RPC, not a public service.
+
+    Home Assistant publishes a service the moment it is registered -- to
+    Developer Tools, to the automation editor's action picker, and to
+    /api/services. There is no private service, so the only way to keep this
+    integration's surface to "one Lovelace card" is not to register one.
+
+    This asserts the absence directly, because the natural instinct when
+    adding a backend capability is to reach for a service, and nothing else
+    in the suite would notice.
+    """
+    assert not hass.services.has_service(DOMAIN, "send")

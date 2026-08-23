@@ -3,8 +3,7 @@
  * the card touches:
  *
  *   hass.states                         — entity list, for the speaker picker
- *   hass.callService(...)               — hass_broadcast.send
- *   hass.connection.sendMessagePromise  — hass_broadcast/list and /delete
+ *   hass.connection.sendMessagePromise  — hass_broadcast/list, /delete and /send
  *   hass.auth.data.access_token         — the bearer token the upload sends
  *   fetch /api/hass_broadcast/upload    — stores the blob, returns an id
  *   fetch /api/hass_broadcast/media/... — serves a stored blob back
@@ -31,7 +30,7 @@ export interface Scenario {
   micDenied: boolean;
   /** POST /upload answers 500. */
   uploadFails: boolean;
-  /** hass_broadcast.send throws instead of answering. */
+  /** hass_broadcast/send throws instead of answering. */
   sendThrows: boolean;
   /** Which targets the send reports as failed. */
   broadcast: BroadcastOutcome;
@@ -204,19 +203,19 @@ export class MockBackend {
     return this.messages.length !== before;
   }
 
-  async send(targets: string[]): Promise<{ response: { failed: string[] } }> {
+  async send(targets: string[]): Promise<{ failed: string[] }> {
     await this.delay();
     if (this.scenario.sendThrows) {
       throw new Error("Speaker is unreachable");
     }
     if (this.scenario.broadcast === "all-fail") {
-      return { response: { failed: [...targets] } };
+      return { failed: [...targets] };
     }
     if (this.scenario.broadcast === "partial") {
       // Fail every other target, so the message names some but not all.
-      return { response: { failed: targets.filter((_, index) => index % 2 === 0) } };
+      return { failed: targets.filter((_, index) => index % 2 === 0) };
     }
-    return { response: { failed: [] } };
+    return { failed: [] };
   }
 }
 
@@ -239,21 +238,11 @@ export function createMockHass(backend: MockBackend): any {
         if (message.type === "hass_broadcast/delete") {
           return { deleted: await backend.remove(message.message_id) };
         }
+        if (message.type === "hass_broadcast/send") {
+          return backend.send(message.targets ?? []);
+        }
         throw new Error(`mock hass: unhandled websocket message ${message.type}`);
       },
-    },
-    callService: async (
-      domain: string,
-      service: string,
-      data: any,
-      _target: unknown,
-      _notifyOnError: unknown,
-      _returnResponse: unknown,
-    ) => {
-      if (domain === "hass_broadcast" && service === "send") {
-        return backend.send(data.targets ?? []);
-      }
-      throw new Error(`mock hass: unhandled service ${domain}.${service}`);
     },
   };
 }

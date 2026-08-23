@@ -66,17 +66,11 @@ export async function sendBroadcast(
   targets: string[],
   mode: BroadcastMode,
 ): Promise<BroadcastResult> {
-  const result = await hass.callService(
-    "hass_broadcast",
-    "send",
-    { message_id: id, targets, mode },
-    undefined, // target: entities are passed in the service data
-    undefined, // notifyOnError: keep the caller's default
-    true, // returnResponse: we need the per-target results
-  );
-  // Defensive: an older frontend that ignores `returnResponse` gives us no
-  // response at all. Treat "no information" as "nothing reported failed"
-  // rather than inventing failures.
-  const failed = result?.response?.failed;
-  return { failed: Array.isArray(failed) ? failed : [] };
+  const result = await hass.connection.sendMessagePromise({
+    type: "hass_broadcast/send",
+    message_id: id,
+    targets,
+    mode,
+  });
+  return { failed: result.failed };
 }

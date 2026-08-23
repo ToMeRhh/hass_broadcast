@@ -135,9 +135,14 @@ export const cardStyles = css`
   .record-row {
     display: flex;
     justify-content: center;
-    padding: 8px 0 4px;
+    /* Reserved unconditionally (not just while recording) so the pulse
+       ring never shifts layout. The ring's box-shadow spreads up to 28px
+       while fading to transparent, so at 16px its tail is faint but not
+       fully gone by the time it reaches the rows above/below. */
+    padding: 16px 0;
   }
   .record {
+    position: relative;
     width: 96px;
     height: 96px;
     border: none;
@@ -153,7 +158,41 @@ export const cardStyles = css`
   }
   .record[data-recording="true"] {
     transform: scale(0.92);
-    box-shadow: 0 0 0 8px rgba(219, 68, 55, 0.25);
+  }
+  /* Two rings pulse outward on pseudo-elements rather than the button
+     itself, so the button's own box-shadow transition above stays
+     untouched. The second ring starts half a cycle behind the first, so a
+     new ring is always emerging before the previous one finishes fading —
+     a continuous pulse instead of one ring restarting after a gap. */
+  .record[data-recording="true"]::before,
+  .record[data-recording="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: record-pulse 2.8s ease-out infinite;
+  }
+  .record[data-recording="true"]::after {
+    animation-delay: 1.4s;
+  }
+  @keyframes record-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(219, 68, 55, 0.55);
+    }
+    100% {
+      box-shadow: 0 0 0 28px rgba(219, 68, 55, 0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .record[data-recording="true"]::before,
+    .record[data-recording="true"]::after {
+      animation: none;
+      box-shadow: none;
+    }
+    .record[data-recording="true"]::after {
+      box-shadow: 0 0 0 8px rgba(219, 68, 55, 0.25);
+    }
   }
   .record[disabled] {
     background: var(--disabled-text-color, #bdbdbd);

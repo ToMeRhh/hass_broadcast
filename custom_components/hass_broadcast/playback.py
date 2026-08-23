@@ -1,12 +1,10 @@
-"""The hass_broadcast.send service."""
+"""Playing a recorded message on media players."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 from typing import Any
-
-import voluptuous as vol
 
 from homeassistant.components.media_player import (
     ATTR_MEDIA_ANNOUNCE,
@@ -18,21 +16,11 @@ from homeassistant.components.media_player import (
     MediaType,
 )
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_SUPPORTED_FEATURES
-from homeassistant.core import (
-    HomeAssistant,
-    ServiceCall,
-    ServiceResponse,
-    SupportsResponse,
-)
-from homeassistant.exceptions import HomeAssistantError
-import homeassistant.helpers.config_validation as cv
+from homeassistant.core import HomeAssistant
 
-from .const import CHIME_URL, DOMAIN, MODE_CHIME, MODE_PLAIN, MODE_RESTORE, MODES
-from .storage import async_get_store
+from .const import CHIME_URL, DOMAIN, MODE_CHIME, MODE_RESTORE
 
 _LOGGER = logging.getLogger(__name__)
-
-SERVICE_SEND = "send"
 
 # The chime asset (Step 1) is two tones totaling 0.12 + 0.18 = 0.3s.
 CHIME_DURATION_S = 0.3
@@ -47,14 +35,6 @@ CHIME_GAP_S = CHIME_DURATION_S + CHIME_LATENCY_MARGIN_S
 # Extra wait before restore mode puts the volume back, on top of the
 # message's own duration -- the same dispatch-latency guess as the chime gap.
 RESTORE_TAIL_MARGIN_S = 1
-
-SEND_SCHEMA = vol.Schema(
-    {
-        vol.Required("message_id"): cv.string,
-        vol.Required("targets"): vol.All(cv.ensure_list, [cv.entity_id]),
-        vol.Optional("mode", default=MODE_PLAIN): vol.In(MODES),
-    }
-)
 
 
 def _supports_announce(state: Any | None) -> bool:
@@ -250,34 +230,3 @@ async def async_broadcast(
         )
     )
     return [entity_id for entity_id in results if entity_id is not None]
-
-
-async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
-    """Handle hass_broadcast.send. Deleted in Task 3."""
-    hass = call.hass
-    store = async_get_store(hass)
-    if store is None:
-        raise HomeAssistantError("Voice Broadcast is not set up")
-    message = await store.async_get(call.data["message_id"])
-    if message is None:
-        raise HomeAssistantError(f"Unknown recording {call.data['message_id']}")
-    failed = await async_broadcast(
-        hass, message, call.data["targets"], call.data["mode"]
-    )
-    return {"failed": failed}
-
-
-def async_register_services(hass: HomeAssistant) -> None:
-    """Register the broadcast services."""
-    if hass.services.has_service(DOMAIN, SERVICE_SEND):
-        return
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_SEND,
-        _async_handle_send,
-        schema=SEND_SCHEMA,
-        # OPTIONAL, not ONLY: the card asks for the response so it can report
-        # per-target failures, while automations that just want the broadcast
-        # can keep calling the service without `return_response`.
-        supports_response=SupportsResponse.OPTIONAL,
-    )

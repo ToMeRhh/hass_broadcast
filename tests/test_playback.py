@@ -384,3 +384,20 @@ async def test_restore_falls_back_when_the_target_lacks_announce(
     assert "announce" not in play_calls[0].data
     assert len(volume_calls) == 1
     assert volume_calls[0].data["volume_level"] == 0.4
+
+
+async def test_no_broadcast_service_is_registered(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    """Broadcasting is card RPC, not a public service.
+
+    Home Assistant publishes a service the moment it is registered -- to
+    Developer Tools, to the automation editor's action picker, and to
+    /api/services. There is no private service, so the only way to keep this
+    integration's surface to "one Lovelace card" is not to register one.
+
+    This asserts the absence directly, because the natural instinct when
+    adding a backend capability is to reach for a service, and nothing else
+    in the suite would notice.
+    """
+    assert not hass.services.has_service(DOMAIN, "send")

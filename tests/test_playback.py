@@ -141,10 +141,11 @@ async def test_one_failing_target_does_not_stop_the_others(
     hass.services.async_register("media_player", "play_media", handler)
 
     client = await hass_ws_client(hass)
-    await _send(
+    msg = await _send(
         client, message_id, ["media_player.broken", "media_player.kitchen"]
     )
 
+    assert msg["success"] is True
     assert played == ["media_player.kitchen"]
     assert "media_player.broken" in caplog.text
 
@@ -176,10 +177,11 @@ async def test_one_failing_target_survives_non_home_assistant_error(
     hass.services.async_register("media_player", "play_media", handler)
 
     client = await hass_ws_client(hass)
-    await _send(
+    msg = await _send(
         client, message_id, ["media_player.broken", "media_player.kitchen"]
     )
 
+    assert msg["success"] is True
     assert played == ["media_player.kitchen"]
     assert "media_player.broken" in caplog.text
 

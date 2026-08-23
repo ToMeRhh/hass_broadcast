@@ -49,8 +49,9 @@ Add the **Voice Broadcast** card to any dashboard. Then:
 4. Press **Broadcast**.
 
 Broadcasting happens from the card. This integration deliberately registers no
-Home Assistant service and creates no entities — installing it adds the card and
-nothing else.
+Home Assistant service and creates no entities — installing it adds the card,
+plus a "Voice Broadcast" folder in the Media panel where past recordings are
+browsable.
 
 Recent recordings appear below the card. Tapping one loads it into the card —
 exactly as if you had just recorded it, ready to play back or send — rather

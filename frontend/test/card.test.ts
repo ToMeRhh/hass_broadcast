@@ -627,6 +627,48 @@ describe("card history rendering and deletion", () => {
     expect(text).toContain("0:02");
   });
 
+  it("keeps the body at three rows and the rest behind the dialog", () => {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    card.history = [0, 1, 2, 3, 4].map((index) => ({
+      ...message(false),
+      id: `id-${index}`,
+      duration: index,
+    }));
+
+    const body = renderedText(card.render());
+    expect(body).toContain("0:02");
+    expect(body).not.toContain("0:04");
+
+    card.historyOpen = true;
+    expect(renderedText(card.render())).toContain("0:04");
+  });
+
+  it("closes the dialog once a message is loaded into the card", async () => {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    card.hass = { auth: { data: { access_token: "t" } } };
+    vi.stubGlobal(
+      "fetch",
+      async () => new Response(new Blob([new Uint8Array([1])]), { status: 200 }),
+    );
+    card.historyOpen = true;
+
+    await card.loadMessage(message(true));
+
+    expect(card.historyOpen).toBe(false);
+  });
+
+  it("does not reopen the dialog when the dashboard reattaches the card", () => {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    card.historyOpen = true;
+
+    card.disconnectedCallback();
+
+    expect(card.historyOpen).toBe(false);
+  });
+
   it("explains a not_authorized rejection from the server", async () => {
     const card = newCard();
     card.hass = {

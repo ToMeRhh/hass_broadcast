@@ -76,6 +76,7 @@ export class HassBroadcastCard extends LitElement {
   @state() private position = 0;
   @state() private playing = false;
   @state() private pickerOpen = false;
+  @state() private historyOpen = false;
 
   private audio?: HTMLAudioElement;
 
@@ -104,6 +105,10 @@ export class HassBroadcastCard extends LitElement {
   }
 
   getCardSize(): number {
+    // Lovelace counts in 50px units. The history block is now a fixed header
+    // plus BODY_ROWS reserved slots — about 150px, the same 3 units the rest
+    // of the card takes — so this answer is true at every list length rather
+    // than only at the one it happened to be written for.
     return this.config.show_history === false ? 3 : 6;
   }
 
@@ -132,6 +137,20 @@ export class HassBroadcastCard extends LitElement {
     void this.refreshHistory();
   }
 
+  protected updated(): void {
+    // `historyOpen` renders the <dialog> element; showModal() is what puts it
+    // in the top layer and brings the backdrop, Escape and focus trap with it.
+    // A bare `open` attribute renders the same markup inline instead, so the
+    // call has to happen here. The optional calls keep this a no-op under the
+    // tests' SSR DOM shim, which has a renderRoot but no query methods.
+    const dialog = (this.renderRoot as any)?.querySelector?.(
+      "dialog",
+    ) as HTMLDialogElement | null;
+    if (dialog && !dialog.open) {
+      dialog.showModal?.();
+    }
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this.disconnected = true;
@@ -144,6 +163,9 @@ export class HassBroadcastCard extends LitElement {
     // object URL just revoked above.
     this.clip = undefined;
     this.bars = [];
+    // Same reason: a dialog left open would showModal() itself back onto the
+    // screen the next time connectedCallback runs on this instance.
+    this.historyOpen = false;
     // Torn down (dashboard navigation, view switch) while a recording is
     // in progress. The MediaStream/AudioContext/worklet node stay alive
     // until something calls Recorder.stop() — there is no side-effect-free
@@ -521,6 +543,7 @@ export class HassBroadcastCard extends LitElement {
   /** Load a stored message so it behaves exactly like one just recorded. */
   private async loadMessage(message: BroadcastMessage): Promise<void> {
     this.loadingId = message.id;
+    this.historyOpen = false;
     this.status = undefined;
     try {
       this.setClip(await loadStoredClip(this.hass, message));
@@ -682,8 +705,12 @@ export class HassBroadcastCard extends LitElement {
               messages: this.history,
               loadedId: this.clip ? storedId(this.clip) : undefined,
               loadingId: this.loadingId,
+              dialogOpen: this.historyOpen,
               onLoad: (message) => void this.loadMessage(message),
               onDelete: (id) => void this.deleteRecording(id),
+              onDialogOpenChange: (open) => {
+                this.historyOpen = open;
+              },
             })}
       </ha-card>
     `;

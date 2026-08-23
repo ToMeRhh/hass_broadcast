@@ -463,6 +463,11 @@ describe("card render reflects phase, not just the clip", () => {
 describe("card teardown", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    // makeCard() calls makeSupported(), which sets this directly on
+    // globalThis where vi.unstubAllGlobals() cannot reach it. Left set, it
+    // leaks into every later test in the file and pushes their render()
+    // past isSupported()'s first short-circuit.
+    (globalThis as any).isSecureContext = undefined;
   });
 
   it("clears the loaded clip on disconnect, not just its object URL", () => {

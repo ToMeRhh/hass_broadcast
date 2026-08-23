@@ -164,3 +164,41 @@ describe("Recorder lifecycle", () => {
     await expect(recorder.stop()).rejects.toThrow(/no active recording/);
   });
 });
+
+describe("Recorder.isSupported", () => {
+  /**
+   * Run `body` with no global `navigator`, restoring whatever was there.
+   *
+   * Node 21 added `globalThis.navigator`; Node 20 — which CI runs — has
+   * none, so a dev machine on 22 cannot see this failure at all.
+   */
+  function withoutNavigator(body: () => void): void {
+    const original = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+    delete (globalThis as any).navigator;
+    try {
+      body();
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, "navigator", original);
+      }
+    }
+  }
+
+  afterEach(() => {
+    delete (globalThis as any).window;
+    delete (globalThis as any).isSecureContext;
+  });
+
+  it("answers false where there is no navigator, instead of throwing", () => {
+    // The whole job of a feature-detection check is to report whether an API
+    // is there. Throwing a ReferenceError because one of the globals it
+    // probes is absent is the one thing it must not do: the card calls this
+    // from render(), so it takes the entire card down with it.
+    (globalThis as any).window = globalThis;
+    (globalThis as any).isSecureContext = true;
+
+    withoutNavigator(() => {
+      expect(Recorder.isSupported()).toBe(false);
+    });
+  });
+});

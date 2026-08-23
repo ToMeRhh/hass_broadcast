@@ -314,4 +314,71 @@ export const cardStyles = css`
     font-variant-numeric: tabular-nums;
     color: var(--secondary-text-color);
   }
+  /* The card's height must not depend on how many messages are stored, so
+     the three slots are reserved whether or not a message fills them. */
+  .history-slots {
+    display: flex;
+    flex-direction: column;
+  }
+  .history-slot {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    overflow: hidden;
+  }
+  .history-slot > * {
+    flex: 1;
+    min-width: 0;
+  }
+  .history-slot .empty {
+    padding: 0;
+  }
+  .history-all {
+    padding: 2px 6px;
+    margin: -2px -6px;
+    font: inherit;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--primary-color);
+    cursor: pointer;
+  }
+  .history-all[data-disabled="true"] {
+    color: var(--disabled-text-color, #bdbdbd);
+    cursor: default;
+  }
+
+  /* --- history dialog ---------------------------------------------- */
+  .history-dialog {
+    width: min(420px, calc(100vw - 32px));
+    padding: 8px 12px 12px;
+    border: none;
+    border-radius: 12px;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+  .history-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+  }
+  /* Retention runs to 200, so the full list scrolls — a modal owns the
+     viewport, so this is the one scroller with no page scroll to fight. */
+  .dialog-list {
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+  }
 `;

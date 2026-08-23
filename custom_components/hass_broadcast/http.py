@@ -119,6 +119,12 @@ class BroadcastUploadView(HomeAssistantView):
         )
         duration = parsed_duration if parsed_duration is not None else client_duration
 
+        # MP3 is the format we aim to store: the speaker fetches and decodes
+        # the file itself, so the stored bytes are what the hardware has to
+        # understand, and MP3 is the one encoding the whole media_player
+        # ecosystem handles. WAV is the fallback for installs without ffmpeg,
+        # not the preferred output -- async_transcode_to_mp3 warns when it
+        # takes that path.
         payload, extension = raw, "wav"
         if (mp3 := await async_transcode_to_mp3(hass, raw)) is not None:
             payload, extension = mp3, "mp3"
@@ -144,8 +150,9 @@ class BroadcastMediaView(HomeAssistantView):
     """Serve a stored recording.
 
     requires_auth = True is deliberate: it makes Home Assistant's signed-path
-    middleware apply, which is how a Cast device fetches the file without the
-    recording being served unauthenticated.
+    middleware apply, which is how the target speaker fetches the file without
+    the recording being served unauthenticated. Playback is always the device
+    pulling this URL itself -- Home Assistant only hands it the address.
     """
 
     url = "/api/hass_broadcast/media/{message_id}.{extension}"

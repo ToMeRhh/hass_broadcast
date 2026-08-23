@@ -41,6 +41,7 @@ async def _send(
     message_id: str,
     targets: list[str],
     mode: str | None = None,
+    volume: float | None = None,
     msg_id: int = 1,
 ) -> dict:
     """Issue hass_broadcast/send and return the reply message."""
@@ -52,6 +53,8 @@ async def _send(
     }
     if mode is not None:
         payload["mode"] = mode
+    if volume is not None:
+        payload["volume"] = volume
     await client.send_json(payload)
     return await client.receive_json()
 
@@ -386,6 +389,127 @@ async def test_restore_falls_back_when_the_target_lacks_announce(
     assert "announce" not in play_calls[0].data
     assert len(volume_calls) == 1
     assert volume_calls[0].data["volume_level"] == 0.4
+
+
+async def test_volume_override_sets_and_restores_in_plain_mode(
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
+) -> None:
+    """A requested volume is set before playback and put back afterward."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
+
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.kitchen"], mode="plain", volume=0.8)
+    await hass.async_block_till_done()
+
+    assert len(play_calls) == 1
+    assert [call.data["volume_level"] for call in volume_calls] == [0.8, 0.4]
+
+
+async def test_no_volume_calls_when_no_override_is_requested(
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
+) -> None:
+    """Without a volume override, plain mode never touches volume_set."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
+
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.kitchen"], mode="plain")
+    await hass.async_block_till_done()
+
+    assert len(play_calls) == 1
+    assert volume_calls == []
+
+
+async def test_volume_override_applies_before_the_chime_too(
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
+) -> None:
+    """Chime mode sets the override once, before the chime, not per clip."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    monkeypatch.setattr(playback, "CHIME_GAP_S", 0)
+    monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
+
+    client = await hass_ws_client(hass)
+    await _send(client, message_id, ["media_player.kitchen"], mode="chime", volume=0.8)
+    await hass.async_block_till_done()
+
+    assert len(play_calls) == 2
+    assert play_calls[0].data["media_content_id"].endswith("chime.wav")
+    assert [call.data["volume_level"] for call in volume_calls] == [0.8, 0.4]
+
+
+async def test_volume_override_combines_with_restore_mode(
+    hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
+) -> None:
+    """Restore mode both sets the override and puts the original back."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set("media_player.kitchen", "idle", {"volume_level": 0.4})
+
+    client = await hass_ws_client(hass)
+    await _send(
+        client, message_id, ["media_player.kitchen"], mode="restore", volume=0.8
+    )
+    await hass.async_block_till_done()
+
+    assert len(play_calls) == 1
+    assert [call.data["volume_level"] for call in volume_calls] == [0.8, 0.4]
+
+
+async def test_volume_override_skipped_for_native_announce_targets(
+    hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
+) -> None:
+    """A player that ducks itself is left alone, override or not."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=0, user_id=None
+    )
+    volume_calls = async_mock_service(hass, "media_player", "volume_set")
+    hass.states.async_set(
+        "media_player.study",
+        "playing",
+        {"volume_level": 0.4, "supported_features": ANNOUNCE_FEATURE},
+    )
+
+    client = await hass_ws_client(hass)
+    await _send(
+        client, message_id, ["media_player.study"], mode="restore", volume=0.8
+    )
+    await hass.async_block_till_done()
+
+    assert len(play_calls) == 1
+    assert not volume_calls, "the device handles its own announce volume"
 
 
 async def test_no_broadcast_service_is_registered(

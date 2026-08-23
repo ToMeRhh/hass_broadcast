@@ -27,6 +27,7 @@ import { historySection } from "./ui/history";
 import { playerRow } from "./ui/player";
 import { targetList } from "./ui/targets";
 import { visualizer } from "./ui/visualizer";
+import { volumeControl } from "./ui/volume";
 
 const DEFAULT_TITLE = "Voice Broadcast";
 
@@ -77,6 +78,9 @@ export class HassBroadcastCard extends LitElement {
   @state() private playing = false;
   @state() private pickerOpen = false;
   @state() private historyOpen = false;
+  /** Off by default: an untouched card sends no volume override at all. */
+  @state() private volumeOverride = false;
+  @state() private volume = 1;
 
   private audio?: HTMLAudioElement;
 
@@ -522,6 +526,7 @@ export class HassBroadcastCard extends LitElement {
         id,
         targets,
         this.config.mode ?? "plain",
+        this.volumeOverride ? this.volume : undefined,
       );
       this.phase = "idle";
       if (failed.length === 0) {
@@ -688,6 +693,17 @@ export class HassBroadcastCard extends LitElement {
           onToggle: (entityId) => this.toggleTarget(entityId),
           onOpenChange: (open) => {
             this.pickerOpen = open;
+          },
+        })}
+
+        ${volumeControl({
+          enabled: this.volumeOverride,
+          value: this.volume,
+          onToggle: () => {
+            this.volumeOverride = !this.volumeOverride;
+          },
+          onChange: (value) => {
+            this.volume = value;
           },
         })}
 

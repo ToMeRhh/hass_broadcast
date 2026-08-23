@@ -84,6 +84,7 @@ async def _async_send_to_target(
     content_id: str,
     mode: str,
     duration: float,
+    volume: float | None,
 ) -> None:
     """Play a message on one target according to the mode."""
     state = hass.states.get(entity_id)
@@ -93,6 +94,8 @@ async def _async_send_to_target(
     # actually ended, while the fallback below can only guess from the
     # message duration and sleep. Prefer the native path and skip the
     # snapshot entirely, so the two mechanisms never both act on one target.
+    # A requested volume override is skipped there too, for the same
+    # reason: the device owns its own announcement volume.
     announce = mode == MODE_RESTORE and _supports_announce(state)
 
     snapshot: dict[str, Any] | None = None
@@ -101,10 +104,22 @@ async def _async_send_to_target(
             "volume": state.attributes.get("volume_level"),
             "state": state.state,
         }
+    elif volume is not None and not announce and state is not None:
+        snapshot = {"volume": state.attributes.get("volume_level"), "state": None}
 
+    if volume is not None and not announce and state is not None:
+        await hass.services.async_call(
+            MEDIA_PLAYER_DOMAIN,
+            "volume_set",
+            {ATTR_ENTITY_ID: entity_id, "volume_level": volume},
+            blocking=True,
+        )
+
+    wait_s = duration + RESTORE_TAIL_MARGIN_S
     if mode == MODE_CHIME:
         await _async_play(hass, entity_id, CHIME_URL)
         await asyncio.sleep(CHIME_GAP_S)
+        wait_s += CHIME_GAP_S
 
     await _async_play(hass, entity_id, content_id, announce=announce)
 
@@ -117,7 +132,7 @@ async def _async_send_to_target(
         # actually played, inviting a duplicate send. Playback has already
         # been dispatched at this point, so the caller has its answer.
         hass.async_create_task(
-            _async_restore_tail(hass, entity_id, snapshot, duration),
+            _async_restore_tail(hass, entity_id, snapshot, wait_s),
             f"{DOMAIN} restore {entity_id}",
         )
 
@@ -126,7 +141,7 @@ async def _async_restore_tail(
     hass: HomeAssistant,
     entity_id: str,
     snapshot: dict[str, Any],
-    duration: float,
+    wait_s: float,
 ) -> None:
     """Wait out the message, then restore volume and best-effort resume.
 
@@ -142,7 +157,7 @@ async def _async_restore_tail(
     went wrong, and the send response has long since been returned.
     """
     try:
-        await asyncio.sleep(duration + RESTORE_TAIL_MARGIN_S)
+        await asyncio.sleep(wait_s)
         if snapshot["volume"] is not None:
             await hass.services.async_call(
                 MEDIA_PLAYER_DOMAIN,
@@ -170,6 +185,7 @@ async def _async_send_to_target_isolated(
     content_id: str,
     mode: str,
     duration: float,
+    volume: float | None,
 ) -> str | None:
     """Play on one target, isolating its failures from the other targets.
 
@@ -190,7 +206,7 @@ async def _async_send_to_target_isolated(
     deliberately NOT caught here so shutdown/cancellation still propagates.
     """
     try:
-        await _async_send_to_target(hass, entity_id, content_id, mode, duration)
+        await _async_send_to_target(hass, entity_id, content_id, mode, duration, volume)
     except Exception as err:  # noqa: BLE001 - intentional broad isolation
         _LOGGER.error("Broadcast to %s failed: %s", entity_id, err)
         return entity_id
@@ -202,6 +218,7 @@ async def async_broadcast(
     message: dict[str, Any],
     targets: list[str],
     mode: str,
+    volume: float | None = None,
 ) -> list[str]:
     """Play `message` on every target; return the ids that could not play.
 
@@ -213,6 +230,10 @@ async def async_broadcast(
     An empty return means every target played. The per-target result is what
     lets the card surface partial failures instead of reporting success for a
     broadcast nobody heard.
+
+    `volume`, when given, is set on each target before playback and restored
+    afterward -- independent of `mode`, and layered on top of whatever
+    restore-mode snapshot already applies to that target.
     """
     content_id = f"media-source://{DOMAIN}/{message['id']}"
     duration = float(message.get("duration") or 0)
@@ -225,7 +246,9 @@ async def async_broadcast(
     # this gather at all -- it runs as a detached task per target.
     results = await asyncio.gather(
         *(
-            _async_send_to_target_isolated(hass, entity_id, content_id, mode, duration)
+            _async_send_to_target_isolated(
+                hass, entity_id, content_id, mode, duration, volume
+            )
             for entity_id in targets
         )
     )

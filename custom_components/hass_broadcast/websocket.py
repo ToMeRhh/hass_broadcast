@@ -83,6 +83,7 @@ async def ws_delete(
         vol.Required("message_id"): str,
         vol.Required("targets"): [cv.entity_id],
         vol.Optional("mode", default=MODE_PLAIN): vol.In(MODES),
+        vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
     }
 )
 @websocket_api.async_response
@@ -113,7 +114,9 @@ async def ws_send(
         )
         return
 
-    failed = await async_broadcast(hass, message, msg["targets"], msg["mode"])
+    failed = await async_broadcast(
+        hass, message, msg["targets"], msg["mode"], msg.get("volume")
+    )
     connection.send_result(msg["id"], {"failed": failed})
 
 

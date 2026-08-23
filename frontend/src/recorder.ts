@@ -12,11 +12,20 @@ export class Recorder {
   private levelCallback?: (level: number) => void;
   private active = false;
 
-  /** Recording needs a secure context; browsers hide the API otherwise. */
+  /**
+   * Recording needs a secure context; browsers hide the API otherwise.
+   *
+   * Every global here is probed with `typeof` rather than dereferenced. A
+   * bare `navigator.mediaDevices` throws a ReferenceError wherever the
+   * global is absent — Node 20 among them, which is what CI runs — and the
+   * card calls this from render(), so the throw takes the whole card down
+   * instead of merely reporting "recording is unavailable here".
+   */
   static isSupported(): boolean {
     return (
       typeof window !== "undefined" &&
       window.isSecureContext === true &&
+      typeof navigator !== "undefined" &&
       !!navigator.mediaDevices?.getUserMedia &&
       typeof AudioWorkletNode !== "undefined"
     );

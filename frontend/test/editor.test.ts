@@ -9,6 +9,24 @@ import {
 } from "../src/editor";
 import { renderedText } from "./helpers";
 
+/**
+ * An editor whose emitted configs are captured. Overriding dispatchEvent
+ * rather than listening keeps this independent of what event plumbing
+ * Lit's SSR DOM shim happens to provide outside a browser.
+ */
+function newEditor(config: any = { type: "custom:hass-broadcast-card" }): {
+  editor: any;
+  configs: any[];
+} {
+  const editor: any = new HassBroadcastCardEditor();
+  editor.createRenderRoot = () => editor;
+  editor.performUpdate = () => {};
+  editor.setConfig(config);
+  const configs: any[] = [];
+  editor.dispatchEvent = (event: any) => configs.push(event.detail.config);
+  return { editor, configs };
+}
+
 describe("clampMaxDuration", () => {
   it("returns the value when within valid range", () => {
     expect(clampMaxDuration(60)).toBe(60);
@@ -237,5 +255,39 @@ describe("editor rendering", () => {
     });
 
     expect(renderedText(editor.render())).toMatch(/not available/);
+  });
+});
+
+describe("editor record mode and list style", () => {
+  it("writes record_mode when a mode is picked", () => {
+    const { editor, configs } = newEditor();
+
+    editor.setRecordMode("start_stop");
+
+    expect(configs[configs.length - 1].record_mode).toBe("start_stop");
+  });
+
+  it("shows push-to-talk as the current mode when the key is absent", () => {
+    const { editor } = newEditor();
+
+    expect(renderedText(editor.render())).toContain("Push to talk");
+    expect(editor.currentRecordMode).toBe("push_to_talk");
+  });
+
+  it("writes player_list when a style is picked", () => {
+    const { editor, configs } = newEditor();
+
+    editor.emit({ player_list: "dropdown" });
+
+    expect(configs[configs.length - 1].player_list).toBe("dropdown");
+  });
+
+  it("shows rows as the style when the key is absent", () => {
+    const { editor } = newEditor();
+
+    // The select's `.value` property binding, not just the field's label —
+    // the previous assertion only checked the label text and could not
+    // fail no matter which style ended up selected.
+    expect(renderedText(editor.render())).toContain(".value=rows");
   });
 });

@@ -62,6 +62,12 @@ untouched on localhost, and a take started as fake still finishes as fake.
 
 The right-hand panel forces the states that are painful to reach on a live
 install: microphone denied, upload failure, a broadcast that throws, a broadcast
-that partially or completely fails, an unauthorized delete, an empty or
-twelve-entry history, and artificial latency for looking at pending states.
-Theme and card width (phone / tablet / desktop) are there too.
+that partially or completely fails, an unauthorized delete, a recent message that
+will not load, an empty or twelve-entry history, and artificial latency for
+looking at pending states. Theme and card width (phone / tablet / desktop) are
+there too.
+
+The card's two new layout choices — push-to-talk versus tap-to-start, and the
+speaker-list style — live in the real editor at the bottom of the panel, not in
+these controls, because they are card configuration rather than simulated
+conditions.

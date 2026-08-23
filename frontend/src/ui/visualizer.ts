@@ -1,0 +1,85 @@
+import { TemplateResult, html } from "lit";
+
+export interface VisualizerProps {
+  /** One value per bar, 0..1. */
+  bars: number[];
+  /** Playhead position 0..1, or undefined when nothing is loaded. */
+  progress?: number;
+  /** True when a clip is loaded and the strip can be scrubbed. */
+  seekable: boolean;
+  /**
+   * True while a take is actually being recorded. Keys the live-tail
+   * styling — deliberately not derived from `progress === undefined`, which
+   * is also true at rest with nothing loaded, and would paint the idle
+   * baseline in the recording accent color.
+   */
+  recording: boolean;
+  onSeek: (fraction: number) => void;
+}
+
+/** Where along the strip a pointer landed, 0..1. */
+function fractionOf(event: PointerEvent): number {
+  const element = event.currentTarget as HTMLElement;
+  const rect = element.getBoundingClientRect();
+  if (rect.width === 0) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+}
+
+/**
+ * The strip: a live scrolling tail while recording, the loaded clip's
+ * waveform with a playhead otherwise, and a flat baseline when idle. One
+ * element for all three, because the alternative is a card that swaps
+ * elements — and therefore heights — under the user.
+ */
+export function visualizer(props: VisualizerProps): TemplateResult {
+  const played = (index: number) =>
+    props.progress !== undefined && index / props.bars.length < props.progress;
+  const seekTo = (event: PointerEvent) => {
+    if (props.seekable) {
+      props.onSeek(fractionOf(event));
+    }
+  };
+  return html`
+    <div
+      class="wave ${props.seekable ? "seekable" : ""}"
+      @pointerdown=${(event: PointerEvent) => {
+        if (!props.seekable) {
+          return;
+        }
+        // Captures the pointer so pointermove keeps arriving here even if
+        // the finger/cursor drifts off the strip mid-drag.
+        (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+        seekTo(event);
+      }}
+      @pointermove=${(event: PointerEvent) => {
+        // event.buttons is 0 for a hover move with nothing pressed; only a
+        // pointer that is still down (mouse button held, or a touch
+        // contact) should scrub the playhead.
+        if (props.seekable && event.buttons > 0) {
+          seekTo(event);
+        }
+      }}
+      @pointerup=${(event: PointerEvent) => {
+        if (props.seekable) {
+          (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+        }
+      }}
+      @pointercancel=${(event: PointerEvent) => {
+        if (props.seekable) {
+          (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+        }
+      }}
+    >
+      ${props.bars.map(
+        (value, index) => html`
+          <div
+            class="bar ${played(index) ? "played" : props.recording ? "live" : ""}"
+            style="height:${Math.max(2, Math.round(value * 100))}%"
+          ></div>
+        `,
+      )}
+    </div>
+  `;
+}

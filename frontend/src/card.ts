@@ -1,4 +1,4 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import {
@@ -14,8 +14,24 @@ import { Recorder } from "./recorder";
 import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
 import { clampMaxDuration } from "./editor";
 import "./editor";
+import {
+  Clip,
+  freshClip,
+  loadStoredClip,
+  revokeClip,
+  storedId,
+} from "./clip";
+import { BAR_COUNT, LevelEnvelope, silence } from "./levels";
+import { cardStyles } from "./styles";
+import { historySection } from "./ui/history";
+import { playerRow } from "./ui/player";
+import { targetList } from "./ui/targets";
+import { visualizer } from "./ui/visualizer";
 
 const DEFAULT_TITLE = "Voice Broadcast";
+
+/** Below this, a push-to-talk press is a mis-tap rather than a message. */
+const MIN_PRESS_SECONDS = 0.4;
 
 interface CardConfig {
   type: string;
@@ -29,25 +45,42 @@ interface CardConfig {
   mode?: BroadcastMode;
   max_duration?: number;
   show_history?: boolean;
+  /** How the record button behaves. Absent means push-to-talk. */
+  record_mode?: "push_to_talk" | "start_stop";
+  /** Which speaker-list style the card draws. Absent means rows. */
+  player_list?: "rows" | "chips" | "dropdown";
 }
 
-type Phase = "idle" | "recording" | "preview" | "sending";
+type Phase = "idle" | "recording" | "sending";
+
+/** What the status line is saying, and whether it reads as a problem. */
+interface Status {
+  kind: "error" | "info";
+  text: string;
+}
 
 @customElement("hass-broadcast-card")
 export class HassBroadcastCard extends LitElement {
   @property({ attribute: false }) hass?: any;
   @state() private config: CardConfig = { type: "" };
   @state() private phase: Phase = "idle";
-  @state() private level = 0;
   @state() private elapsed = 0;
-  @state() private error?: string;
+  @state() private status?: Status;
   @state() private selected: string[] = [];
   @state() private history: BroadcastMessage[] = [];
-  @state() private previewUrl?: string;
+  @state() private clip?: Clip;
+  /** Bars the strip draws right now: live tail, loaded waveform, or silence. */
+  @state() private bars: number[] = [];
+  /** The history row currently being fetched, for its pending state. */
+  @state() private loadingId?: string;
+  @state() private position = 0;
+  @state() private playing = false;
+  @state() private pickerOpen = false;
+
+  private audio?: HTMLAudioElement;
 
   private recorder = new Recorder();
-  private blob?: Blob;
-  private duration = 0;
+  private envelope = new LevelEnvelope();
   private timer?: number;
   // Guards Recorder.start()/stop() against re-entrant calls — e.g. a
   // double-tap on the record button, or the max-duration timer firing at
@@ -60,43 +93,10 @@ export class HassBroadcastCard extends LitElement {
   // resume on a detached element — holding the microphone open and installing
   // an interval that keeps the dead element alive.
   private disconnected = false;
+  /** Set when the button is released before start() has resolved. */
+  private stopRequested = false;
 
-  static styles = css`
-    ha-card { padding: 16px; }
-    .row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .record { border: none; border-radius: 50%; width: 56px; height: 56px;
-      background: var(--error-color, #db4437); color: #fff; cursor: pointer; font-size: 22px; }
-    .record[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .meter { flex: 1; height: 6px; background: var(--divider-color, #ddd); border-radius: 3px; overflow: hidden; }
-    .meter > div { height: 100%; background: var(--primary-color); transition: width 80ms linear; }
-    .error { color: var(--error-color, #db4437); margin-bottom: 12px; }
-    /* Preview actions: centred, and spaced away from the speaker list below. */
-    .actions { display: flex; justify-content: center; align-items: center; gap: 12px;
-      margin: 4px 0 24px; }
-    .action { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      font: inherit; font-size: 0.95em; font-weight: 500; line-height: 1;
-      padding: 10px 22px; border-radius: 20px; border: 1px solid transparent;
-      cursor: pointer; transition: background 120ms ease, box-shadow 120ms ease; }
-    .action:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-    .send { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
-    .send:hover { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
-    /* Play triangle, drawn from borders so it inherits the label colour. */
-    .send .play { width: 0; height: 0; border-left: 9px solid currentColor;
-      border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-    .discard { background: none; color: var(--secondary-text-color);
-      border-color: var(--divider-color, #ddd); }
-    .discard:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-      color: var(--primary-text-color); }
-    .targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .chip { padding: 6px 12px; border-radius: 16px; cursor: pointer;
-      border: 1px solid var(--divider-color, #ddd); background: none; color: var(--primary-text-color); }
-    .chip[data-on="true"] { background: var(--primary-color); color: var(--text-primary-color, #fff); }
-    .history { border-top: 1px solid var(--divider-color, #ddd); margin-top: 12px; padding-top: 8px; }
-    .history-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
-    .history-row span { flex: 1; font-size: 0.9em; }
-    audio { width: 100%; margin-bottom: 12px; }
-  `;
+  static styles = cardStyles;
 
   setConfig(config: CardConfig): void {
     this.config = config;
@@ -112,7 +112,13 @@ export class HassBroadcastCard extends LitElement {
   }
 
   static getStubConfig(): CardConfig {
-    return { type: "custom:hass-broadcast-card", targets: [], mode: "plain" };
+    return {
+      type: "custom:hass-broadcast-card",
+      targets: [],
+      mode: "plain",
+      record_mode: "push_to_talk",
+      player_list: "rows",
+    };
   }
 
   connectedCallback(): void {
@@ -121,7 +127,7 @@ export class HassBroadcastCard extends LitElement {
     // than recreating it).
     this.disconnected = false;
     if (!Recorder.isSupported()) {
-      this.error = INSECURE_CONTEXT_MESSAGE;
+      this.status = { kind: "error", text: INSECURE_CONTEXT_MESSAGE };
     }
     void this.refreshHistory();
   }
@@ -130,9 +136,14 @@ export class HassBroadcastCard extends LitElement {
     super.disconnectedCallback();
     this.disconnected = true;
     this.clearTimer();
-    if (this.previewUrl) {
-      URL.revokeObjectURL(this.previewUrl);
-    }
+    this.stopPlayback();
+    revokeClip(this.clip);
+    // Dashboard navigation moves the element rather than recreating it, so
+    // on re-attach connectedCallback runs again on this same instance. A
+    // clip left in place would render an enabled Play/Broadcast over the
+    // object URL just revoked above.
+    this.clip = undefined;
+    this.bars = [];
     // Torn down (dashboard navigation, view switch) while a recording is
     // in progress. The MediaStream/AudioContext/worklet node stay alive
     // until something calls Recorder.stop() — there is no side-effect-free
@@ -200,6 +211,61 @@ export class HassBroadcastCard extends LitElement {
     );
   }
 
+  private get recordMode(): "push_to_talk" | "start_stop" {
+    return this.config.record_mode === "start_stop"
+      ? "start_stop"
+      : "push_to_talk";
+  }
+
+  /**
+   * Pointer down on the record button. In start-stop this is the whole
+   * interaction; in push-to-talk it opens the microphone and `onPressEnd`
+   * closes it.
+   */
+  private async onPressStart(event: Event): Promise<void> {
+    if (this.phase === "sending" || !Recorder.isSupported()) {
+      return;
+    }
+    if (this.recordMode === "start_stop") {
+      await (this.phase === "recording"
+        ? this.stopRecording()
+        : this.startRecording());
+      return;
+    }
+    // Without this a long press on a phone selects text, opens the context
+    // menu, or starts a scroll — all of which cancel the gesture mid-message.
+    // Scoped to push-to-talk: in start-stop a plain click already works, and
+    // calling this unconditionally at the top of the method (as it used to)
+    // stopped the button ever taking focus in start-stop mode.
+    event.preventDefault();
+    if (this.busy) {
+      // A second pointer (e.g. another finger) landed while this press's
+      // own start()/stop() is still in flight. Handling it as a normal press
+      // would reset stopRequested below and clobber the first press's
+      // pending stop, or open a second concurrent recording session.
+      return;
+    }
+    this.stopRequested = false;
+    await this.startRecording();
+    // Released while the microphone was still opening: stop now that there
+    // is a session to stop.
+    if (this.stopRequested && this.phase === "recording") {
+      await this.stopRecording();
+    }
+  }
+
+  /** Pointer up, cancel, or leave. Only push-to-talk cares. */
+  private async onPressEnd(): Promise<void> {
+    if (this.recordMode !== "push_to_talk") {
+      return;
+    }
+    if (this.phase !== "recording") {
+      this.stopRequested = true;
+      return;
+    }
+    await this.stopRecording();
+  }
+
   private async startRecording(): Promise<void> {
     // Ignore a re-entrant call (double-tap) while a start/stop is already
     // in flight, or if we are already recording.
@@ -207,14 +273,17 @@ export class HassBroadcastCard extends LitElement {
       return;
     }
     this.busy = true;
-    this.error = undefined;
+    this.status = undefined;
     try {
       this.recorder.onLevel((level) => {
-        this.level = level;
+        if (this.envelope.push(level, Date.now())) {
+          this.bars = this.envelope.tail(BAR_COUNT);
+        }
       });
+      this.envelope.reset();
       await this.recorder.start();
     } catch (err: any) {
-      this.error = micErrorMessage(err);
+      this.fail(micErrorMessage(err));
       return;
     } finally {
       this.busy = false;
@@ -261,33 +330,109 @@ export class HassBroadcastCard extends LitElement {
     this.clearTimer();
     try {
       const { blob, duration } = await this.recorder.stop();
-      this.blob = blob;
-      this.duration = duration;
-      if (this.previewUrl) {
-        URL.revokeObjectURL(this.previewUrl);
+      if (this.recordMode === "push_to_talk" && duration < MIN_PRESS_SECONDS) {
+        // A tap, not a message. Saying so beats loading a clip of silence
+        // that the user then has to work out how to get rid of.
+        this.phase = "idle";
+        this.fail("Hold the button while you speak.");
+        return;
       }
-      this.previewUrl = URL.createObjectURL(blob);
-      this.level = 0;
-      this.phase = "preview";
+      this.setClip(freshClip(blob, duration, this.envelope.all()));
+      this.phase = "idle";
     } catch (err: any) {
       // Don't strand the UI showing "recording" over a dead session — a
       // second tap would just hit Recorder.stop()'s own "no active
       // session" throw again. Whatever went wrong, the recording is gone
       // either way, so surface it and reset to idle.
-      this.error = `Could not finish recording: ${err?.message ?? err}`;
+      this.fail(`Could not finish recording: ${err?.message ?? err}`);
       this.phase = "idle";
     } finally {
       this.busy = false;
     }
   }
 
-  private discard(): void {
-    this.blob = undefined;
-    if (this.previewUrl) {
-      URL.revokeObjectURL(this.previewUrl);
-      this.previewUrl = undefined;
+  /** Swap in a new clip, releasing the one it replaces. */
+  private setClip(clip: Clip): void {
+    this.stopPlayback();
+    if (this.clip && this.clip !== clip) {
+      revokeClip(this.clip);
     }
-    this.phase = "idle";
+    this.clip = clip;
+    this.bars = clip.peaks.length ? clip.peaks : [];
+  }
+
+  private clearClip(): void {
+    this.stopPlayback();
+    revokeClip(this.clip);
+    this.clip = undefined;
+    this.bars = [];
+  }
+
+  private seek(fraction: number): void {
+    if (!this.clip) {
+      return;
+    }
+    this.position = fraction * this.clip.duration;
+    const audio = this.ensureAudio();
+    if (audio && audio.src === this.clip.url) {
+      audio.currentTime = this.position;
+    }
+  }
+
+  /**
+   * The `<audio>` element is created on demand and never rendered: the card
+   * draws its own transport, and the tests run in plain Node where `Audio`
+   * does not exist at all.
+   */
+  private ensureAudio(): HTMLAudioElement | undefined {
+    if (typeof Audio === "undefined") {
+      return undefined;
+    }
+    if (!this.audio) {
+      this.audio = new Audio();
+      this.audio.addEventListener("timeupdate", () => {
+        this.position = this.audio?.currentTime ?? 0;
+      });
+      this.audio.addEventListener("ended", () => {
+        this.playing = false;
+        this.position = 0;
+      });
+    }
+    return this.audio;
+  }
+
+  private togglePlay(): void {
+    const audio = this.ensureAudio();
+    if (!audio || !this.clip) {
+      return;
+    }
+    if (this.playing) {
+      audio.pause();
+      this.playing = false;
+      return;
+    }
+    if (audio.src !== this.clip.url) {
+      audio.src = this.clip.url;
+      audio.currentTime = this.position;
+    }
+    void audio.play().then(
+      () => {
+        this.playing = true;
+      },
+      (err: any) => {
+        this.fail(`Could not play that here: ${err?.message ?? err}`);
+      },
+    );
+  }
+
+  private stopPlayback(): void {
+    this.audio?.pause();
+    this.playing = false;
+    this.position = 0;
+  }
+
+  private fail(text: string): void {
+    this.status = { kind: "error", text };
   }
 
   private toggleTarget(entityId: string): void {
@@ -296,40 +441,93 @@ export class HassBroadcastCard extends LitElement {
       : [...this.selected, entityId];
   }
 
-  private async send(): Promise<void> {
+  private get canBroadcast(): boolean {
+    return (
+      this.clip !== undefined &&
+      this.targets.length > 0 &&
+      this.phase === "idle"
+    );
+  }
+
+  /**
+   * The id to broadcast. A fresh clip is uploaded once and then *becomes* a
+   * stored clip, so retrying a partial failure — or sending the same message
+   * to another speaker — never uploads a second copy.
+   */
+  private async messageId(clip: Clip): Promise<string> {
+    const existing = storedId(clip);
+    if (existing !== undefined) {
+      return existing;
+    }
+    const blob = (clip.source as { kind: "fresh"; blob: Blob }).blob;
+    const id = await uploadRecording(this.hass, blob, clip.duration);
+    // The upload can outlive the clip it was for: a ✕ tap mid-upload runs
+    // clearClip() before this resolves. Only rewrite the source if this is
+    // still the clip the card is holding, or a cleared clip comes back
+    // holding an already-revoked object URL.
+    if (this.clip === clip) {
+      this.clip = { ...clip, source: { kind: "stored", id } };
+    }
+    return id;
+  }
+
+  private async broadcast(): Promise<void> {
+    // Broadcast is only ever rendered enabled at phase === "idle" (see
+    // canBroadcast), but broadcast() is also reachable directly (tests,
+    // and any stale event still in flight), so re-check here too: sending
+    // mid-take would flip phase to "sending" and then "idle" while the
+    // recorder is still active, and every stop path is gated on
+    // phase === "recording" — the recorder would never be told to stop.
+    if (this.phase !== "idle") {
+      return;
+    }
+    const clip = this.clip;
+    if (!clip) {
+      this.fail("Record a message or pick one from below first.");
+      return;
+    }
     const targets = this.targets;
-    if (!this.blob || targets.length === 0) {
-      this.error = "Pick at least one speaker first.";
+    if (targets.length === 0) {
+      this.fail("Pick at least one speaker first.");
       return;
     }
     this.phase = "sending";
-    this.error = undefined;
+    this.status = undefined;
     try {
-      const id = await uploadRecording(this.hass, this.blob, this.duration);
+      const id = await this.messageId(clip);
       const { failed } = await sendBroadcast(
         this.hass,
         id,
         targets,
         this.config.mode ?? "plain",
       );
+      this.phase = "idle";
       if (failed.length === 0) {
-        this.discard();
-        await this.refreshHistory();
-        return;
+        this.status = { kind: "info", text: `Sent to ${this.describe(targets)}` };
+      } else if (failed.length >= targets.length) {
+        // The clip is kept in every branch now, so the old "the recording was
+        // kept" reassurance is gone — nothing is ever thrown away here.
+        this.fail(`Could not play on any speaker: ${this.describe(failed)}.`);
+      } else {
+        this.fail(`Played, but not on ${this.describe(failed)}.`);
       }
-      // Some (or every) speaker could not play it. Keep the recording either
-      // way: discarding it here would throw away the only copy of a message
-      // that part of the house never heard, with nothing to retry from.
-      this.error =
-        failed.length >= targets.length
-          ? `Could not play on any speaker: ${this.describe(failed)}. The recording was kept — try again.`
-          : `Played, but not on ${this.describe(failed)}. The recording was kept so you can retry those.`;
-      this.phase = "preview";
       await this.refreshHistory();
     } catch (err: any) {
-      // Keep the recording so it is not lost; the user can retry.
-      this.error = `Could not send: ${err?.message ?? err}`;
-      this.phase = "preview";
+      this.phase = "idle";
+      this.fail(`Could not send: ${err?.message ?? err}`);
+    }
+  }
+
+  /** Load a stored message so it behaves exactly like one just recorded. */
+  private async loadMessage(message: BroadcastMessage): Promise<void> {
+    this.loadingId = message.id;
+    this.status = undefined;
+    try {
+      this.setClip(await loadStoredClip(this.hass, message));
+    } catch (err: any) {
+      this.fail(err?.message ?? String(err));
+    } finally {
+      this.loadingId = undefined;
     }
   }
 
@@ -341,28 +539,6 @@ export class HassBroadcastCard extends LitElement {
           this.hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
       )
       .join(", ");
-  }
-
-  private async replay(id: string): Promise<void> {
-    const targets = this.targets;
-    if (targets.length === 0) {
-      this.error = "Pick at least one speaker first.";
-      return;
-    }
-    try {
-      const { failed } = await sendBroadcast(
-        this.hass,
-        id,
-        targets,
-        this.config.mode ?? "plain",
-      );
-      this.error =
-        failed.length === 0
-          ? undefined
-          : `Could not play on ${this.describe(failed)}.`;
-    } catch (err: any) {
-      this.error = `Could not play: ${err?.message ?? err}`;
-    }
   }
 
   private async deleteRecording(id: string): Promise<void> {
@@ -377,75 +553,138 @@ export class HassBroadcastCard extends LitElement {
       // rejected anyway (e.g. a stale can_delete from before the recording
       // changed hands), surface a clear message instead of failing silently.
       if (err?.code === "not_authorized") {
-        this.error = "You do not have permission to delete this recording.";
+        this.fail("You do not have permission to delete this recording.");
       } else {
-        this.error = `Could not delete: ${err?.message ?? err}`;
+        this.fail(`Could not delete: ${err?.message ?? err}`);
       }
     }
   }
 
+  /** What the status line says when there is nothing more urgent to report. */
+  private get recordHint(): string {
+    if (this.phase === "recording") {
+      return `Recording… ${this.elapsed}s`;
+    }
+    if (this.phase === "sending") {
+      return "Broadcasting…";
+    }
+    return this.recordMode === "push_to_talk"
+      ? "Hold to talk"
+      : "Tap to record";
+  }
+
+  /**
+   * The record button's title/aria-label. Deliberately static within a
+   * phase — unlike `recordHint`, which counts elapsed seconds. Some screen
+   * readers re-announce a changed aria-label on the focused element, so a
+   * label that ticked once a second narrated the whole take; the timer
+   * lives only in the status line (`aria-live="polite"` there instead).
+   */
+  private get recordLabel(): string {
+    if (this.phase === "sending") {
+      return "Broadcasting";
+    }
+    if (this.phase === "recording") {
+      return this.recordMode === "push_to_talk"
+        ? "Recording — release to stop"
+        : "Recording — tap to stop";
+    }
+    return this.recordMode === "push_to_talk"
+      ? "Hold to talk"
+      : "Tap to record";
+  }
+
   render() {
-    const recording = this.phase === "recording";
     return html`
       <ha-card .header=${this.config.title?.trim() || DEFAULT_TITLE}>
-        ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
+        ${visualizer({
+          bars: this.bars.length ? this.bars : silence(BAR_COUNT),
+          progress:
+            this.phase === "recording"
+              ? undefined
+              : this.clip
+                ? this.position / (this.clip.duration || 1)
+                : undefined,
+          seekable: this.phase === "idle" && this.clip !== undefined,
+          recording: this.phase === "recording",
+          onSeek: (fraction) => this.seek(fraction),
+        })}
 
-        <div class="row">
+        ${playerRow({
+          enabled: this.phase === "idle" && this.clip !== undefined,
+          playing: this.playing,
+          position: this.position,
+          duration: this.clip?.duration ?? 0,
+          onToggle: () => this.togglePlay(),
+          onClear: () => this.clearClip(),
+        })}
+
+        <div class="record-row">
           <button
             class="record"
+            data-recording=${this.phase === "recording"}
             ?disabled=${!Recorder.isSupported() || this.phase === "sending"}
-            @click=${recording ? this.stopRecording : this.startRecording}
-            title=${recording ? "Stop" : "Record"}
-          >
-            ${recording ? "■" : "●"}
-          </button>
-          <div class="meter"><div style="width:${Math.round(this.level * 100)}%"></div></div>
-          <span>${recording ? `${this.elapsed}s` : ""}</span>
+            @pointerdown=${this.onPressStart}
+            @pointerup=${this.onPressEnd}
+            @pointercancel=${this.onPressEnd}
+            @pointerleave=${this.onPressEnd}
+            @contextmenu=${(event: Event) => event.preventDefault()}
+            @keydown=${(event: KeyboardEvent) => {
+              // Auto-repeat would otherwise restart the take ~30 times a second.
+              if (!event.repeat && (event.key === " " || event.key === "Enter")) {
+                void this.onPressStart(event);
+              }
+            }}
+            @keyup=${(event: KeyboardEvent) => {
+              if (event.key === " " || event.key === "Enter") {
+                void this.onPressEnd();
+              }
+            }}
+            title=${this.recordLabel}
+            aria-label=${this.recordLabel}
+          ></button>
+        </div>
+        <div
+          class="status ${this.status?.kind ?? "info"}"
+          title=${this.status?.text ?? this.recordHint}
+          aria-live="polite"
+        >
+          ${this.status?.text ?? this.recordHint}
         </div>
 
-        ${this.phase === "preview" && this.previewUrl
-          ? html`
-              <audio controls src=${this.previewUrl}></audio>
-              <div class="actions">
-                <button class="action send" @click=${this.send}>
-                  <span class="play" aria-hidden="true"></span>Send
-                </button>
-                <button class="action discard" @click=${this.discard}>Discard</button>
-              </div>
-            `
-          : nothing}
+        ${targetList({
+          players: this.players.map((entityId) => ({
+            entityId,
+            name:
+              this.hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
+            available: this.hass?.states?.[entityId]?.state !== "unavailable",
+          })),
+          selected: this.selected,
+          style: this.config.player_list ?? "rows",
+          open: this.pickerOpen,
+          onToggle: (entityId) => this.toggleTarget(entityId),
+          onOpenChange: (open) => {
+            this.pickerOpen = open;
+          },
+        })}
 
-        <div class="targets">
-          ${this.players.map(
-            (entityId) => html`
-              <button
-                class="chip"
-                data-on=${this.selected.includes(entityId)}
-                @click=${() => this.toggleTarget(entityId)}
-              >
-                ${this.hass.states[entityId].attributes.friendly_name ?? entityId}
-              </button>
-            `,
-          )}
-        </div>
+        <button
+          class="broadcast"
+          ?disabled=${!this.canBroadcast}
+          @click=${this.broadcast}
+        >
+          ${this.phase === "sending" ? "Broadcasting…" : "Broadcast"}
+        </button>
 
         ${this.config.show_history === false
           ? nothing
-          : html`
-              <div class="history">
-                ${this.history.map(
-                  (message) => html`
-                    <div class="history-row">
-                      <span>${new Date(message.created).toLocaleString()}</span>
-                      <button @click=${() => this.replay(message.id)}>Play</button>
-                      ${message.can_delete
-                        ? html`<button @click=${() => this.deleteRecording(message.id)}>Delete</button>`
-                        : nothing}
-                    </div>
-                  `,
-                )}
-              </div>
-            `}
+          : historySection({
+              messages: this.history,
+              loadedId: this.clip ? storedId(this.clip) : undefined,
+              loadingId: this.loadingId,
+              onLoad: (message) => void this.loadMessage(message),
+              onDelete: (id) => void this.deleteRecording(id),
+            })}
       </ha-card>
     `;
   }

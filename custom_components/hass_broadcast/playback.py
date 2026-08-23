@@ -217,25 +217,24 @@ async def _async_send_to_target_isolated(
     return None
 
 
-async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
-    """Handle hass_broadcast.send.
+async def async_broadcast(
+    hass: HomeAssistant,
+    message: dict[str, Any],
+    targets: list[str],
+    mode: str,
+) -> list[str]:
+    """Play `message` on every target; return the ids that could not play.
 
-    Returns `{"failed": [entity_id, ...]}` -- empty when every target played.
-    The response is what lets the card surface per-target results instead of
-    reporting success for a broadcast nobody heard.
+    Takes an already-loaded message rather than an id: the caller looked it
+    up to answer "does this recording exist?", and re-reading the store here
+    would duplicate that lookup and its failure mode. Keeps this module free
+    of storage concerns.
+
+    An empty return means every target played. The per-target result is what
+    lets the card surface partial failures instead of reporting success for a
+    broadcast nobody heard.
     """
-    hass = call.hass
-    store = async_get_store(hass)
-    if store is None:
-        raise HomeAssistantError("Voice Broadcast is not set up")
-
-    message_id = call.data["message_id"]
-    message = await store.async_get(message_id)
-    if message is None:
-        raise HomeAssistantError(f"Unknown recording {message_id}")
-
-    content_id = f"media-source://{DOMAIN}/{message_id}"
-    mode = call.data["mode"]
+    content_id = f"media-source://{DOMAIN}/{message['id']}"
     duration = float(message.get("duration") or 0)
 
     # Dispatched concurrently: sequential dispatch means each target's own
@@ -243,14 +242,29 @@ async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
     # target's, turning a broadcast into a slow relay. Each coroutine keeps
     # its own try/except (above) so one target's failure cannot cancel or
     # otherwise affect the others. Restore's post-playback wait is not in
-    # this gather at all — it runs as a detached task per target.
+    # this gather at all -- it runs as a detached task per target.
     results = await asyncio.gather(
         *(
             _async_send_to_target_isolated(hass, entity_id, content_id, mode, duration)
-            for entity_id in call.data["targets"]
+            for entity_id in targets
         )
     )
-    return {"failed": [entity_id for entity_id in results if entity_id is not None]}
+    return [entity_id for entity_id in results if entity_id is not None]
+
+
+async def _async_handle_send(call: ServiceCall) -> ServiceResponse:
+    """Handle hass_broadcast.send. Deleted in Task 3."""
+    hass = call.hass
+    store = async_get_store(hass)
+    if store is None:
+        raise HomeAssistantError("Voice Broadcast is not set up")
+    message = await store.async_get(call.data["message_id"])
+    if message is None:
+        raise HomeAssistantError(f"Unknown recording {call.data['message_id']}")
+    failed = await async_broadcast(
+        hass, message, call.data["targets"], call.data["mode"]
+    )
+    return {"failed": failed}
 
 
 def async_register_services(hass: HomeAssistant) -> None:

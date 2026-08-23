@@ -48,6 +48,10 @@ Add the **Voice Broadcast** card to any dashboard. Then:
 3. Select one or more speakers.
 4. Press **Broadcast**.
 
+Broadcasting happens from the card. This integration deliberately registers no
+Home Assistant service and creates no entities — installing it adds the card and
+nothing else.
+
 Recent recordings appear below the card. Tapping one loads it into the card —
 exactly as if you had just recorded it, ready to play back or send — rather
 than broadcasting it immediately. A recording can be deleted by its owner or
@@ -70,36 +74,6 @@ concurrently — they all start together rather than one after another.
 | `show_history` | `true` | Show the list of recent recordings |
 | `record_mode` | `push_to_talk` | How the record button behaves: `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop). Editable from the card editor's **Recording** field |
 | `player_list` | `rows` | How the speaker list is drawn: `rows` (one row per speaker), `chips` (compact pills), or `dropdown` (a summary line that opens a panel of the same rows). Editable from the card editor's **Speaker list style** field |
-
-### Using it from an automation
-
-```yaml
-action:
-  - service: hass_broadcast.send
-    data:
-      message_id: "{{ message_id }}"
-      targets:
-        - media_player.kitchen
-        - media_player.office
-      mode: plain
-```
-
-A target that cannot play the message never aborts the others. The service optionally
-returns which ones failed, so an automation can react to a partial broadcast:
-
-```yaml
-action:
-  - service: hass_broadcast.send
-    data:
-      message_id: "{{ message_id }}"
-      targets: [media_player.kitchen, media_player.office]
-    response_variable: result
-  - condition: template
-    value_template: "{{ result.failed | count > 0 }}"
-  - service: persistent_notification.create
-    data:
-      message: "Broadcast did not reach: {{ result.failed | join(', ') }}"
-```
 
 ## Requirements and restrictions
 
@@ -151,7 +125,7 @@ the items below.
    radio session** — that is a Cast limitation, not something this integration can fix.
    `plain` is the default for exactly this reason. Treat `restore` as best-effort. The
    volume is put back roughly a second after the message should have finished, by a
-   background task: the card (or your automation) is released as soon as playback has been
+   background task: the card is released as soon as playback has been
    dispatched and does not wait out the whole message.
 
 7. **In `chime` mode, the gap before the message is a timing heuristic, not a guarantee

@@ -7,8 +7,8 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (54)
-npm test                        # card tests, vitest (84)
+.venv/bin/python -m pytest -q   # integration tests (59)
+npm test                        # card tests, vitest (146)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
@@ -40,6 +40,28 @@ on upgrade, deliberately, so there is one default rather than one per card age.
 
 `getStubConfig` lives as a static on `HassBroadcastCard` in `card.ts`, not on
 the editor — worth remembering, since it's the editor that consumes it.
+
+## The integration registers no Home Assistant service
+
+Broadcasting is reached over the `hass_broadcast/send` websocket command, beside
+`/list` and `/delete` in `websocket.py`. It was a service, `hass_broadcast.send`,
+and that was a mistake: `hass.services.async_register` has no visibility flag, so
+registering one publishes it to Developer Tools, to the automation editor's
+action picker and to `/api/services`. There is no such thing as a private
+service.
+
+That surface was also unusable in practice — the required `message_id` is an
+opaque storage id no automation author can obtain without reading `.storage` by
+hand — so it was advertised API that nobody could call.
+
+Installing this integration should add a Lovelace card and nothing else.
+`tests/test_playback.py::test_no_broadcast_service_is_registered` asserts the
+absence, because the instinct when adding a backend capability is to reach for a
+service and nothing else in the suite would notice.
+
+The media source in `media_source.py` is the deliberate exception: it stays
+registered and browsable, because `play_media` resolving `media-source://` ids is
+what lets Home Assistant own URL signing across versions.
 
 ## The card bundle is a committed build output
 

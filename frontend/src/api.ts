@@ -65,12 +65,14 @@ export async function sendBroadcast(
   id: string,
   targets: string[],
   mode: BroadcastMode,
+  volume?: number,
 ): Promise<BroadcastResult> {
   const result = await hass.connection.sendMessagePromise({
     type: "hass_broadcast/send",
     message_id: id,
     targets,
     mode,
+    ...(volume !== undefined ? { volume } : {}),
   });
   return { failed: result.failed };
 }

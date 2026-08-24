@@ -108,6 +108,38 @@ export const cardStyles = css`
     outline-offset: 2px;
   }
 
+  /* --- volume override ---------------------------------------------- */
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .volume-toggle {
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.85em;
+    border: 1px solid var(--divider-color, #ddd);
+    border-radius: 14px;
+    background: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .volume-toggle[data-on="true"] {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-primary-color, #fff);
+  }
+  .volume-slider {
+    flex: 1;
+  }
+  .volume-value {
+    min-width: 3ch;
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    color: var(--secondary-text-color);
+  }
+
   /* --- broadcast --------------------------------------------------- */
   .broadcast {
     display: block;

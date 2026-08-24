@@ -94,6 +94,31 @@ describe("api", () => {
     });
   });
 
+  it("includes volume in the payload when given", async () => {
+    const hass = fakeHass();
+    hass.connection.sendMessagePromise.mockResolvedValue({ failed: [] });
+
+    await sendBroadcast(hass, "abc", ["media_player.kitchen"], "plain", 0.8);
+
+    expect(hass.connection.sendMessagePromise).toHaveBeenCalledWith({
+      type: "hass_broadcast/send",
+      message_id: "abc",
+      targets: ["media_player.kitchen"],
+      mode: "plain",
+      volume: 0.8,
+    });
+  });
+
+  it("omits volume from the payload when not given", async () => {
+    const hass = fakeHass();
+    hass.connection.sendMessagePromise.mockResolvedValue({ failed: [] });
+
+    await sendBroadcast(hass, "abc", ["media_player.kitchen"], "plain");
+
+    const payload = hass.connection.sendMessagePromise.mock.calls[0][0];
+    expect(payload).not.toHaveProperty("volume");
+  });
+
   it("returns the targets the backend reported as failed", async () => {
     const hass = fakeHass();
     hass.connection.sendMessagePromise.mockResolvedValue({

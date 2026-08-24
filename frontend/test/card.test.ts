@@ -327,6 +327,24 @@ describe("card broadcasting", () => {
     expect(card.clip).toBeDefined();
   });
 
+  it("sends no volume by default", async () => {
+    const { card, calls } = cardWithClip({ failed: [] });
+
+    await card.broadcast();
+
+    expect(calls[0]).not.toHaveProperty("volume");
+  });
+
+  it("sends the chosen volume once the override is turned on", async () => {
+    const { card, calls } = cardWithClip({ failed: [] });
+    card.volumeOverride = true;
+    card.volume = 0.8;
+
+    await card.broadcast();
+
+    expect(calls[0].volume).toBe(0.8);
+  });
+
   it("cannot broadcast with nothing loaded or nobody selected", () => {
     const { card } = cardWithClip({ failed: [] });
     expect(card.canBroadcast).toBe(true);

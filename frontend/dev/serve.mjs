@@ -17,7 +17,7 @@ const BUILD_DIR = join(DEV_DIR, ".build");
 // harness has to serve that exact path or real microphone capture cannot work.
 const STATIC_DIR = join(ROOT, "custom_components/hass_broadcast/www");
 
-// npm run dev -- --host 192.168.1.157 --port 9000, or HOST=... PORT=... npm run dev.
+// npm run dev -- --host 192.168.1.20 --port 9000, or HOST=... PORT=... npm run dev.
 // The default binds every interface, so the harness is reachable from other
 // devices on the network without any flag.
 let flags;

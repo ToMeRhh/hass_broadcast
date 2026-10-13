@@ -45,7 +45,7 @@ outlives the websocket message. No timing, mode, or restore semantics move.
 ## Global Constraints
 
 - **`.venv` lives in the main checkout, not this worktree.** Run tests with
-  `/root/dev/hass_broadcast/.venv/bin/python -m pytest -q`. A bare `python` or a
+  `.venv/bin/python -m pytest -q`. A bare `python` or a
   worktree-relative `.venv/bin/python` will not work.
 - **Baseline is green at 58 Python tests and 147 card tests.** Any task that
   ends with a different total must account for the difference explicitly.
@@ -255,7 +255,7 @@ Three carry-over notes:
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `/root/dev/hass_broadcast/.venv/bin/python -m pytest tests/test_playback.py -q`
+Run: `.venv/bin/python -m pytest tests/test_playback.py -q`
 Expected: FAIL — every test errors with `unknown_command` for
 `hass_broadcast/send`, because the command is not registered yet.
 
@@ -384,7 +384,7 @@ Register it in `async_register_websocket_commands`:
 
 - [ ] **Step 5: Run the full Python suite to verify it passes**
 
-Run: `/root/dev/hass_broadcast/.venv/bin/python -m pytest -q`
+Run: `.venv/bin/python -m pytest -q`
 Expected: PASS — 58 passed. The count is unchanged; tests were converted, not
 added.
 
@@ -681,7 +681,7 @@ async def test_no_broadcast_service_is_registered(
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `/root/dev/hass_broadcast/.venv/bin/python -m pytest tests/test_playback.py::test_no_broadcast_service_is_registered -q`
+Run: `.venv/bin/python -m pytest tests/test_playback.py::test_no_broadcast_service_is_registered -q`
 Expected: FAIL — the service is still registered by `async_setup_entry`.
 
 - [ ] **Step 3: Strip the service plumbing from `playback.py`**
@@ -749,7 +749,7 @@ needs touching — confirm with
 
 - [ ] **Step 6: Run the full Python suite to verify it passes**
 
-Run: `/root/dev/hass_broadcast/.venv/bin/python -m pytest -q`
+Run: `.venv/bin/python -m pytest -q`
 Expected: PASS — 59 passed. One more than the 58 baseline: the guard test.
 
 - [ ] **Step 7: Commit**
@@ -853,7 +853,7 @@ of the original design and this plan — leave those alone.)
 
 - [ ] **Step 7: Run both suites one final time**
 
-Run: `/root/dev/hass_broadcast/.venv/bin/python -m pytest -q`
+Run: `.venv/bin/python -m pytest -q`
 Expected: PASS — 59 passed.
 
 Run: `npm test`

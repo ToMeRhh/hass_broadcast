@@ -1,7 +1,25 @@
 # Voice Broadcast for Home Assistant
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![CI](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml/badge.svg)](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Record a voice message in your Home Assistant dashboard and play it on your
 speakers — a simple intercom, without leaving the UI.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ToMeRhh/hass_broadcast/master/docs/images/card-dark.png">
+    <img src="https://raw.githubusercontent.com/ToMeRhh/hass_broadcast/master/docs/images/card-light.png" alt="The Voice Broadcast card: a record button, a list of speakers, and recent messages" width="360">
+  </picture>
+</p>
+
+- **Hold to talk** (or tap to start, tap to stop), then play it back before sending
+- **Broadcast to several speakers at once** — playback starts on all of them together
+- **Three playback modes**: plain, restore the volume afterwards, or a chime first
+- **Optional broadcast volume**, with each speaker's own volume put back afterwards
+- **Recent messages** to replay or re-send, with automatic retention
+- **No services, no entities** — installing it adds a dashboard card and nothing else
 
 ## Installation
 
@@ -44,16 +62,20 @@ Add the **Voice Broadcast** card to any dashboard. Then:
 1. Hold the round record button and speak, then let go to stop. (The button
    defaults to this hold-to-talk behaviour; switch it to tap-to-start,
    tap-to-stop instead from the card editor's **Recording** field.)
-2. The recording plays back locally so you can check it before sending.
+2. Optionally press play to hear the recording before sending it.
 3. Select one or more speakers.
-4. Press **Broadcast**.
+4. Optionally turn on **Set volume** and choose the level to broadcast at.
+   Each speaker is set to that level for the message and put back to its own
+   volume afterwards. Left off, the speakers' volume is not touched.
+5. Press **Broadcast**.
 
 Broadcasting happens from the card. This integration deliberately registers no
 Home Assistant service and creates no entities — installing it adds the card,
 plus a "Voice Broadcast" folder in the Media panel where past recordings are
 browsable.
 
-Recent recordings appear below the card. Tapping one loads it into the card —
+The three most recent recordings appear at the bottom of the card, and
+**Show all** opens the full list. Tapping one loads it into the card —
 exactly as if you had just recorded it, ready to play back or send — rather
 than broadcasting it immediately. A recording can be deleted by its owner or
 by an administrator — see [Deletion permissions](#deletion-permissions) below;
@@ -63,6 +85,21 @@ When you broadcast to multiple speakers, playback is dispatched to all of them
 concurrently — they all start together rather than one after another.
 
 ### Card options
+
+Everything below can be set from the card editor. In YAML:
+
+```yaml
+type: custom:hass-broadcast-card
+title: Intercom
+mode: restore
+targets:
+  - media_player.kitchen
+hide_players:
+  - media_player.tv
+record_mode: start_stop
+player_list: chips
+```
+
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -119,18 +156,23 @@ the items below.
 
 ### Behavioural restrictions
 
-6. **There is no ducking or resume on Google Cast.** Home Assistant's Cast integration does
-   not implement the `announce` feature, so a broadcast simply interrupts whatever was
-   playing. The card's `restore` mode is an *emulation*: it snapshots and restores the
+6. **There is no ducking or resume on Google Cast.** In `restore` mode, a speaker whose
+   integration implements Home Assistant's `announce` feature (Sonos, Music Assistant and
+   ESPHome media players among them) is handed the message as an announcement, and the
+   device itself ducks and resumes whatever was playing. Home Assistant's Cast integration
+   does not implement `announce`, so on Cast a broadcast simply interrupts whatever was
+   playing, and `restore` mode is an *emulation*: it snapshots and restores the
    volume reliably, but it **cannot dependably resume an active Spotify, YouTube Music, or
    radio session** — that is a Cast limitation, not something this integration can fix.
    `plain` is the default for exactly this reason. Treat `restore` as best-effort. The
    volume is put back roughly a second after the message should have finished, by a
    background task: the card is released as soon as playback has been
-   dispatched and does not wait out the whole message.
+   dispatched and does not wait out the whole message. The same mechanism puts the volume
+   back after a **Set volume** broadcast, in any mode; speakers that take the native
+   announcement path manage their own announcement volume and are left alone.
 
 7. **In `chime` mode, the gap before the message is a timing heuristic, not a guarantee
-   that the chime finished playing.** The card plays a short chime, waits a fixed interval
+   that the chime finished playing.** Home Assistant plays a short chime, waits a fixed interval
    derived from the chime's own length plus a latency margin, then plays the message —
    `play_media` with `blocking=True` only confirms Home Assistant's call was accepted, not
    that the speaker has audibly finished the chime. On a Cast device that is slow to start
@@ -167,7 +209,7 @@ the items below.
     messages go with it.
 
 12. **Retention defaults to the last 10 recordings.** Older ones are deleted automatically
-    when a new one arrives. Change this in **Settings → Devices & services → Voice
+    when a new one arrives. Change this (1–200) in **Settings → Devices & services → Voice
     Broadcast → Configure**.
 
 13. <a id="deletion-permissions"></a>**Deletion is ownership-based: you may delete your own
@@ -215,23 +257,35 @@ the items below.
 
 ## Development
 
-```bash
-pip install -r requirements_test.txt
-python -m pytest tests/ -v   # integration tests — use `python -m pytest`, not bare `pytest`;
-                              # only `-m` puts the repo root on sys.path, which is what makes
-                              # `custom_components` importable from the test modules
+Python 3.12 or newer and Node 22.
 
-npm install
-npm test                  # card tests
-npm run build              # bundle the card into custom_components/hass_broadcast/www/
+```bash
+python -m venv .venv
+.venv/bin/pip install -r requirements_test.txt
+.venv/bin/python -m pytest -q   # integration tests; `python -m pytest`, not bare `pytest`,
+                                # so the repo root is on sys.path
+
+npm ci
+npm test                        # card tests (vitest)
+npm run build                   # bundle the card into custom_components/hass_broadcast/www/
+npm run dev                     # card dev harness on http://localhost:8099
 ```
+
+`npm run dev` renders the real card and editor against a mocked Home Assistant,
+with live reload and switches for hard-to-reach states (microphone denied, a
+partly failed broadcast, empty history, latency). See
+[`frontend/dev/README.md`](frontend/dev/README.md).
 
 `custom_components/hass_broadcast/www/hass-broadcast-card.js` is a **build output that is
 committed to the repository**, because HACS installs the repository as-is and the integration
 serves that file directly — an uncommitted bundle means every dashboard gets a 404 instead of a
 card. Whenever anything under `frontend/src/` changes, run `npm run build` and commit the
-regenerated bundle in the same change.
+regenerated bundle in the same change. CI fails if the committed bundle is stale.
+
+Releases are cut with **Actions → Release → Run workflow**, which bumps the version in
+`manifest.json`, tags, and publishes a GitHub release. The version is also the card's
+cache-busting query string, so a change reaches users only once it is released.
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -9,7 +9,7 @@ speakers — a simple intercom, without leaving the UI.
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ToMeRhh/hass_broadcast/master/docs/images/card-dark.png">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/card-dark.png">
     <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a record button, a list of speakers, and recent messages" width="360">
   </picture>
 </p>

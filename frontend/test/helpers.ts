@@ -23,3 +23,17 @@ export function renderedText(node: any): string {
   }
   return String(node);
 }
+
+/**
+ * What Lovelace's hui-card assigns to every card element it hosts
+ * (src/panels/lovelace/cards/hui-card.ts in home-assistant/frontend). A card
+ * must accept all of them: a getter-only property by any of these names
+ * throws, and the dashboard silently never creates the card.
+ */
+export const LOVELACE_ASSIGNS = {
+  layout: "grid",
+  preview: false,
+  editMode: false,
+  isPanel: false,
+  connectedWhileHidden: false,
+};

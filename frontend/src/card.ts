@@ -117,7 +117,10 @@ export class HassBroadcastCard extends LitElement {
     this.selected = config.targets ? [...config.targets] : [];
   }
 
-  private get layout(): Layout {
+  // Not `layout`: Lovelace assigns `layout` ("grid", "masonry", "panel") to
+  // every card it hosts, and a getter-only property by that name throws, so
+  // the card is never created.
+  private get cardLayout(): Layout {
     return resolveLayout(this.config);
   }
 
@@ -128,7 +131,7 @@ export class HassBroadcastCard extends LitElement {
   getCardSize(): number {
     // Lovelace counts in 50px units. Compact is two rows by design; full is
     // header + strip + core + a speaker pill, plus whatever stacks below.
-    if (this.layout === "compact") {
+    if (this.cardLayout === "compact") {
       return 2;
     }
     let size = 5;
@@ -657,7 +660,7 @@ export class HassBroadcastCard extends LitElement {
     const parts = this.parts;
     return html`
       <ha-card>
-        ${this.layout === "compact" ? compactLayout(parts) : fullLayout(parts)}
+        ${this.cardLayout === "compact" ? compactLayout(parts) : fullLayout(parts)}
         <div class="sr-only" aria-live="polite">${this.status?.text ?? ""}</div>
       </ha-card>
     `;

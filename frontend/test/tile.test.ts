@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { renderedText } from "./helpers";
+import { LOVELACE_ASSIGNS, renderedText } from "./helpers";
 
 // Same Node-only setup as card.test.ts: the module registers itself on
 // `window`, and nothing here needs a real DOM.
@@ -158,6 +158,12 @@ describe("broadcast tile", () => {
 
     tile.setConfig({ type: "custom:hass-broadcast-tile", shape: "horizontal" });
     expect(tile.getGridOptions()).toMatchObject({ rows: 1, columns: 6, max_rows: 1 });
+    expect(tile.getCardSize()).toBe(1);
+  });
+
+  it("accepts every property Lovelace assigns to the cards it hosts", () => {
+    const { tile } = makeTile({ shape: "horizontal" });
+    expect(() => Object.assign(tile, LOVELACE_ASSIGNS)).not.toThrow();
     expect(tile.getCardSize()).toBe(1);
   });
 

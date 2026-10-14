@@ -1,6 +1,8 @@
 import { TemplateResult, html, nothing } from "lit";
 
-export type ListStyle = "rows" | "chips" | "dropdown";
+import { chevronIcon, speakerIcon } from "./icons";
+
+export type ListStyle = "rows" | "chips" | "pill";
 
 export interface TargetPlayer {
   entityId: string;
@@ -13,7 +15,7 @@ export interface TargetProps {
   players: TargetPlayer[];
   selected: string[];
   style: ListStyle;
-  /** Dropdown only: whether the overlay panel is showing. */
+  /** Pill only: whether the overlay panel is showing. */
   open: boolean;
   onToggle: (entityId: string) => void;
   onOpenChange: (open: boolean) => void;
@@ -22,7 +24,7 @@ export interface TargetProps {
 /** How many speakers the dropdown summary names before it starts counting. */
 const SUMMARY_NAMES = 2;
 
-/** The one-line description of a selection, for the dropdown's closed state. */
+/** The one-line description of a selection, for the pill's closed state. */
 export function summarize(
   players: TargetPlayer[],
   selected: string[],
@@ -76,8 +78,10 @@ function chip(props: TargetProps, player: TargetPlayer): TemplateResult {
 /**
  * The speaker picker, in whichever style the card is configured for.
  *
- * All three show the same header and counter; only the body differs, so
- * switching styles in the editor never changes what the card can do.
+ * Rows and chips show a header and counter above the body. The pill is a
+ * single line that opens a panel carrying the same header, so it fits the
+ * compact layout's one fixed row. Switching styles in the editor never
+ * changes what the card can do.
  */
 export function targetList(props: TargetProps): TemplateResult {
   const header = html`
@@ -88,7 +92,14 @@ export function targetList(props: TargetProps): TemplateResult {
   `;
 
   if (props.players.length === 0) {
-    return html`${header}<div class="empty">No speakers found</div>`;
+    return props.style === "pill"
+      ? html`<div class="pill-wrap">
+          <button class="pill" disabled>
+            <span class="pill-icon">${speakerIcon}</span>
+            <span class="pill-text">No speakers found</span>
+          </button>
+        </div>`
+      : html`${header}<div class="empty">No speakers found</div>`;
   }
 
   if (props.style === "chips") {
@@ -98,23 +109,26 @@ export function targetList(props: TargetProps): TemplateResult {
     `;
   }
 
-  if (props.style === "dropdown") {
+  if (props.style === "pill") {
     return html`
-      ${header}
-      <div class="dropdown">
+      <div class="pill-wrap">
         <button
-          class="dropdown-summary"
+          class="pill"
           aria-expanded=${props.open}
+          aria-haspopup="true"
+          title=${summarize(props.players, props.selected)}
           @click=${() => props.onOpenChange(!props.open)}
         >
-          <span>${summarize(props.players, props.selected)}</span>
-          <span aria-hidden="true">${props.open ? "▴" : "▾"}</span>
+          <span class="pill-icon">${speakerIcon}</span>
+          <span class="pill-text">${summarize(props.players, props.selected)}</span>
+          <span class="pill-chevron">${chevronIcon}</span>
         </button>
         ${props.open
           ? html`
-              <!-- Absolutely positioned: an inline panel would push the
-                   broadcast button and the history list down the card. -->
-              <div class="dropdown-panel">
+              <!-- Absolutely positioned: an inline panel would push
+                   everything below it down the card. -->
+              <div class="pill-panel">
+                ${header}
                 ${props.players.map((player) => row(props, player))}
               </div>
             `

@@ -51,9 +51,16 @@ export class DevApp extends LitElement {
     targets: ["media_player.kitchen"],
     mode: "plain",
     max_duration: 60,
-    show_history: true,
+    layout: "full",
+    sections: [
+      { type: "speakers", style: "pill" },
+      { type: "history", style: "icon" },
+      { type: "volume", style: "icon" },
+    ],
   };
   @state() private generation = 0;
+  /** Outline every fixed slot, to eyeball that nothing moves between states. */
+  @state() private showSlots = false;
 
   private card?: HTMLElement & { setConfig(config: any): void; hass: any };
   private editor?: HTMLElement & { setConfig(config: any): void; hass: any };
@@ -182,6 +189,7 @@ export class DevApp extends LitElement {
     // is unused — the point is that the getter then builds a fresh element.
     void this.generation;
     const card = this.cardElement;
+    card.toggleAttribute("data-show-slots", this.showSlots);
     return html`
       <div class="stage">
         <div class="frame" style="max-width:${this.width}px">${card}</div>
@@ -213,6 +221,17 @@ export class DevApp extends LitElement {
             `,
           )}
         </div>
+        <label style="margin-top:6px">
+          <input
+            type="checkbox"
+            id="show-slots"
+            .checked=${this.showSlots}
+            @change=${(e: Event) => {
+              this.showSlots = (e.target as HTMLInputElement).checked;
+            }}
+          />
+          Show slots
+        </label>
 
         <h2>Microphone</h2>
         <label>

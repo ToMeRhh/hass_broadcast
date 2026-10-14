@@ -8,11 +8,18 @@ Lovelace card and play it on media players. Python integration in
 
 ```bash
 .venv/bin/python -m pytest -q   # integration tests (59)
-npm test                        # card tests, vitest (146)
+npm test                        # card tests, vitest (199)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
+npm run check:layout            # headless: no element moves between card states
 ```
+
+`check:layout` drives the harness in headless Chromium (`playwright-core`, a
+dev dependency) and compares every `.slot`'s box across idle, recording,
+review and sending. It is not in CI, because CI would have to download a
+browser, so run it after any change to the card's markup or CSS. First run on
+a machine: `npx playwright-core install chromium`.
 
 `npm run dev` renders the real card and editor against a mocked `hass`, with
 live reload and switches for the states that are painful to reach on a live
@@ -33,10 +40,21 @@ so code that touches Home Assistant internals must tolerate both (see
 
 ## Card configuration keys
 
-`record_mode` (`push_to_talk` | `start_stop`) and `player_list` (`rows` |
-`chips` | `dropdown`) are card config, both written by the editor. An absent
-`record_mode` means push-to-talk — cards predating that key changed behaviour
-on upgrade, deliberately, so there is one default rather than one per card age.
+`record_mode` (`push_to_talk` | `start_stop`), `layout` (`full` | `compact`)
+and `sections` (an ordered list of `{type, style}`) are card config, all
+written by the editor. An absent `record_mode` means push-to-talk and an
+absent `layout` means full — cards predating those keys changed on upgrade,
+deliberately, so there is one default rather than one per card age.
+
+`sections` replaced `player_list` and `show_history`. Both are still *read*,
+only when `sections` is absent (`resolveSections` in `sections.ts`), and the
+editor drops them on its first save. All config normalisation lives in
+`resolveSections`; don't interpret `sections` anywhere else.
+
+The record core (strip, mic, Discard, Send) is not a section and is not
+configurable: it is what guarantees no layout shift between states. Any
+state-dependent region must be a fixed-size `.slot`, with its states as
+stacked `layers()` (see `ui/strip.ts`), never conditionally rendered.
 
 `getStubConfig` lives as a static on `HassBroadcastCard` in `card.ts`, not on
 the editor — worth remembering, since it's the editor that consumes it.

@@ -1,18 +1,16 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { keyed } from "lit/directives/keyed.js";
 
 import {
   BroadcastMessage,
   BroadcastMode,
   deleteMessage,
   listMessages,
-  sendBroadcast,
-  uploadRecording,
 } from "./api";
-import { INSECURE_CONTEXT_MESSAGE, micErrorMessage } from "./errors";
-import { Recorder } from "./recorder";
+import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
-import { clampMaxDuration } from "./editor";
+import { clampMaxDuration } from "./editor-fields";
 import "./editor";
 import {
   Clip,
@@ -21,20 +19,39 @@ import {
   revokeClip,
   storedId,
 } from "./clip";
-import { BAR_COUNT, LevelEnvelope, silence } from "./levels";
+import { formatClock } from "./format";
+import { BAR_COUNT, silence } from "./levels";
+import { RecordMode, RecordingController } from "./recording";
+import { Status, outcomeStatus, sendClip } from "./sending";
+import {
+  Layout,
+  Section,
+  findSection,
+  resolveLayout,
+  resolveSections,
+} from "./sections";
 import { cardStyles } from "./styles";
-import { historySection } from "./ui/history";
-import { playerRow } from "./ui/player";
+import { compactLayout } from "./layouts/compact";
+import { fullLayout } from "./layouts/full";
+import { CardParts, View } from "./layouts/parts";
+import { historyDialog, historySection } from "./ui/history";
+import { closeIcon, historyIcon, pauseIcon, playIcon, sendIcon } from "./ui/icons";
+import { mic } from "./ui/mic";
 import { targetList } from "./ui/targets";
 import { visualizer } from "./ui/visualizer";
-import { volumeControl } from "./ui/volume";
+import { volumeButton, volumeControl } from "./ui/volume";
 
 const DEFAULT_TITLE = "Voice Broadcast";
 
-/** Below this, a push-to-talk press is a mis-tap rather than a message. */
-const MIN_PRESS_SECONDS = 0.4;
+/** How long a non-sticky status message holds its slot. */
+export const STATUS_MS = 4000;
 
-interface CardConfig {
+/** The timer warns for the last this-many seconds of a take… */
+const WARN_SECONDS = 10;
+/** …or the last quarter of it, whichever is shorter. */
+const WARN_FRACTION = 0.25;
+
+export interface CardConfig {
   type: string;
   /** Card heading, renamable from the editor. Blank falls back to DEFAULT_TITLE. */
   title?: string;
@@ -45,61 +62,50 @@ interface CardConfig {
   hide_players?: string[];
   mode?: BroadcastMode;
   max_duration?: number;
-  show_history?: boolean;
   /** How the record button behaves. Absent means push-to-talk. */
-  record_mode?: "push_to_talk" | "start_stop";
-  /** Which speaker-list style the card draws. Absent means rows. */
+  record_mode?: RecordMode;
+  /** Absent means full. */
+  layout?: Layout;
+  /** What the card shows around its record core. See sections.ts. */
+  sections?: { type: string; style?: string }[];
+  /** Legacy, read only when `sections` is absent. */
+  show_history?: boolean;
+  /** Legacy, read only when `sections` is absent. */
   player_list?: "rows" | "chips" | "dropdown";
-}
-
-type Phase = "idle" | "recording" | "sending";
-
-/** What the status line is saying, and whether it reads as a problem. */
-interface Status {
-  kind: "error" | "info";
-  text: string;
 }
 
 @customElement("hass-broadcast-card")
 export class HassBroadcastCard extends LitElement {
   @property({ attribute: false }) hass?: any;
   @state() private config: CardConfig = { type: "" };
-  @state() private phase: Phase = "idle";
-  @state() private elapsed = 0;
   @state() private status?: Status;
   @state() private selected: string[] = [];
   @state() private history: BroadcastMessage[] = [];
   @state() private clip?: Clip;
-  /** Bars the strip draws right now: live tail, loaded waveform, or silence. */
-  @state() private bars: number[] = [];
   /** The history row currently being fetched, for its pending state. */
   @state() private loadingId?: string;
   @state() private position = 0;
   @state() private playing = false;
   @state() private pickerOpen = false;
   @state() private historyOpen = false;
+  @state() private volumeOpen = false;
+  @state() private menuOpen = false;
   /** Off by default: an untouched card sends no volume override at all. */
   @state() private volumeOverride = false;
   @state() private volume = 1;
 
   private audio?: HTMLAudioElement;
+  private statusTimer?: number;
 
-  private recorder = new Recorder();
-  private envelope = new LevelEnvelope();
-  private timer?: number;
-  // Guards Recorder.start()/stop() against re-entrant calls — e.g. a
-  // double-tap on the record button, or the max-duration timer firing at
-  // the same moment as a manual stop. Recorder.stop() throws when there is
-  // no active recording session, so these transitions must not race.
-  private busy = false;
-  // Set in disconnectedCallback. That callback's own teardown only fires for
-  // phase === "recording", but during start() the phase is still "idle", so a
-  // teardown mid-start would be skipped entirely and startRecording would
-  // resume on a detached element — holding the microphone open and installing
-  // an interval that keeps the dead element alive.
-  private disconnected = false;
-  /** Set when the button is released before start() has resolved. */
-  private stopRequested = false;
+  private rec = new RecordingController(this, {
+    recordMode: () => this.recordMode,
+    maxDuration: () => clampMaxDuration(this.config.max_duration),
+    onStart: () => this.setStatus(undefined),
+    onError: (text, sticky) => this.fail(text, sticky),
+    onTake: (take) => {
+      this.setClip(freshClip(take.blob, take.duration, take.peaks));
+    },
+  });
 
   static styles = cardStyles;
 
@@ -108,12 +114,35 @@ export class HassBroadcastCard extends LitElement {
     this.selected = config.targets ? [...config.targets] : [];
   }
 
+  private get layout(): Layout {
+    return resolveLayout(this.config);
+  }
+
+  private get sections(): Section[] {
+    return resolveSections(this.config);
+  }
+
   getCardSize(): number {
-    // Lovelace counts in 50px units. The history block is now a fixed header
-    // plus BODY_ROWS reserved slots — about 150px, the same 3 units the rest
-    // of the card takes — so this answer is true at every list length rather
-    // than only at the one it happened to be written for.
-    return this.config.show_history === false ? 3 : 6;
+    // Lovelace counts in 50px units. Compact is two rows by design; full is
+    // header + strip + core + a speaker pill, plus whatever stacks below.
+    if (this.layout === "compact") {
+      return 2;
+    }
+    let size = 5;
+    for (const section of this.sections) {
+      if (section.type === "speakers") {
+        size += section.style === "rows" ? 4 : section.style === "chips" ? 1 : 0;
+      } else if (section.type === "history" && section.style === "list") {
+        size += 3;
+      }
+    }
+    return size;
+  }
+
+  getGridOptions() {
+    // No `rows`: the sections view then sizes the card to its content, which
+    // is what a card whose height depends on its sections needs.
+    return { columns: 12, min_columns: 6 };
   }
 
   static getConfigElement() {
@@ -126,17 +155,19 @@ export class HassBroadcastCard extends LitElement {
       targets: [],
       mode: "plain",
       record_mode: "push_to_talk",
-      player_list: "rows",
+      layout: "full",
+      sections: [
+        { type: "speakers", style: "pill" },
+        { type: "history", style: "icon" },
+        { type: "volume", style: "icon" },
+      ],
     };
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    // Reset for a re-attach (dashboard navigation moves the element rather
-    // than recreating it).
-    this.disconnected = false;
-    if (!Recorder.isSupported()) {
-      this.status = { kind: "error", text: INSECURE_CONTEXT_MESSAGE };
+    if (!this.rec.supported) {
+      this.status = { kind: "error", text: INSECURE_CONTEXT_MESSAGE, sticky: true };
     }
     void this.refreshHistory();
   }
@@ -157,56 +188,23 @@ export class HassBroadcastCard extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.disconnected = true;
-    this.clearTimer();
     this.stopPlayback();
+    this.clearStatusTimer();
     revokeClip(this.clip);
     // Dashboard navigation moves the element rather than recreating it, so
     // on re-attach connectedCallback runs again on this same instance. A
-    // clip left in place would render an enabled Play/Broadcast over the
-    // object URL just revoked above.
+    // clip left in place would render an enabled Play/Send over the object
+    // URL just revoked above.
     this.clip = undefined;
-    this.bars = [];
     // Same reason: a dialog left open would showModal() itself back onto the
     // screen the next time connectedCallback runs on this instance.
     this.historyOpen = false;
-    // Torn down (dashboard navigation, view switch) while a recording is
-    // in progress. The MediaStream/AudioContext/worklet node stay alive
-    // until something calls Recorder.stop() — there is no side-effect-free
-    // "abandon" method, and Task 10's Recorder API is already reviewed and
-    // settled, so call stop() here and discard the resulting blob rather
-    // than leaking the mic open until a page reload. Skip this when
-    // `busy` is already true: a start()/stop() is already in flight (e.g.
-    // the user tapped stop and navigated away in the same tick) and will
-    // release the session itself once its own promise settles — calling
-    // stop() again here would race it and hit Recorder.stop()'s own
-    // "no active session" throw.
-    if (this.phase === "recording" && !this.busy) {
-      this.phase = "idle";
-      this.busy = true;
-      // disconnectedCallback is synchronous and cannot be awaited, so this
-      // is fire-and-forget. The rejection is still handled so teardown can
-      // never surface an unhandled promise rejection.
-      this.recorder
-        .stop()
-        .catch(() => {
-          // Nothing left to recover into once the card is torn down.
-        })
-        .finally(() => {
-          this.busy = false;
-        });
-    }
-  }
-
-  private clearTimer(): void {
-    if (this.timer !== undefined) {
-      window.clearInterval(this.timer);
-      this.timer = undefined;
-    }
+    this.menuOpen = false;
+    this.volumeOpen = false;
   }
 
   private async refreshHistory(): Promise<void> {
-    if (!this.hass || this.config.show_history === false) {
+    if (!this.hass || !findSection(this.sections, "history")) {
       return;
     }
     try {
@@ -237,145 +235,44 @@ export class HassBroadcastCard extends LitElement {
     );
   }
 
-  private get recordMode(): "push_to_talk" | "start_stop" {
+  private get recordMode(): RecordMode {
     return this.config.record_mode === "start_stop"
       ? "start_stop"
       : "push_to_talk";
   }
 
+  // --- status --------------------------------------------------------------
+
+  private clearStatusTimer(): void {
+    if (this.statusTimer !== undefined) {
+      window.clearTimeout(this.statusTimer);
+      this.statusTimer = undefined;
+    }
+  }
+
   /**
-   * Pointer down on the record button. In start-stop this is the whole
-   * interaction; in push-to-talk it opens the microphone and `onPressEnd`
-   * closes it.
+   * Show a message in the strip. It holds the slot for STATUS_MS and then
+   * hands it back, unless it is sticky — a condition the user has to fix
+   * before anything else will work.
    */
-  private async onPressStart(event: Event): Promise<void> {
-    if (this.phase === "sending" || !Recorder.isSupported()) {
-      return;
-    }
-    if (this.recordMode === "start_stop") {
-      await (this.phase === "recording"
-        ? this.stopRecording()
-        : this.startRecording());
-      return;
-    }
-    // Without this a long press on a phone selects text, opens the context
-    // menu, or starts a scroll — all of which cancel the gesture mid-message.
-    // Scoped to push-to-talk: in start-stop a plain click already works, and
-    // calling this unconditionally at the top of the method (as it used to)
-    // stopped the button ever taking focus in start-stop mode.
-    event.preventDefault();
-    if (this.busy) {
-      // A second pointer (e.g. another finger) landed while this press's
-      // own start()/stop() is still in flight. Handling it as a normal press
-      // would reset stopRequested below and clobber the first press's
-      // pending stop, or open a second concurrent recording session.
-      return;
-    }
-    this.stopRequested = false;
-    await this.startRecording();
-    // Released while the microphone was still opening: stop now that there
-    // is a session to stop.
-    if (this.stopRequested && this.phase === "recording") {
-      await this.stopRecording();
-    }
-  }
-
-  /** Pointer up, cancel, or leave. Only push-to-talk cares. */
-  private async onPressEnd(): Promise<void> {
-    if (this.recordMode !== "push_to_talk") {
-      return;
-    }
-    if (this.phase !== "recording") {
-      this.stopRequested = true;
-      return;
-    }
-    await this.stopRecording();
-  }
-
-  private async startRecording(): Promise<void> {
-    // Ignore a re-entrant call (double-tap) while a start/stop is already
-    // in flight, or if we are already recording.
-    if (this.busy || this.phase === "recording") {
-      return;
-    }
-    this.busy = true;
-    this.status = undefined;
-    try {
-      this.recorder.onLevel((level) => {
-        if (this.envelope.push(level, Date.now())) {
-          this.bars = this.envelope.tail(BAR_COUNT);
+  private setStatus(status: Status | undefined): void {
+    this.clearStatusTimer();
+    this.status = status;
+    if (status && !status.sticky) {
+      this.statusTimer = window.setTimeout(() => {
+        this.statusTimer = undefined;
+        if (this.status === status) {
+          this.status = undefined;
         }
-      });
-      this.envelope.reset();
-      await this.recorder.start();
-    } catch (err: any) {
-      this.fail(micErrorMessage(err));
-      return;
-    } finally {
-      this.busy = false;
-    }
-
-    // Torn down while start() was in flight. disconnectedCallback already ran
-    // (clearTimer with it), so transitioning here would strand a detached
-    // element with a live 1s interval and the microphone held open until the
-    // max-duration timer fired — up to 300s after the user navigated away.
-    // Release the session instead.
-    if (this.disconnected) {
-      this.busy = true;
-      void this.recorder
-        .stop()
-        .catch(() => {
-          // Nothing left to recover into once the card is torn down.
-        })
-        .finally(() => {
-          this.busy = false;
-        });
-      return;
-    }
-
-    this.phase = "recording";
-    this.elapsed = 0;
-    const limit = clampMaxDuration(this.config.max_duration);
-    this.timer = window.setInterval(() => {
-      this.elapsed += 1;
-      if (this.elapsed >= limit) {
-        void this.stopRecording();
-      }
-    }, 1000);
-  }
-
-  private async stopRecording(): Promise<void> {
-    // Recorder.stop() throws when there is no active recording session.
-    // Guard against double-taps on the stop button and against the
-    // max-duration timer firing at the same instant as a manual stop —
-    // both would otherwise call stop() twice for one recording.
-    if (this.busy || this.phase !== "recording") {
-      return;
-    }
-    this.busy = true;
-    this.clearTimer();
-    try {
-      const { blob, duration } = await this.recorder.stop();
-      if (this.recordMode === "push_to_talk" && duration < MIN_PRESS_SECONDS) {
-        // A tap, not a message. Saying so beats loading a clip of silence
-        // that the user then has to work out how to get rid of.
-        this.phase = "idle";
-        this.fail("Hold the button while you speak.");
-        return;
-      }
-      this.setClip(freshClip(blob, duration, this.envelope.all()));
-      this.phase = "idle";
-    } catch (err: any) {
-      // Don't strand the UI showing "recording" over a dead session — a
-      // second tap would just hit Recorder.stop()'s own "no active
-      // session" throw again. Whatever went wrong, the recording is gone
-      // either way, so surface it and reset to idle.
-      this.fail(`Could not finish recording: ${err?.message ?? err}`);
-      this.phase = "idle";
-    } finally {
-      this.busy = false;
+      }, STATUS_MS);
     }
   }
+
+  private fail(text: string, sticky = false): void {
+    this.setStatus({ kind: "error", text, sticky });
+  }
+
+  // --- clip and playback ---------------------------------------------------
 
   /** Swap in a new clip, releasing the one it replaces. */
   private setClip(clip: Clip): void {
@@ -384,14 +281,12 @@ export class HassBroadcastCard extends LitElement {
       revokeClip(this.clip);
     }
     this.clip = clip;
-    this.bars = clip.peaks.length ? clip.peaks : [];
   }
 
   private clearClip(): void {
     this.stopPlayback();
     revokeClip(this.clip);
     this.clip = undefined;
-    this.bars = [];
   }
 
   private seek(fraction: number): void {
@@ -457,9 +352,7 @@ export class HassBroadcastCard extends LitElement {
     this.position = 0;
   }
 
-  private fail(text: string): void {
-    this.status = { kind: "error", text };
-  }
+  // --- broadcasting --------------------------------------------------------
 
   private toggleTarget(entityId: string): void {
     this.selected = this.selected.includes(entityId)
@@ -471,40 +364,18 @@ export class HassBroadcastCard extends LitElement {
     return (
       this.clip !== undefined &&
       this.targets.length > 0 &&
-      this.phase === "idle"
+      this.rec.phase === "idle"
     );
   }
 
-  /**
-   * The id to broadcast. A fresh clip is uploaded once and then *becomes* a
-   * stored clip, so retrying a partial failure — or sending the same message
-   * to another speaker — never uploads a second copy.
-   */
-  private async messageId(clip: Clip): Promise<string> {
-    const existing = storedId(clip);
-    if (existing !== undefined) {
-      return existing;
-    }
-    const blob = (clip.source as { kind: "fresh"; blob: Blob }).blob;
-    const id = await uploadRecording(this.hass, blob, clip.duration);
-    // The upload can outlive the clip it was for: a ✕ tap mid-upload runs
-    // clearClip() before this resolves. Only rewrite the source if this is
-    // still the clip the card is holding, or a cleared clip comes back
-    // holding an already-revoked object URL.
-    if (this.clip === clip) {
-      this.clip = { ...clip, source: { kind: "stored", id } };
-    }
-    return id;
-  }
-
   private async broadcast(): Promise<void> {
-    // Broadcast is only ever rendered enabled at phase === "idle" (see
-    // canBroadcast), but broadcast() is also reachable directly (tests,
-    // and any stale event still in flight), so re-check here too: sending
-    // mid-take would flip phase to "sending" and then "idle" while the
-    // recorder is still active, and every stop path is gated on
-    // phase === "recording" — the recorder would never be told to stop.
-    if (this.phase !== "idle") {
+    // Send is only ever enabled at phase === "idle" (see canBroadcast), but
+    // broadcast() is also reachable directly (tests, and any stale event
+    // still in flight), so re-check here too: sending mid-take would flip
+    // phase to "sending" and then "idle" while the recorder is still active,
+    // and every stop path is gated on phase === "recording" — the recorder
+    // would never be told to stop.
+    if (this.rec.phase !== "idle") {
       return;
     }
     const clip = this.clip;
@@ -517,39 +388,43 @@ export class HassBroadcastCard extends LitElement {
       this.fail("Pick at least one speaker first.");
       return;
     }
-    this.phase = "sending";
-    this.status = undefined;
+    this.rec.setSending(true);
+    this.setStatus(undefined);
     try {
-      const id = await this.messageId(clip);
-      const { failed } = await sendBroadcast(
-        this.hass,
-        id,
+      const outcome = await sendClip({
+        hass: this.hass,
+        clip,
         targets,
-        this.config.mode ?? "plain",
-        this.volumeOverride ? this.volume : undefined,
-      );
-      this.phase = "idle";
-      if (failed.length === 0) {
-        this.status = { kind: "info", text: `Sent to ${this.describe(targets)}` };
-      } else if (failed.length >= targets.length) {
-        // The clip is kept in every branch now, so the old "the recording was
-        // kept" reassurance is gone — nothing is ever thrown away here.
-        this.fail(`Could not play on any speaker: ${this.describe(failed)}.`);
-      } else {
-        this.fail(`Played, but not on ${this.describe(failed)}.`);
-      }
+        mode: this.config.mode ?? "plain",
+        volume: this.volumeOverride ? this.volume : undefined,
+        onStored: (id) => {
+          // The upload can outlive the clip it was for: a Discard tap
+          // mid-upload runs clearClip() before this resolves. Only rewrite
+          // the source if this is still the clip the card is holding, or a
+          // cleared clip comes back holding an already-revoked object URL.
+          if (this.clip === clip) {
+            this.clip = { ...clip, source: { kind: "stored", id } };
+          }
+        },
+      });
+      this.rec.setSending(false);
+      // The clip is kept in every branch: sending the same message to another
+      // speaker, or retrying the ones that failed, must not need a re-record.
+      this.setStatus(outcomeStatus(this.hass, outcome));
       await this.refreshHistory();
     } catch (err: any) {
-      this.phase = "idle";
+      this.rec.setSending(false);
       this.fail(`Could not send: ${err?.message ?? err}`);
     }
   }
+
+  // --- history -------------------------------------------------------------
 
   /** Load a stored message so it behaves exactly like one just recorded. */
   private async loadMessage(message: BroadcastMessage): Promise<void> {
     this.loadingId = message.id;
     this.historyOpen = false;
-    this.status = undefined;
+    this.setStatus(undefined);
     try {
       this.setClip(await loadStoredClip(this.hass, message));
     } catch (err: any) {
@@ -557,16 +432,6 @@ export class HassBroadcastCard extends LitElement {
     } finally {
       this.loadingId = undefined;
     }
-  }
-
-  /** Name entity ids the way the picker does, so a warning is readable. */
-  private describe(entityIds: string[]): string {
-    return entityIds
-      .map(
-        (entityId) =>
-          this.hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
-      )
-      .join(", ");
   }
 
   private async deleteRecording(id: string): Promise<void> {
@@ -588,99 +453,153 @@ export class HassBroadcastCard extends LitElement {
     }
   }
 
-  /** What the status line says when there is nothing more urgent to report. */
-  private get recordHint(): string {
-    if (this.phase === "recording") {
-      return `Recording… ${this.elapsed}s`;
-    }
-    if (this.phase === "sending") {
-      return "Broadcasting…";
-    }
-    return this.recordMode === "push_to_talk"
-      ? "Hold to talk"
-      : "Tap to record";
+  // --- rendering -----------------------------------------------------------
+
+  private get hint(): string {
+    return this.recordMode === "push_to_talk" ? "Hold to talk" : "Tap to record";
   }
 
   /**
    * The record button's title/aria-label. Deliberately static within a
-   * phase — unlike `recordHint`, which counts elapsed seconds. Some screen
-   * readers re-announce a changed aria-label on the focused element, so a
-   * label that ticked once a second narrated the whole take; the timer
-   * lives only in the status line (`aria-live="polite"` there instead).
+   * phase: some screen readers re-announce a changed aria-label on the
+   * focused element, so a label that ticked once a second narrated the whole
+   * take. The timer lives in the strip instead.
    */
   private get recordLabel(): string {
-    if (this.phase === "sending") {
+    if (this.rec.phase === "sending") {
       return "Broadcasting";
     }
-    if (this.phase === "recording") {
+    if (this.rec.phase === "recording") {
       return this.recordMode === "push_to_talk"
         ? "Recording — release to stop"
         : "Recording — tap to stop";
     }
-    return this.recordMode === "push_to_talk"
-      ? "Hold to talk"
-      : "Tap to record";
+    return this.hint;
   }
 
-  render() {
-    return html`
-      <ha-card .header=${this.config.title?.trim() || DEFAULT_TITLE}>
-        ${visualizer({
-          bars: this.bars.length ? this.bars : silence(BAR_COUNT),
-          progress:
-            this.phase === "recording"
-              ? undefined
-              : this.clip
-                ? this.position / (this.clip.duration || 1)
-                : undefined,
-          seekable: this.phase === "idle" && this.clip !== undefined,
-          recording: this.phase === "recording",
-          onSeek: (fraction) => this.seek(fraction),
-        })}
+  /** Which layer the state-dependent slots show. */
+  private get view(): View {
+    if (this.rec.phase === "recording") {
+      return "recording";
+    }
+    if (this.status) {
+      return "status";
+    }
+    return this.clip ? "review" : "idle";
+  }
 
-        ${playerRow({
-          enabled: this.phase === "idle" && this.clip !== undefined,
-          playing: this.playing,
-          position: this.position,
-          duration: this.clip?.duration ?? 0,
-          onToggle: () => this.togglePlay(),
-          onClear: () => this.clearClip(),
-        })}
+  private get timerWarning(): boolean {
+    const limit = clampMaxDuration(this.config.max_duration);
+    const window = Math.min(WARN_SECONDS, limit * WARN_FRACTION);
+    return this.rec.phase === "recording" && limit - this.rec.elapsed <= window;
+  }
 
-        <div class="record-row">
-          <button
-            class="record"
-            data-recording=${this.phase === "recording"}
-            ?disabled=${!Recorder.isSupported() || this.phase === "sending"}
-            @pointerdown=${this.onPressStart}
-            @pointerup=${this.onPressEnd}
-            @pointercancel=${this.onPressEnd}
-            @pointerleave=${this.onPressEnd}
-            @contextmenu=${(event: Event) => event.preventDefault()}
-            @keydown=${(event: KeyboardEvent) => {
-              // Auto-repeat would otherwise restart the take ~30 times a second.
-              if (!event.repeat && (event.key === " " || event.key === "Enter")) {
-                void this.onPressStart(event);
-              }
-            }}
-            @keyup=${(event: KeyboardEvent) => {
-              if (event.key === " " || event.key === "Enter") {
-                void this.onPressEnd();
-              }
-            }}
-            title=${this.recordLabel}
-            aria-label=${this.recordLabel}
-          ></button>
-        </div>
-        <div
-          class="status ${this.status?.kind ?? "info"}"
-          title=${this.status?.text ?? this.recordHint}
-          aria-live="polite"
+  private historyProps() {
+    return {
+      messages: this.history,
+      loadedId: this.clip ? storedId(this.clip) : undefined,
+      loadingId: this.loadingId,
+      onLoad: (message: BroadcastMessage) => void this.loadMessage(message),
+      onDelete: (id: string) => void this.deleteRecording(id),
+      onDialogOpenChange: (open: boolean) => {
+        this.historyOpen = open;
+      },
+    };
+  }
+
+  private get parts(): CardParts {
+    const recording = this.rec.phase === "recording";
+    const sending = this.rec.phase === "sending";
+    const reviewing = this.clip !== undefined && !recording;
+    const volumeProps = {
+      enabled: this.volumeOverride,
+      value: this.volume,
+      onToggle: () => {
+        this.volumeOverride = !this.volumeOverride;
+      },
+      onChange: (value: number) => {
+        this.volume = value;
+      },
+    };
+    return {
+      title: this.config.title?.trim() || DEFAULT_TITLE,
+      view: this.view,
+      sections: this.sections,
+      hint: this.hint,
+      timer: formatClock(this.rec.elapsed),
+      timerWarning: this.timerWarning,
+      status: this.status,
+      reviewing,
+      mic: (size) =>
+        mic({
+          size,
+          recording,
+          disabled: !this.rec.supported || sending,
+          recordMode: this.recordMode,
+          level: this.rec.level,
+          maxDuration: clampMaxDuration(this.config.max_duration),
+          label: this.recordLabel,
+          onPressStart: (event) => void this.rec.onPressStart(event),
+          onPressEnd: () => void this.rec.onPressEnd(),
+        }),
+      play: () => html`
+        <button
+          class="icon play"
+          ?disabled=${!reviewing || sending}
+          title=${this.playing ? "Pause" : "Play"}
+          aria-label=${this.playing ? "Pause" : "Play"}
+          @click=${() => this.togglePlay()}
         >
-          ${this.status?.text ?? this.recordHint}
-        </div>
-
-        ${targetList({
+          ${this.playing ? pauseIcon : playIcon}
+        </button>
+      `,
+      // Keyed on the clip, so each new clip gets fresh bars and its draw-in
+      // plays exactly once rather than on every re-render.
+      waveform: (className) => html`${keyed(
+          this.clip?.url ?? "none",
+          visualizer({
+            bars: this.clip?.peaks.length ? this.clip.peaks : silence(BAR_COUNT),
+            progress: this.clip ? this.position / (this.clip.duration || 1) : undefined,
+            seekable: reviewing && !sending,
+            recording: false,
+            onSeek: (fraction) => this.seek(fraction),
+            className: `${className} reveal`,
+          }),
+        )}`,
+      clipLength: formatClock(this.clip?.duration ?? 0),
+      discard: () => html`
+        <button
+          class="icon discard"
+          ?disabled=${!reviewing || sending}
+          title="Discard"
+          aria-label="Discard"
+          @click=${() => this.clearClip()}
+        >
+          ${closeIcon}
+        </button>
+      `,
+      send: (variant) => {
+        const count = this.targets.length;
+        const label = count > 1 ? `Send to ${count}` : "Send";
+        return html`
+          <div class="send-wrap send-wrap-${variant}">
+            <button
+              class="send send-${variant}"
+              ?disabled=${!this.canBroadcast}
+              data-sending=${sending}
+              title=${label}
+              aria-label=${sending ? "Broadcasting" : label}
+              @click=${() => void this.broadcast()}
+            >
+              ${sending ? html`<span class="spinner" aria-hidden="true"></span>` : sendIcon}
+              ${variant === "pill" ? html`<span>Send</span>` : nothing}
+            </button>
+            ${variant === "round" ? html`<span class="caption">${label}</span>` : nothing}
+          </div>
+        `;
+      },
+      speakers: (section) =>
+        targetList({
           players: this.players.map((entityId) => ({
             entityId,
             name:
@@ -688,46 +607,55 @@ export class HassBroadcastCard extends LitElement {
             available: this.hass?.states?.[entityId]?.state !== "unavailable",
           })),
           selected: this.selected,
-          style: this.config.player_list ?? "rows",
+          style: section.style,
           open: this.pickerOpen,
           onToggle: (entityId) => this.toggleTarget(entityId),
           onOpenChange: (open) => {
             this.pickerOpen = open;
           },
-        })}
-
-        ${volumeControl({
-          enabled: this.volumeOverride,
-          value: this.volume,
-          onToggle: () => {
-            this.volumeOverride = !this.volumeOverride;
-          },
-          onChange: (value) => {
-            this.volume = value;
-          },
-        })}
-
+        }),
+      // The dialog is rendered once, by historyDialog below, whichever style
+      // opened it.
+      historyList: () => historySection({ ...this.historyProps(), dialogOpen: false }),
+      historyButton: () => html`
         <button
-          class="broadcast"
-          ?disabled=${!this.canBroadcast}
-          @click=${this.broadcast}
+          class="icon"
+          title="Recent messages"
+          aria-label="Recent messages"
+          @click=${() => {
+            this.historyOpen = true;
+          }}
         >
-          ${this.phase === "sending" ? "Broadcasting…" : "Broadcast"}
+          ${historyIcon}
         </button>
+      `,
+      volumeButton: () =>
+        volumeButton({
+          ...volumeProps,
+          open: this.volumeOpen,
+          onOpenChange: (open) => {
+            this.volumeOpen = open;
+          },
+        }),
+      volumePanel: () => volumeControl(volumeProps),
+      historyDialog: () =>
+        this.historyOpen ? historyDialog(this.historyProps()) : nothing,
+      menuOpen: this.menuOpen,
+      onMenuOpenChange: (open) => {
+        this.menuOpen = open;
+      },
+      onOpenHistory: () => {
+        this.historyOpen = true;
+      },
+    };
+  }
 
-        ${this.config.show_history === false
-          ? nothing
-          : historySection({
-              messages: this.history,
-              loadedId: this.clip ? storedId(this.clip) : undefined,
-              loadingId: this.loadingId,
-              dialogOpen: this.historyOpen,
-              onLoad: (message) => void this.loadMessage(message),
-              onDelete: (id) => void this.deleteRecording(id),
-              onDialogOpenChange: (open) => {
-                this.historyOpen = open;
-              },
-            })}
+  render() {
+    const parts = this.parts;
+    return html`
+      <ha-card>
+        ${this.layout === "compact" ? compactLayout(parts) : fullLayout(parts)}
+        <div class="sr-only" aria-live="polite">${this.status?.text ?? ""}</div>
       </ha-card>
     `;
   }

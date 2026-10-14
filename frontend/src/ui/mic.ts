@@ -1,0 +1,79 @@
+import { TemplateResult, html } from "lit";
+
+import { RecordMode } from "../recording";
+import { micIcon, stopIcon } from "./icons";
+
+export interface MicProps {
+  /** Button diameter in px. The blob and arc scale from it. */
+  size: number;
+  recording: boolean;
+  disabled: boolean;
+  recordMode: RecordMode;
+  /** Latest live level, 0..1. Drives the blob's scale while recording. */
+  level: number;
+  /** Seconds; the countdown arc takes exactly this long to close. */
+  maxDuration: number;
+  /** title/aria-label. Keep it static within a phase — see the card. */
+  label: string;
+  onPressStart: (event: Event) => void;
+  onPressEnd: () => void;
+}
+
+/** How much louder speech grows the blob, as a fraction of the button. */
+const LEVEL_GAIN = 0.35;
+
+/**
+ * The record button and its recording animation.
+ *
+ * Two layers sit behind and on the button while a take runs: a blob whose
+ * size follows the voice (`--level`, updated ~20 times a second from the
+ * level envelope) and wobbles on its own, and a countdown arc on the rim that
+ * closes over `max_duration`. Both are CSS: the arc's animation is attached
+ * only while recording, so it restarts from zero on every take without any
+ * per-frame script.
+ */
+export function mic(props: MicProps): TemplateResult {
+  const level = Math.min(1, Math.max(0, props.level || 0));
+  return html`
+    <div
+      class="mic-wrap"
+      data-recording=${props.recording}
+      data-mode=${props.recordMode}
+      style="--mic:${props.size}px;--grow:${(1 + level * LEVEL_GAIN).toFixed(3)};--limit:${props.maxDuration}s"
+    >
+      <div class="mic-level" aria-hidden="true">
+        <span class="blob blob-outer"></span>
+        <span class="blob blob-inner"></span>
+      </div>
+      <button
+        class="mic"
+        ?disabled=${props.disabled}
+        @pointerdown=${props.onPressStart}
+        @pointerup=${props.onPressEnd}
+        @pointercancel=${props.onPressEnd}
+        @pointerleave=${props.onPressEnd}
+        @contextmenu=${(event: Event) => event.preventDefault()}
+        @keydown=${(event: KeyboardEvent) => {
+          // Auto-repeat would otherwise restart the take ~30 times a second.
+          if (!event.repeat && (event.key === " " || event.key === "Enter")) {
+            props.onPressStart(event);
+          }
+        }}
+        @keyup=${(event: KeyboardEvent) => {
+          if (event.key === " " || event.key === "Enter") {
+            props.onPressEnd();
+          }
+        }}
+        title=${props.label}
+        aria-label=${props.label}
+      >
+        <span class="mic-glyph mic-glyph-mic">${micIcon}</span>
+        <span class="mic-glyph mic-glyph-stop">${stopIcon}</span>
+      </button>
+      <svg class="mic-arc" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="mic-arc-track" cx="50" cy="50" r="46" pathLength="100" />
+        <circle class="mic-arc-fill" cx="50" cy="50" r="46" pathLength="100" />
+      </svg>
+    </div>
+  `;
+}

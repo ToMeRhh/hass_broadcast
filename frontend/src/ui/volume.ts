@@ -1,5 +1,7 @@
 import { TemplateResult, html, nothing } from "lit";
 
+import { volumeIcon } from "./icons";
+
 export interface VolumeControlProps {
   /** Off by default: an untouched card sends no volume at all. */
   enabled: boolean;
@@ -41,6 +43,36 @@ export function volumeControl(props: VolumeControlProps): TemplateResult {
             />
             <span class="volume-value">${Math.round(props.value * 100)}%</span>
           `
+        : nothing}
+    </div>
+  `;
+}
+
+export interface VolumeButtonProps extends VolumeControlProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * The volume section in its icon style: a header button that opens the
+ * toggle and slider in a popover. Lit up while an override is on, so a card
+ * that will send at a non-default volume says so without being opened.
+ */
+export function volumeButton(props: VolumeButtonProps): TemplateResult {
+  return html`
+    <div class="popover-wrap">
+      <button
+        class="icon"
+        data-active=${props.enabled}
+        aria-expanded=${props.open}
+        title="Broadcast volume"
+        aria-label="Broadcast volume"
+        @click=${() => props.onOpenChange(!props.open)}
+      >
+        ${volumeIcon}
+      </button>
+      ${props.open
+        ? html`<div class="popover">${volumeControl(props)}</div>`
         : nothing}
     </div>
   `;

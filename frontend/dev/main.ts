@@ -10,6 +10,7 @@ import "../src/card";
 import "../src/editor";
 import { installMicMock, installRecorderMock } from "./fake-recorder";
 import { applyTheme } from "./ha-stubs";
+import { LOVELACE_ASSIGNS } from "../test/helpers";
 import {
   DEFAULT_SCENARIO,
   MockBackend,
@@ -163,6 +164,8 @@ export class DevApp extends LitElement {
   private get tileElement(): HTMLElement {
     if (!this.tile) {
       const element = document.createElement("hass-broadcast-tile") as any;
+      // As Lovelace does, so a property clash breaks here and not on a dashboard.
+      Object.assign(element, LOVELACE_ASSIGNS);
       element.setConfig(this.tileConfig);
       element.hass = hass;
       this.tile = element;
@@ -187,6 +190,7 @@ export class DevApp extends LitElement {
   private get cardElement(): HTMLElement {
     if (!this.card) {
       const element = document.createElement("hass-broadcast-card") as any;
+      Object.assign(element, LOVELACE_ASSIGNS);
       element.setConfig(this.config);
       element.hass = hass;
       this.card = element;

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { renderedText } from "./helpers";
+import { LOVELACE_ASSIGNS, renderedText } from "./helpers";
 
 // The default vitest environment is plain Node, and that is enough: Lit ships
 // @lit-labs/ssr-dom-shim, so a @customElement-decorated component constructs
@@ -965,6 +965,15 @@ describe("card layouts and sections", () => {
     // A legacy card: rows (+4) and the history list (+3).
     expect(configured({}).getCardSize()).toBe(12);
     expect(configured({}).getGridOptions()).not.toHaveProperty("rows");
+  });
+
+  it("accepts every property Lovelace assigns to the cards it hosts", () => {
+    // hui-card sets these on the element; a getter-only property with any of
+    // these names throws, and the dashboard section never creates the card.
+    const card = configured({ layout: "compact" });
+    expect(() => Object.assign(card, LOVELACE_ASSIGNS)).not.toThrow();
+    // Lovelace's `layout` is where the card sits, not which layout it uses.
+    expect(card.getCardSize()).toBe(2);
   });
 
   it("does not fetch history it will not show", async () => {

@@ -15,6 +15,7 @@ import { renderedText } from "./helpers";
 
 const { HassBroadcastCard } = await import("../src/card");
 const { INSECURE_CONTEXT_MESSAGE } = await import("../src/errors");
+const { STATUS_MS } = await import("../src/card");
 
 /** Minimal stand-in for Recorder, injected over the card's own instance. */
 class FakeRecorder {
@@ -72,7 +73,7 @@ function makeCard(supported = true): { card: any; recorder: FakeRecorder } {
   }
   const card = newCard();
   const recorder = new FakeRecorder();
-  card.recorder = recorder;
+  card.rec.recorder = recorder;
   card.connectedCallback();
   return { card, recorder };
 }
@@ -91,15 +92,15 @@ describe("card state machine", () => {
 
   it("goes idle -> recording -> loaded -> idle", async () => {
     const { card, recorder } = makeCard();
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
 
-    await card.startRecording();
-    expect(card.phase).toBe("recording");
+    await card.rec.startRecording();
+    expect(card.rec.phase).toBe("recording");
     expect(recorder.started).toBe(1);
     expect(card.status).toBeUndefined();
 
-    await card.stopRecording();
-    expect(card.phase).toBe("idle");
+    await card.rec.stopRecording();
+    expect(card.rec.phase).toBe("idle");
     expect(card.clip.source.kind).toBe("fresh");
     expect(card.clip.duration).toBe(2);
     expect(card.clip.url).toBe("blob:preview");
@@ -112,13 +113,13 @@ describe("card state machine", () => {
     const { card } = makeCard();
     card.setConfig({ type: "custom:hass-broadcast-card", max_duration: 5 });
 
-    await card.startRecording();
-    expect(card.phase).toBe("recording");
+    await card.rec.startRecording();
+    expect(card.rec.phase).toBe("recording");
 
     await vi.advanceTimersByTimeAsync(5000);
     await Promise.resolve();
-    expect(card.elapsed).toBe(5);
-    expect(card.phase).toBe("idle");
+    expect(card.rec.elapsed).toBe(5);
+    expect(card.rec.phase).toBe("idle");
     expect(card.clip).toBeDefined();
   });
 
@@ -130,7 +131,7 @@ describe("card state machine", () => {
 
     expect(card.status.text).toBe(INSECURE_CONTEXT_MESSAGE);
     expect(card.status.text).toMatch(/HTTPS/);
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
   });
 
   it("shows the permission message when the microphone is denied", async () => {
@@ -141,23 +142,23 @@ describe("card state machine", () => {
       });
     };
 
-    await card.startRecording();
+    await card.rec.startRecording();
 
     expect(card.status.text).toMatch(/Microphone permission was denied/);
-    expect(card.phase).toBe("idle");
-    expect(card.timer).toBeUndefined();
+    expect(card.rec.phase).toBe("idle");
+    expect(card.rec.timer).toBeUndefined();
   });
 
   it("resets to idle instead of stranding the UI when stop() fails", async () => {
     const { card, recorder } = makeCard();
-    await card.startRecording();
+    await card.rec.startRecording();
     recorder.stopImpl = async () => {
       throw new Error("device vanished");
     };
 
-    await card.stopRecording();
+    await card.rec.stopRecording();
 
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
     expect(card.status.text).toMatch(/Could not finish recording/);
   });
 
@@ -169,7 +170,7 @@ describe("card state machine", () => {
         releaseStart = resolve;
       });
 
-    const pending = card.startRecording();
+    const pending = card.rec.startRecording();
     // Navigate away mid-start: the phase is still "idle" here, which is
     // precisely why disconnectedCallback's own teardown does not fire.
     card.disconnectedCallback();
@@ -178,20 +179,20 @@ describe("card state machine", () => {
     await Promise.resolve();
 
     // No transition, no interval, and the session was actually released.
-    expect(card.phase).toBe("idle");
-    expect(card.timer).toBeUndefined();
+    expect(card.rec.phase).toBe("idle");
+    expect(card.rec.timer).toBeUndefined();
     expect(recorder.stopped).toBe(1);
   });
 
   it("stops the recorder when torn down while already recording", async () => {
     const { card, recorder } = makeCard();
-    await card.startRecording();
+    await card.rec.startRecording();
 
     card.disconnectedCallback();
     await Promise.resolve();
 
-    expect(card.phase).toBe("idle");
-    expect(card.timer).toBeUndefined();
+    expect(card.rec.phase).toBe("idle");
+    expect(card.rec.timer).toBeUndefined();
     expect(recorder.stopped).toBe(1);
   });
 });
@@ -240,7 +241,7 @@ describe("card broadcasting", () => {
 
     // Discarding on success would make "send it to the bedroom too" a
     // re-record; the clip stays and Broadcast stays enabled.
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
     expect(card.clip).toBeDefined();
     expect(card.status.kind).toBe("info");
   });
@@ -271,16 +272,19 @@ describe("card broadcasting", () => {
         }),
     );
     const card = newCard();
-    card.hass = { auth: { data: { access_token: "tok" } } };
-    const clip = {
+    card.setConfig({ type: "custom:hass-broadcast-card", targets: ["media_player.kitchen"] });
+    card.hass = {
+      auth: { data: { access_token: "tok" } },
+      connection: { sendMessagePromise: async () => ({ failed: [] }) },
+    };
+    card.clip = {
       source: { kind: "fresh" as const, blob: new Blob(["x"]) },
       url: "blob:preview",
       duration: 2,
       peaks: [],
     };
-    card.clip = clip;
 
-    const pending = card.messageId(clip);
+    const pending = card.broadcast();
     card.clearClip();
     resolveFetch({ ok: true, json: async () => ({ message_id: "abc" }) });
     await pending;
@@ -312,7 +316,7 @@ describe("card broadcasting", () => {
     // never heard is the failure mode this exists to prevent.
     expect(card.status.kind).toBe("error");
     expect(card.status.text).toMatch(/Garage/);
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
     expect(card.clip).toBeDefined();
   });
 
@@ -363,14 +367,14 @@ describe("card broadcasting", () => {
     // Broadcast live. Tapping it stranded the recorder — every stop path is
     // gated on phase === "recording", and sending flips phase away from it.
     const { card, calls } = cardWithClip({ failed: [] });
-    card.phase = "recording";
+    card.rec.phase = "recording";
 
     expect(card.canBroadcast).toBe(false);
 
     await card.broadcast();
 
     expect(calls).toHaveLength(0);
-    expect(card.phase).toBe("recording");
+    expect(card.rec.phase).toBe("recording");
   });
 });
 
@@ -459,22 +463,26 @@ describe("card render reflects phase, not just the clip", () => {
 
   it("stops treating the loaded clip as current while a new take records", () => {
     const card = cardWithLoadedClip();
-    card.phase = "recording";
+    card.rec.phase = "recording";
 
+    const parts = card.parts;
     const html = renderedText(card.render());
 
     expect(html).not.toContain("seekable");
-    expect(html).toContain("data-enabled=false");
+    expect(parts.reviewing).toBe(false);
+    // The strip shows the timer, not the old clip's waveform.
+    expect(parts.view).toBe("recording");
   });
 
   it("restores the loaded clip's transport once idle again", () => {
     const card = cardWithLoadedClip();
-    card.phase = "idle";
+    card.rec.phase = "idle";
 
     const html = renderedText(card.render());
 
     expect(html).toContain("seekable");
-    expect(html).toContain("data-enabled=true");
+    expect(card.parts.reviewing).toBe(true);
+    expect(card.parts.view).toBe("review");
   });
 });
 
@@ -499,12 +507,11 @@ describe("card teardown", () => {
       duration: 2,
       peaks: [0.5],
     };
-    card.bars = [0.5];
 
     card.disconnectedCallback();
 
     expect(card.clip).toBeUndefined();
-    expect(card.bars).toEqual([]);
+    expect(card.parts.view).not.toBe("review");
   });
 });
 
@@ -746,10 +753,10 @@ describe("push to talk", () => {
     const { card, recorder } = makeCard();
     card.setConfig({ type: "custom:hass-broadcast-card" });
 
-    await card.onPressStart(press);
-    expect(card.phase).toBe("recording");
+    await card.rec.onPressStart(press);
+    expect(card.rec.phase).toBe("recording");
 
-    await card.onPressEnd();
+    await card.rec.onPressEnd();
     expect(recorder.stopped).toBe(1);
     expect(card.clip).toBeDefined();
   });
@@ -763,16 +770,16 @@ describe("push to talk", () => {
         releaseStart = resolve;
       });
 
-    const pending = card.onPressStart(press);
+    const pending = card.rec.onPressStart(press);
     // Released while getUserMedia is still pending: without the deferred
     // stop this leaves the microphone open and the card recording forever.
-    await card.onPressEnd();
+    await card.rec.onPressEnd();
     releaseStart();
     await pending;
     await Promise.resolve();
 
     expect(recorder.stopped).toBe(1);
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
   });
 
   it("discards a tap too short to be speech", async () => {
@@ -780,8 +787,8 @@ describe("push to talk", () => {
     card.setConfig({ type: "custom:hass-broadcast-card" });
     recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
 
-    await card.onPressStart(press);
-    await card.onPressEnd();
+    await card.rec.onPressStart(press);
+    await card.rec.onPressEnd();
 
     expect(card.clip).toBeUndefined();
     expect(card.status.text).toMatch(/Hold/);
@@ -792,8 +799,8 @@ describe("push to talk", () => {
     card.setConfig({ type: "custom:hass-broadcast-card", record_mode: "start_stop" });
     recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
 
-    await card.onPressStart(press);
-    await card.onPressStart(press);
+    await card.rec.onPressStart(press);
+    await card.rec.onPressStart(press);
 
     expect(card.clip).toBeDefined();
   });
@@ -811,17 +818,17 @@ describe("push to talk", () => {
         releaseStart = resolve;
       });
 
-    const firstPress = card.onPressStart(press);
+    const firstPress = card.rec.onPressStart(press);
     // First finger releases before the mic finishes opening.
-    await card.onPressEnd();
+    await card.rec.onPressEnd();
     // A second finger lands while start() is still in flight.
-    const secondPress = card.onPressStart(press);
+    const secondPress = card.rec.onPressStart(press);
     releaseStart();
     await firstPress;
     await secondPress;
     await Promise.resolve();
 
-    expect(card.phase).toBe("idle");
+    expect(card.rec.phase).toBe("idle");
     expect(recorder.stopped).toBe(1);
   });
 
@@ -829,15 +836,144 @@ describe("push to talk", () => {
     const { card, recorder } = makeCard();
     card.setConfig({ type: "custom:hass-broadcast-card", record_mode: "start_stop" });
 
-    await card.onPressStart(press);
-    expect(card.phase).toBe("recording");
+    await card.rec.onPressStart(press);
+    expect(card.rec.phase).toBe("recording");
     // A release must do nothing at all here, or the button records for
     // exactly as long as the click lasts.
-    await card.onPressEnd();
-    expect(card.phase).toBe("recording");
+    await card.rec.onPressEnd();
+    expect(card.rec.phase).toBe("recording");
     expect(recorder.stopped).toBe(0);
 
-    await card.onPressStart(press);
+    await card.rec.onPressStart(press);
     expect(recorder.stopped).toBe(1);
+  });
+});
+
+describe("card status messages", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    (globalThis as any).isSecureContext = undefined;
+  });
+
+  it("hands the strip back once a message has been read", () => {
+    const card = newCard();
+    card.fail("Could not delete: nope");
+    expect(card.parts.view).toBe("status");
+
+    vi.advanceTimersByTime(STATUS_MS);
+
+    expect(card.status).toBeUndefined();
+    expect(card.parts.view).toBe("idle");
+  });
+
+  it("keeps a sticky message until the next attempt", async () => {
+    const { card, recorder } = makeCard();
+    recorder.startImpl = async () => {
+      throw Object.assign(new Error("no"), { name: "NotAllowedError" });
+    };
+    await card.rec.startRecording();
+
+    vi.advanceTimersByTime(STATUS_MS * 3);
+    expect(card.status.text).toMatch(/permission was denied/);
+
+    recorder.startImpl = async () => {};
+    await card.rec.startRecording();
+    expect(card.status).toBeUndefined();
+  });
+
+  it("shows the timer, not a stale message, while recording", async () => {
+    const { card } = makeCard();
+    card.fail("Something earlier");
+    await card.rec.startRecording();
+
+    expect(card.parts.view).toBe("recording");
+  });
+
+  it("warns as the take nears its limit", async () => {
+    const { card } = makeCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", max_duration: 20 });
+    await card.rec.startRecording();
+
+    // 20s limit: the window is min(10s, a quarter of 20s) = 5s.
+    await vi.advanceTimersByTimeAsync(14000);
+    expect(card.parts.timerWarning).toBe(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(card.parts.timerWarning).toBe(true);
+  });
+});
+
+describe("card layouts and sections", () => {
+  const configured = (config: any) => {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", ...config });
+    return card;
+  };
+
+  it("puts icon sections in the header and list sections below", () => {
+    const card = configured({
+      sections: [
+        { type: "speakers", style: "chips" },
+        { type: "history", style: "icon" },
+        { type: "volume" },
+      ],
+    });
+
+    const text = renderedText(card.render());
+    expect(text).toContain("Recent messages");
+    expect(text).toContain("Broadcast volume");
+    // Icon style: no inline list, so none of its "Show all" control.
+    expect(text).not.toContain("Show all");
+  });
+
+  it("draws compact with the speaker pill and the rest behind ⋮", () => {
+    const card = configured({
+      layout: "compact",
+      sections: [{ type: "speakers", style: "rows" }, { type: "history" }],
+    });
+
+    const text = renderedText(card.render());
+    expect(text).toContain('class="card compact"');
+    expect(text).toContain('class="pill"');
+    expect(text).toContain("More");
+    expect(text).not.toContain("Show all");
+  });
+
+  it("leaves out ⋮ in compact when there is nothing to put in it", () => {
+    const card = configured({ layout: "compact", sections: [{ type: "speakers" }] });
+
+    expect(renderedText(card.render())).not.toContain("More");
+  });
+
+  it("opens the history dialog from the header icon", () => {
+    const card = configured({ sections: [{ type: "history", style: "icon" }] });
+    card.history = [
+      { id: "a", created: "2026-08-21T10:00:00Z", duration: 7, can_delete: false, extension: "wav" },
+    ];
+
+    expect(renderedText(card.render())).not.toContain("<dialog");
+    card.historyOpen = true;
+    const text = renderedText(card.render());
+    expect(text).toContain("<dialog");
+    expect(text).toContain("0:07");
+  });
+
+  it("sizes itself from its layout and sections", () => {
+    expect(configured({ layout: "compact" }).getCardSize()).toBe(2);
+    expect(configured({ sections: [{ type: "speakers", style: "pill" }] }).getCardSize()).toBe(5);
+    // A legacy card: rows (+4) and the history list (+3).
+    expect(configured({}).getCardSize()).toBe(12);
+    expect(configured({}).getGridOptions()).not.toHaveProperty("rows");
+  });
+
+  it("does not fetch history it will not show", async () => {
+    const card = configured({ sections: [{ type: "speakers" }] });
+    const send = vi.fn(async () => ({ messages: [] }));
+    card.hass = { connection: { sendMessagePromise: send } };
+
+    await card.refreshHistory();
+
+    expect(send).not.toHaveBeenCalled();
   });
 });

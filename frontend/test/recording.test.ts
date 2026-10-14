@@ -1,0 +1,159 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { RecordingController, Take } from "../src/recording";
+
+/** Stand-in for Recorder; the level callback is driven by hand. */
+class FakeRecorder {
+  started = 0;
+  stopped = 0;
+  levelCallback?: (level: number) => void;
+  startImpl: () => Promise<void> = async () => {};
+  stopImpl: () => Promise<{ blob: Blob; duration: number }> = async () => ({
+    blob: new Blob(["x"]),
+    duration: 2,
+  });
+  onLevel(callback: (level: number) => void): void {
+    this.levelCallback = callback;
+  }
+  async start(): Promise<void> {
+    this.started += 1;
+    return this.startImpl();
+  }
+  async stop(): Promise<{ blob: Blob; duration: number }> {
+    this.stopped += 1;
+    return this.stopImpl();
+  }
+}
+
+function makeController(mode: "push_to_talk" | "start_stop" = "push_to_talk") {
+  const host = { updates: 0, addController() {}, requestUpdate() { host.updates += 1; } };
+  const takes: Take[] = [];
+  const errors: { text: string; sticky: boolean }[] = [];
+  let started = 0;
+  const controller = new RecordingController(host as any, {
+    recordMode: () => mode,
+    maxDuration: () => 60,
+    onTake: (take) => {
+      takes.push(take);
+    },
+    onError: (text, sticky) => errors.push({ text, sticky }),
+    onStart: () => {
+      started += 1;
+    },
+  });
+  const recorder = new FakeRecorder();
+  controller.recorder = recorder as any;
+  return { controller, recorder, host, takes, errors, starts: () => started };
+}
+
+const press = { preventDefault: () => {} } as any;
+
+describe("RecordingController", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    (globalThis as any).window = globalThis;
+    (globalThis as any).isSecureContext = true;
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: async () => ({}) } });
+    vi.stubGlobal("AudioWorkletNode", class {});
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    (globalThis as any).isSecureContext = undefined;
+  });
+
+  it("hands a finished take, with its level envelope, to the host", async () => {
+    const { controller, recorder, takes, starts } = makeController();
+
+    await controller.onPressStart(press);
+    expect(starts()).toBe(1);
+    for (let ms = 0; ms <= 200; ms += 10) {
+      vi.setSystemTime(ms);
+      recorder.levelCallback?.(0.5);
+    }
+    await controller.onPressEnd();
+
+    expect(takes).toHaveLength(1);
+    expect(takes[0].duration).toBe(2);
+    expect(takes[0].peaks.length).toBeGreaterThan(0);
+    expect(controller.phase).toBe("idle");
+  });
+
+  it("follows the live level while recording and rests at zero after", async () => {
+    const { controller, recorder, host } = makeController();
+    await controller.startRecording();
+    const before = host.updates;
+
+    vi.setSystemTime(1000);
+    recorder.levelCallback?.(0.1);
+    vi.setSystemTime(1100);
+    recorder.levelCallback?.(0.8);
+    vi.setSystemTime(1200);
+    recorder.levelCallback?.(0.2);
+
+    expect(controller.level).toBeCloseTo(0.8);
+    expect(host.updates).toBeGreaterThan(before);
+
+    await controller.stopRecording();
+    expect(controller.level).toBe(0);
+  });
+
+  it("does not start a take while a broadcast is in flight", async () => {
+    const { controller, recorder } = makeController();
+    controller.setSending(true);
+
+    await controller.onPressStart(press);
+    await controller.startRecording();
+
+    expect(recorder.started).toBe(0);
+    expect(controller.phase).toBe("sending");
+  });
+
+  it("reports a denied microphone as sticky, and other failures as not", async () => {
+    const { controller, recorder, errors } = makeController();
+    recorder.startImpl = async () => {
+      throw Object.assign(new Error("no"), { name: "NotAllowedError" });
+    };
+    await controller.startRecording();
+    recorder.startImpl = async () => {
+      throw new Error("worklet 404");
+    };
+    await controller.startRecording();
+
+    expect(errors.map((error) => error.sticky)).toEqual([true, false]);
+  });
+
+  it("calls a short push-to-talk press a tap, not a take", async () => {
+    const { controller, recorder, takes, errors } = makeController();
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+
+    await controller.onPressStart(press);
+    await controller.onPressEnd();
+
+    expect(takes).toHaveLength(0);
+    expect(errors[0].text).toMatch(/Hold/);
+  });
+
+  it("waits for the host to finish with a take before resolving", async () => {
+    // The tile sends from onTake; stopRecording resolving only afterwards is
+    // what lets its tests (and its own sequencing) await the whole gesture.
+    const host = { addController() {}, requestUpdate() {} };
+    const order: string[] = [];
+    const controller = new RecordingController(host as any, {
+      recordMode: () => "push_to_talk",
+      maxDuration: () => 60,
+      onTake: async () => {
+        await Promise.resolve();
+        order.push("take handled");
+      },
+      onError: () => {},
+    });
+    controller.recorder = new FakeRecorder() as any;
+
+    await controller.startRecording();
+    await controller.stopRecording();
+    order.push("stop resolved");
+
+    expect(order).toEqual(["take handled", "stop resolved"]);
+  });
+});

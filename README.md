@@ -10,7 +10,7 @@ speakers — a simple intercom, without leaving the UI.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/card-dark.png">
-    <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a record button, a list of speakers, and recent messages" width="360">
+    <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="360">
   </picture>
 </p>
 
@@ -61,13 +61,43 @@ Add the **Voice Broadcast** card to any dashboard. Then:
 
 1. Hold the round record button and speak, then let go to stop. (The button
    defaults to this hold-to-talk behaviour; switch it to tap-to-start,
-   tap-to-stop instead from the card editor's **Recording** field.)
-2. Optionally press play to hear the recording before sending it.
-3. Select one or more speakers.
-4. Optionally turn on **Set volume** and choose the level to broadcast at.
+   tap-to-stop instead from the card editor's **Recording** field.) While you
+   speak, the button pulses with your voice and a ring on its rim counts down
+   to the length limit.
+2. Optionally press play to hear the recording before sending it, or
+   **Discard** it.
+3. Pick one or more speakers.
+4. Optionally open the volume control and choose the level to broadcast at.
    Each speaker is set to that level for the message and put back to its own
    volume afterwards. Left off, the speakers' volume is not touched.
-5. Press **Broadcast**.
+5. Press **Send**.
+
+Nothing on the card moves while you do this: recording, reviewing and sending
+change what the card shows, never where its buttons are.
+
+### Layouts and sections
+
+The card comes in two layouts, picked from the editor's **Layout** field:
+
+- **Full** — a large record button with Discard and Send beside it, a strip
+  above it for the timer and the recorded waveform, and the speaker picker
+  below.
+- **Compact** — two rows: the record button on the left, and beside it the
+  status line, the speaker picker and Send. Recent messages and volume move
+  into a ⋮ menu.
+
+<p align="center">
+  <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-compact-light.png?raw=true" alt="The compact layout: the record button beside a recorded waveform, a speaker picker and Send" width="360">
+</p>
+
+Everything around the record button is a **section** you can reorder,
+restyle or hide from the editor's **Card sections** list:
+
+| Section | Styles | Notes |
+| --- | --- | --- |
+| Speakers | `pill` (one line that opens a list), `chips`, `rows` | Cannot be hidden. Always a pill in Compact |
+| Recent messages | `list` (three rows below the card) or `icon` (a header button) | Either way, opens the full list in a dialog |
+| Volume | `icon` | A header button that opens the volume control |
 
 Broadcasting happens from the card. This integration deliberately registers no
 Home Assistant service and creates no entities — installing it adds the card,
@@ -97,7 +127,13 @@ targets:
 hide_players:
   - media_player.tv
 record_mode: start_stop
-player_list: chips
+layout: full
+sections:
+  - type: speakers
+    style: chips
+  - type: history
+    style: icon
+  - type: volume
 ```
 
 
@@ -109,9 +145,14 @@ player_list: chips
 | `hide_players` | `[]` | Speakers to leave off the card. Applied after `show_players`, so it wins over it. A speaker removed by either list is never broadcast to, even if `targets` still names it |
 | `mode` | `plain` | `plain`, `restore`, or `chime` — see [Behavioural restrictions](#behavioural-restrictions) below |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to the range **5–300**; values outside that range are pulled back to the nearest bound, and invalid values fall back to 60. |
-| `show_history` | `true` | Show the list of recent recordings |
 | `record_mode` | `push_to_talk` | How the record button behaves: `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop). Editable from the card editor's **Recording** field |
-| `player_list` | `rows` | How the speaker list is drawn: `rows` (one row per speaker), `chips` (compact pills), or `dropdown` (a summary line that opens a panel of the same rows). Editable from the card editor's **Speaker list style** field |
+| `layout` | `full` | `full` or `compact` — see [Layouts and sections](#layouts-and-sections) |
+| `sections` | see below | The sections around the record button, in display order, each `{type, style}`. A section left out is hidden, except `speakers` |
+
+Cards written before `layout` and `sections` existed keep working: `player_list`
+(`rows`, `chips`, or `dropdown`, now the pill) sets the speaker style, recent
+messages show as a list unless `show_history: false`, and volume is an icon.
+The editor replaces those two keys with `sections` the first time it saves.
 
 ## Requirements and restrictions
 
@@ -269,6 +310,7 @@ npm ci
 npm test                        # card tests (vitest)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness on http://localhost:8099
+npm run check:layout            # headless check that nothing moves between card states
 ```
 
 `npm run dev` renders the real card and editor against a mocked Home Assistant,

@@ -19,7 +19,7 @@ const base = {
 
 describe("targetList", () => {
   it("names every player and counts the selection in all three styles", () => {
-    for (const style of ["rows", "chips", "dropdown"] as const) {
+    for (const style of ["rows", "chips", "pill"] as const) {
       const html = renderedText(targetList({ ...base, style, open: true }));
       expect(html).toContain("Kitchen");
       expect(html).toContain("Attic");
@@ -33,9 +33,9 @@ describe("targetList", () => {
     expect(html).toContain("unavailable");
   });
 
-  it("keeps a closed dropdown's rows out of the markup", () => {
-    const closed = renderedText(targetList({ ...base, style: "dropdown" }));
-    const open = renderedText(targetList({ ...base, style: "dropdown", open: true }));
+  it("keeps a closed pill's rows out of the markup", () => {
+    const closed = renderedText(targetList({ ...base, style: "pill" }));
+    const open = renderedText(targetList({ ...base, style: "pill", open: true }));
 
     expect(closed).not.toContain("Attic");
     expect(open).toContain("Attic");

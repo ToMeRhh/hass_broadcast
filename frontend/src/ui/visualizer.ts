@@ -15,6 +15,8 @@ export interface VisualizerProps {
    */
   recording: boolean;
   onSeek: (fraction: number) => void;
+  /** Extra classes for the strip, e.g. its size in a layout. */
+  className?: string;
 }
 
 /** Where along the strip a pointer landed, 0..1. */
@@ -43,7 +45,7 @@ export function visualizer(props: VisualizerProps): TemplateResult {
   };
   return html`
     <div
-      class="wave ${props.seekable ? "seekable" : ""}"
+      class="wave ${props.seekable ? "seekable" : ""} ${props.className ?? ""}"
       @pointerdown=${(event: PointerEvent) => {
         if (!props.seekable) {
           return;
@@ -76,7 +78,7 @@ export function visualizer(props: VisualizerProps): TemplateResult {
         (value, index) => html`
           <div
             class="bar ${played(index) ? "played" : props.recording ? "live" : ""}"
-            style="height:${Math.max(2, Math.round(value * 100))}%"
+            style="height:${Math.max(2, Math.round(value * 100))}%;--i:${index}"
           ></div>
         `,
       )}

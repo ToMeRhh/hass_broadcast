@@ -67,8 +67,15 @@ function historyRow(
   `;
 }
 
-/** The whole list, in a modal the card opens with `showModal()`. */
-function historyDialog(props: HistoryProps, now: Date): TemplateResult {
+/**
+ * The whole list, in a modal the card opens with `showModal()`. The list
+ * style renders it from `historySection`; the icon style and the compact ⋮
+ * menu render it directly, since they have no section to hang it from.
+ */
+export function historyDialog(
+  props: HistoryProps,
+  now: Date = props.now ?? new Date(),
+): TemplateResult {
   const close = () => props.onDialogOpenChange?.(false);
   return html`
     <dialog class="history-dialog" @close=${close} @cancel=${close}>

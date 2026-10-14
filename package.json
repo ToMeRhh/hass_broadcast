@@ -6,10 +6,12 @@
   "scripts": {
     "build": "node frontend/build.mjs",
     "dev": "node frontend/dev/serve.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:layout": "node frontend/dev/check-layout.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",
+    "playwright-core": "^1.63.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   },

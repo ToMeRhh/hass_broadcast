@@ -1,28 +1,148 @@
-var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t,r)=>{for(var s=r>1?void 0:r?lt(e,t):e,o=i.length-1,n;o>=0;o--)(n=i[o])&&(s=(r?n(e,t,s):n(s))||s);return r&&s&&at(e,t,s),s};var q=globalThis,W=q.ShadowRoot&&(q.ShadyCSS===void 0||q.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,te=Symbol(),be=new WeakMap,T=class{constructor(e,t,r){if(this._$cssResult$=!0,r!==te)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(W&&e===void 0){let r=t!==void 0&&t.length===1;r&&(e=be.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),r&&be.set(t,e))}return e}toString(){return this.cssText}},ye=i=>new T(typeof i=="string"?i:i+"",void 0,te),R=(i,...e)=>{let t=i.length===1?i[0]:e.reduce((r,s,o)=>r+(n=>{if(n._$cssResult$===!0)return n.cssText;if(typeof n=="number")return n;throw Error("Value passed to 'css' function must be a 'css' function result: "+n+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+i[o+1],i[0]);return new T(t,i,te)},ve=(i,e)=>{if(W)i.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let r=document.createElement("style"),s=q.litNonce;s!==void 0&&r.setAttribute("nonce",s),r.textContent=t.cssText,i.appendChild(r)}},re=W?i=>i:i=>i instanceof CSSStyleSheet?(e=>{let t="";for(let r of e.cssRules)t+=r.cssText;return ye(t)})(i):i;var{is:dt,defineProperty:ct,getOwnPropertyDescriptor:ht,getOwnPropertyNames:pt,getOwnPropertySymbols:ut,getPrototypeOf:gt}=Object,V=globalThis,xe=V.trustedTypes,ft=xe?xe.emptyScript:"",mt=V.reactiveElementPolyfillSupport,O=(i,e)=>i,U={toAttribute(i,e){switch(e){case Boolean:i=i?ft:null;break;case Object:case Array:i=i==null?i:JSON.stringify(i)}return i},fromAttribute(i,e){let t=i;switch(e){case Boolean:t=i!==null;break;case Number:t=i===null?null:Number(i);break;case Object:case Array:try{t=JSON.parse(i)}catch{t=null}}return t}},F=(i,e)=>!dt(i,e),$e={attribute:!0,type:String,converter:U,reflect:!1,useDefault:!1,hasChanged:F};Symbol.metadata??=Symbol("metadata"),V.litPropertyMetadata??=new WeakMap;var v=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=$e){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let r=Symbol(),s=this.getPropertyDescriptor(e,r,t);s!==void 0&&ct(this.prototype,e,s)}}static getPropertyDescriptor(e,t,r){let{get:s,set:o}=ht(this.prototype,e)??{get(){return this[t]},set(n){this[t]=n}};return{get:s,set(n){let a=s?.call(this);o?.call(this,n),this.requestUpdate(e,a,r)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??$e}static _$Ei(){if(this.hasOwnProperty(O("elementProperties")))return;let e=gt(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(O("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(O("properties"))){let t=this.properties,r=[...pt(t),...ut(t)];for(let s of r)this.createProperty(s,t[s])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[r,s]of t)this.elementProperties.set(r,s)}this._$Eh=new Map;for(let[t,r]of this.elementProperties){let s=this._$Eu(t,r);s!==void 0&&this._$Eh.set(s,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let r=new Set(e.flat(1/0).reverse());for(let s of r)t.unshift(re(s))}else e!==void 0&&t.push(re(e));return t}static _$Eu(e,t){let r=t.attribute;return r===!1?void 0:typeof r=="string"?r:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let r of t.keys())this.hasOwnProperty(r)&&(e.set(r,this[r]),delete this[r]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return ve(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,r){this._$AK(e,r)}_$ET(e,t){let r=this.constructor.elementProperties.get(e),s=this.constructor._$Eu(e,r);if(s!==void 0&&r.reflect===!0){let o=(r.converter?.toAttribute!==void 0?r.converter:U).toAttribute(t,r.type);this._$Em=e,o==null?this.removeAttribute(s):this.setAttribute(s,o),this._$Em=null}}_$AK(e,t){let r=this.constructor,s=r._$Eh.get(e);if(s!==void 0&&this._$Em!==s){let o=r.getPropertyOptions(s),n=typeof o.converter=="function"?{fromAttribute:o.converter}:o.converter?.fromAttribute!==void 0?o.converter:U;this._$Em=s;let a=n.fromAttribute(t,o.type);this[s]=a??this._$Ej?.get(s)??a,this._$Em=null}}requestUpdate(e,t,r,s=!1,o){if(e!==void 0){let n=this.constructor;if(s===!1&&(o=this[e]),r??=n.getPropertyOptions(e),!((r.hasChanged??F)(o,t)||r.useDefault&&r.reflect&&o===this._$Ej?.get(e)&&!this.hasAttribute(n._$Eu(e,r))))return;this.C(e,t,r)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:r,reflect:s,wrapped:o},n){r&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,n??t??this[e]),o!==!0||n!==void 0)||(this._$AL.has(e)||(this.hasUpdated||r||(t=void 0),this._$AL.set(e,t)),s===!0&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[s,o]of this._$Ep)this[s]=o;this._$Ep=void 0}let r=this.constructor.elementProperties;if(r.size>0)for(let[s,o]of r){let{wrapped:n}=o,a=this[s];n!==!0||this._$AL.has(s)||a===void 0||this.C(s,void 0,o,a)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(r=>r.hostUpdate?.()),this.update(t)):this._$EM()}catch(r){throw e=!1,this._$EM(),r}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(e){}firstUpdated(e){}};v.elementStyles=[],v.shadowRootOptions={mode:"open"},v[O("elementProperties")]=new Map,v[O("finalized")]=new Map,mt?.({ReactiveElement:v}),(V.reactiveElementVersions??=[]).push("2.1.2");var de=globalThis,we=i=>i,Y=de.trustedTypes,_e=Y?Y.createPolicy("lit-html",{createHTML:i=>i}):void 0,Pe="$lit$",$=`lit$${Math.random().toFixed(9).slice(2)}$`,Me="?"+$,bt=`<${Me}>`,k=document,D=()=>k.createComment(""),N=i=>i===null||typeof i!="object"&&typeof i!="function",ce=Array.isArray,yt=i=>ce(i)||typeof i?.[Symbol.iterator]=="function",ie=`[ 	
-\f\r]`,L=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,ke=/-->/g,Ae=/>/g,w=RegExp(`>|${ie}(?:([^\\s"'>=/]+)(${ie}*=${ie}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`,"g"),Se=/'/g,Ee=/"/g,Te=/^(?:script|style|textarea|title)$/i,he=i=>(e,...t)=>({_$litType$:i,strings:e,values:t}),d=he(1),K=he(2),Wt=he(3),A=Symbol.for("lit-noChange"),c=Symbol.for("lit-nothing"),Ce=new WeakMap,_=k.createTreeWalker(k,129);function Re(i,e){if(!ce(i)||!i.hasOwnProperty("raw"))throw Error("invalid template strings array");return _e!==void 0?_e.createHTML(e):e}var vt=(i,e)=>{let t=i.length-1,r=[],s,o=e===2?"<svg>":e===3?"<math>":"",n=L;for(let a=0;a<t;a++){let l=i[a],g,f,h=-1,y=0;for(;y<l.length&&(n.lastIndex=y,f=n.exec(l),f!==null);)y=n.lastIndex,n===L?f[1]==="!--"?n=ke:f[1]!==void 0?n=Ae:f[2]!==void 0?(Te.test(f[2])&&(s=RegExp("</"+f[2],"g")),n=w):f[3]!==void 0&&(n=w):n===w?f[0]===">"?(n=s??L,h=-1):f[1]===void 0?h=-2:(h=n.lastIndex-f[2].length,g=f[1],n=f[3]===void 0?w:f[3]==='"'?Ee:Se):n===Ee||n===Se?n=w:n===ke||n===Ae?n=L:(n=w,s=void 0);let x=n===w&&i[a+1].startsWith("/>")?" ":"";o+=n===L?l+bt:h>=0?(r.push(g),l.slice(0,h)+Pe+l.slice(h)+$+x):l+$+(h===-2?a:x)}return[Re(i,o+(i[t]||"<?>")+(e===2?"</svg>":e===3?"</math>":"")),r]},I=class i{constructor({strings:e,_$litType$:t},r){let s;this.parts=[];let o=0,n=0,a=e.length-1,l=this.parts,[g,f]=vt(e,t);if(this.el=i.createElement(g,r),_.currentNode=this.el.content,t===2||t===3){let h=this.el.content.firstChild;h.replaceWith(...h.childNodes)}for(;(s=_.nextNode())!==null&&l.length<a;){if(s.nodeType===1){if(s.hasAttributes())for(let h of s.getAttributeNames())if(h.endsWith(Pe)){let y=f[n++],x=s.getAttribute(h).split($),B=/([.?@])?(.*)/.exec(y);l.push({type:1,index:o,name:B[2],strings:x,ctor:B[1]==="."?oe:B[1]==="?"?ne:B[1]==="@"?ae:P}),s.removeAttribute(h)}else h.startsWith($)&&(l.push({type:6,index:o}),s.removeAttribute(h));if(Te.test(s.tagName)){let h=s.textContent.split($),y=h.length-1;if(y>0){s.textContent=Y?Y.emptyScript:"";for(let x=0;x<y;x++)s.append(h[x],D()),_.nextNode(),l.push({type:2,index:++o});s.append(h[y],D())}}}else if(s.nodeType===8)if(s.data===Me)l.push({type:2,index:o});else{let h=-1;for(;(h=s.data.indexOf($,h+1))!==-1;)l.push({type:7,index:o}),h+=$.length-1}o++}}static createElement(e,t){let r=k.createElement("template");return r.innerHTML=e,r}};function C(i,e,t=i,r){if(e===A)return e;let s=r!==void 0?t._$Co?.[r]:t._$Cl,o=N(e)?void 0:e._$litDirective$;return s?.constructor!==o&&(s?._$AO?.(!1),o===void 0?s=void 0:(s=new o(i),s._$AT(i,t,r)),r!==void 0?(t._$Co??=[])[r]=s:t._$Cl=s),s!==void 0&&(e=C(i,s._$AS(i,e.values),s,r)),e}var se=class{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:t},parts:r}=this._$AD,s=(e?.creationScope??k).importNode(t,!0);_.currentNode=s;let o=_.nextNode(),n=0,a=0,l=r[0];for(;l!==void 0;){if(n===l.index){let g;l.type===2?g=new z(o,o.nextSibling,this,e):l.type===1?g=new l.ctor(o,l.name,l.strings,this,e):l.type===6&&(g=new le(o,this,e)),this._$AV.push(g),l=r[++a]}n!==l?.index&&(o=_.nextNode(),n++)}return _.currentNode=k,s}p(e){let t=0;for(let r of this._$AV)r!==void 0&&(r.strings!==void 0?(r._$AI(e,r,t),t+=r.strings.length-2):r._$AI(e[t])),t++}},z=class i{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,r,s){this.type=2,this._$AH=c,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=r,this.options=s,this._$Cv=s?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,t=this._$AM;return t!==void 0&&e?.nodeType===11&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=C(this,e,t),N(e)?e===c||e==null||e===""?(this._$AH!==c&&this._$AR(),this._$AH=c):e!==this._$AH&&e!==A&&this._(e):e._$litType$!==void 0?this.$(e):e.nodeType!==void 0?this.T(e):yt(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==c&&N(this._$AH)?this._$AA.nextSibling.data=e:this.T(k.createTextNode(e)),this._$AH=e}$(e){let{values:t,_$litType$:r}=e,s=typeof r=="number"?this._$AC(e):(r.el===void 0&&(r.el=I.createElement(Re(r.h,r.h[0]),this.options)),r);if(this._$AH?._$AD===s)this._$AH.p(t);else{let o=new se(s,this),n=o.u(this.options);o.p(t),this.T(n),this._$AH=o}}_$AC(e){let t=Ce.get(e.strings);return t===void 0&&Ce.set(e.strings,t=new I(e)),t}k(e){ce(this._$AH)||(this._$AH=[],this._$AR());let t=this._$AH,r,s=0;for(let o of e)s===t.length?t.push(r=new i(this.O(D()),this.O(D()),this,this.options)):r=t[s],r._$AI(o),s++;s<t.length&&(this._$AR(r&&r._$AB.nextSibling,s),t.length=s)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){let r=we(e).nextSibling;we(e).remove(),e=r}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},P=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,r,s,o){this.type=1,this._$AH=c,this._$AN=void 0,this.element=e,this.name=t,this._$AM=s,this.options=o,r.length>2||r[0]!==""||r[1]!==""?(this._$AH=Array(r.length-1).fill(new String),this.strings=r):this._$AH=c}_$AI(e,t=this,r,s){let o=this.strings,n=!1;if(o===void 0)e=C(this,e,t,0),n=!N(e)||e!==this._$AH&&e!==A,n&&(this._$AH=e);else{let a=e,l,g;for(e=o[0],l=0;l<o.length-1;l++)g=C(this,a[r+l],t,l),g===A&&(g=this._$AH[l]),n||=!N(g)||g!==this._$AH[l],g===c?e=c:e!==c&&(e+=(g??"")+o[l+1]),this._$AH[l]=g}n&&!s&&this.j(e)}j(e){e===c?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}},oe=class extends P{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===c?void 0:e}},ne=class extends P{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==c)}},ae=class extends P{constructor(e,t,r,s,o){super(e,t,r,s,o),this.type=5}_$AI(e,t=this){if((e=C(this,e,t,0)??c)===A)return;let r=this._$AH,s=e===c&&r!==c||e.capture!==r.capture||e.once!==r.once||e.passive!==r.passive,o=e!==c&&(r===c||s);s&&this.element.removeEventListener(this.name,this,r),o&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH=="function"?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},le=class{constructor(e,t,r){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=r}get _$AU(){return this._$AM._$AU}_$AI(e){C(this,e)}};var xt=de.litHtmlPolyfillSupport;xt?.(I,z),(de.litHtmlVersions??=[]).push("3.3.3");var Oe=(i,e,t)=>{let r=t?.renderBefore??e,s=r._$litPart$;if(s===void 0){let o=t?.renderBefore??null;r._$litPart$=s=new z(e.insertBefore(D(),o),o,void 0,t??{})}return s._$AI(i),s};var pe=globalThis,b=class extends v{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=Oe(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return A}};b._$litElement$=!0,b.finalized=!0,pe.litElementHydrateSupport?.({LitElement:b});var $t=pe.litElementPolyfillSupport;$t?.({LitElement:b});(pe.litElementVersions??=[]).push("4.2.2");var G=i=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(i,e)}):customElements.define(i,e)};var wt={attribute:!0,type:String,converter:U,reflect:!1,hasChanged:F},_t=(i=wt,e,t)=>{let{kind:r,metadata:s}=t,o=globalThis.litPropertyMetadata.get(s);if(o===void 0&&globalThis.litPropertyMetadata.set(s,o=new Map),r==="setter"&&((i=Object.create(i)).wrapped=!0),o.set(t.name,i),r==="accessor"){let{name:n}=t;return{set(a){let l=e.get.call(this);e.set.call(this,a),this.requestUpdate(n,l,i,!0,a)},init(a){return a!==void 0&&this.C(n,void 0,i,a),a}}}if(r==="setter"){let{name:n}=t;return function(a){let l=this[n];e.call(this,a),this.requestUpdate(n,l,i,!0,a)}}throw Error("Unsupported decorator location: "+r)};function M(i){return(e,t)=>typeof t=="object"?_t(i,e,t):((r,s,o)=>{let n=s.hasOwnProperty(o);return s.constructor.createProperty(o,r),n?Object.getOwnPropertyDescriptor(s,o):void 0})(i,e,t)}function m(i){return M({...i,state:!0,attribute:!1})}async function Ue(i,e,t){let r=new FormData;r.append("file",e,"recording.wav"),r.append("duration",String(t));let s=await fetch("/api/hass_broadcast/upload",{method:"POST",body:r,headers:{Authorization:`Bearer ${i.auth.data.access_token}`}});if(!s.ok)throw new Error(`Upload failed (${s.status})`);return(await s.json()).message_id}async function Le(i){return(await i.connection.sendMessagePromise({type:"hass_broadcast/list"})).messages}async function De(i,e){return(await i.connection.sendMessagePromise({type:"hass_broadcast/delete",message_id:e})).deleted}async function Ne(i,e,t,r,s){return{failed:(await i.connection.sendMessagePromise({type:"hass_broadcast/send",message_id:e,targets:t,mode:r,...s!==void 0?{volume:s}:{}})).failed}}var Ie="Recording needs a secure connection. Open Home Assistant over HTTPS (or localhost) \u2014 plain http:// to a LAN address cannot use the microphone.";function ze(i){return i?.name==="NotAllowedError"?"Microphone permission was denied. Allow it for this site and try again.":`Could not start recording: ${i?.message??i?.name??"unknown error"}`}function He(i,e){let t=i.length*2,r=new ArrayBuffer(44+t),s=new DataView(r),o=(n,a)=>{for(let l=0;l<a.length;l++)s.setUint8(n+l,a.charCodeAt(l))};return o(0,"RIFF"),s.setUint32(4,36+t,!0),o(8,"WAVE"),o(12,"fmt "),s.setUint32(16,16,!0),s.setUint16(20,1,!0),s.setUint16(22,1,!0),s.setUint32(24,e,!0),s.setUint32(28,e*2,!0),s.setUint16(32,2,!0),s.setUint16(34,16,!0),o(36,"data"),s.setUint32(40,t,!0),new Int16Array(r,44).set(i),new Blob([r],{type:"audio/wav"})}var je=16e3,kt="/api/hass_broadcast/static/recorder-worklet.js",S=class{constructor(){this.chunks=[];this.active=!1}static isSupported(){return typeof window<"u"&&window.isSecureContext===!0&&typeof navigator<"u"&&!!navigator.mediaDevices?.getUserMedia&&typeof AudioWorkletNode<"u"}onLevel(e){this.levelCallback=e}async start(){this.chunks=[];try{this.stream=await navigator.mediaDevices.getUserMedia({audio:!0}),this.context=new AudioContext({sampleRate:je}),await this.context.audioWorklet.addModule(kt);let e=this.context.createMediaStreamSource(this.stream);this.node=new AudioWorkletNode(this.context,"recorder-worklet"),this.node.port.onmessage=t=>{this.chunks.push(t.data),this.levelCallback&&this.levelCallback(At(t.data))},e.connect(this.node),this.node.connect(this.context.destination),this.active=!0}catch(e){throw await this.release(),e}}async stop(){if(!this.active)throw new Error("Recorder.stop() called with no active recording session");let e=this.context?.sampleRate??je,t=this.chunks;await this.release();let r=t.reduce((n,a)=>n+a.length,0),s=new Int16Array(r),o=0;for(let n of t)s.set(n,o),o+=n.length;return{blob:He(s,e),duration:r/e}}async release(){this.node?.port.close(),this.node?.disconnect(),this.stream?.getTracks().forEach(e=>e.stop());try{await this.context?.close()}catch{}finally{this.context=void 0,this.stream=void 0,this.node=void 0,this.chunks=[],this.active=!1}}};function At(i){let e=0;for(let t of i)e=Math.max(e,Math.abs(t));return e/32768}function X(i){return i?.states?Object.keys(i.states).filter(e=>e.startsWith("media_player.")).filter(e=>(i.states[e].attributes.supported_features&512)!==0).sort():[]}function Be(i,e,t){let r=e?.length?[...new Set(e)]:i;if(!t?.length)return r;let s=new Set(t);return r.filter(o=>!s.has(o))}function qe(i,e,t){let r=e?.length?new Set(e):void 0,s=new Set(t??[]);return i.filter(o=>(r===void 0||r.has(o))&&!s.has(o))}function St(i,e){let t=n=>i?.states?.[n]?.attributes?.friendly_name??n,r=X(i),s=new Set(r),o=[...new Set([...e.show_players??[],...e.hide_players??[]])].filter(n=>!s.has(n)).sort();return[...r,...o].map(n=>({entityId:n,name:t(n),available:s.has(n)}))}var We=3;function Et(i,e,t){if(!i?.length)return t;let r=i.map(n=>e.find(a=>a.entityId===n)?.name??n),s=r.slice(0,We).join(", "),o=r.length-We;return o>0?`${s} +${o} more`:s}function Ct(i,e,t){let r=i??[];if(t)return r.includes(e)?r:[...r,e];let s=r.filter(o=>o!==e);return s.length?s:void 0}function ue(i){if(i===""||i===null||i===void 0)return 60;let e=Number(i);return isNaN(e)?60:Math.min(300,Math.max(5,e))}var E=class extends b{constructor(){super(...arguments);this.config={type:""}}setConfig(t){this.config=t}emit(t){this.config={...this.config,...t},this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this.config},bubbles:!0,composed:!0}))}get currentRecordMode(){return this.config.record_mode==="start_stop"?"start_stop":"push_to_talk"}setRecordMode(t){this.emit({record_mode:t})}playerSection(t,r,s,o){let n=this.config[t]??[];return d`
+var ii=Object.defineProperty;var si=Object.getOwnPropertyDescriptor;var m=(i,e,t,s)=>{for(var o=s>1?void 0:s?si(e,t):e,r=i.length-1,n;r>=0;r--)(n=i[r])&&(o=(s?n(e,t,o):n(o))||o);return s&&o&&ii(e,t,o),o};var F=globalThis,Y=F.ShadowRoot&&(F.ShadyCSS===void 0||F.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,ve=Symbol(),Ie=new WeakMap,D=class{constructor(e,t,s){if(this._$cssResult$=!0,s!==ve)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(Y&&e===void 0){let s=t!==void 0&&t.length===1;s&&(e=Ie.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),s&&Ie.set(t,e))}return e}toString(){return this.cssText}},Ne=i=>new D(typeof i=="string"?i:i+"",void 0,ve),x=(i,...e)=>{let t=i.length===1?i[0]:e.reduce((s,o,r)=>s+(n=>{if(n._$cssResult$===!0)return n.cssText;if(typeof n=="number")return n;throw Error("Value passed to 'css' function must be a 'css' function result: "+n+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(o)+i[r+1],i[0]);return new D(t,i,ve)},ze=(i,e)=>{if(Y)i.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let s=document.createElement("style"),o=F.litNonce;o!==void 0&&s.setAttribute("nonce",o),s.textContent=t.cssText,i.appendChild(s)}},be=Y?i=>i:i=>i instanceof CSSStyleSheet?(e=>{let t="";for(let s of e.cssRules)t+=s.cssText;return Ne(t)})(i):i;var{is:oi,defineProperty:ri,getOwnPropertyDescriptor:ni,getOwnPropertyNames:ai,getOwnPropertySymbols:li,getPrototypeOf:ci}=Object,K=globalThis,He=K.trustedTypes,di=He?He.emptyScript:"",pi=K.reactiveElementPolyfillSupport,U=(i,e)=>i,I={toAttribute(i,e){switch(e){case Boolean:i=i?di:null;break;case Object:case Array:i=i==null?i:JSON.stringify(i)}return i},fromAttribute(i,e){let t=i;switch(e){case Boolean:t=i!==null;break;case Number:t=i===null?null:Number(i);break;case Object:case Array:try{t=JSON.parse(i)}catch{t=null}}return t}},G=(i,e)=>!oi(i,e),Be={attribute:!0,type:String,converter:I,reflect:!1,useDefault:!1,hasChanged:G};Symbol.metadata??=Symbol("metadata"),K.litPropertyMetadata??=new WeakMap;var $=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=Be){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let s=Symbol(),o=this.getPropertyDescriptor(e,s,t);o!==void 0&&ri(this.prototype,e,o)}}static getPropertyDescriptor(e,t,s){let{get:o,set:r}=ni(this.prototype,e)??{get(){return this[t]},set(n){this[t]=n}};return{get:o,set(n){let l=o?.call(this);r?.call(this,n),this.requestUpdate(e,l,s)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??Be}static _$Ei(){if(this.hasOwnProperty(U("elementProperties")))return;let e=ci(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(U("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(U("properties"))){let t=this.properties,s=[...ai(t),...li(t)];for(let o of s)this.createProperty(o,t[o])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[s,o]of t)this.elementProperties.set(s,o)}this._$Eh=new Map;for(let[t,s]of this.elementProperties){let o=this._$Eu(t,s);o!==void 0&&this._$Eh.set(o,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let s=new Set(e.flat(1/0).reverse());for(let o of s)t.unshift(be(o))}else e!==void 0&&t.push(be(e));return t}static _$Eu(e,t){let s=t.attribute;return s===!1?void 0:typeof s=="string"?s:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let s of t.keys())this.hasOwnProperty(s)&&(e.set(s,this[s]),delete this[s]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return ze(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,s){this._$AK(e,s)}_$ET(e,t){let s=this.constructor.elementProperties.get(e),o=this.constructor._$Eu(e,s);if(o!==void 0&&s.reflect===!0){let r=(s.converter?.toAttribute!==void 0?s.converter:I).toAttribute(t,s.type);this._$Em=e,r==null?this.removeAttribute(o):this.setAttribute(o,r),this._$Em=null}}_$AK(e,t){let s=this.constructor,o=s._$Eh.get(e);if(o!==void 0&&this._$Em!==o){let r=s.getPropertyOptions(o),n=typeof r.converter=="function"?{fromAttribute:r.converter}:r.converter?.fromAttribute!==void 0?r.converter:I;this._$Em=o;let l=n.fromAttribute(t,r.type);this[o]=l??this._$Ej?.get(o)??l,this._$Em=null}}requestUpdate(e,t,s,o=!1,r){if(e!==void 0){let n=this.constructor;if(o===!1&&(r=this[e]),s??=n.getPropertyOptions(e),!((s.hasChanged??G)(r,t)||s.useDefault&&s.reflect&&r===this._$Ej?.get(e)&&!this.hasAttribute(n._$Eu(e,s))))return;this.C(e,t,s)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:s,reflect:o,wrapped:r},n){s&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,n??t??this[e]),r!==!0||n!==void 0)||(this._$AL.has(e)||(this.hasUpdated||s||(t=void 0),this._$AL.set(e,t)),o===!0&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[o,r]of this._$Ep)this[o]=r;this._$Ep=void 0}let s=this.constructor.elementProperties;if(s.size>0)for(let[o,r]of s){let{wrapped:n}=r,l=this[o];n!==!0||this._$AL.has(o)||l===void 0||this.C(o,void 0,r,l)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(s=>s.hostUpdate?.()),this.update(t)):this._$EM()}catch(s){throw e=!1,this._$EM(),s}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(e){}firstUpdated(e){}};$.elementStyles=[],$.shadowRootOptions={mode:"open"},$[U("elementProperties")]=new Map,$[U("finalized")]=new Map,pi?.({ReactiveElement:$}),(K.reactiveElementVersions??=[]).push("2.1.2");var $e=globalThis,je=i=>i,X=$e.trustedTypes,Ve=X?X.createPolicy("lit-html",{createHTML:i=>i}):void 0,we="$lit$",w=`lit$${Math.random().toFixed(9).slice(2)}$`,_e="?"+w,hi=`<${_e}>`,A=document,z=()=>A.createComment(""),H=i=>i===null||typeof i!="object"&&typeof i!="function",ke=Array.isArray,Ge=i=>ke(i)||typeof i?.[Symbol.iterator]=="function",xe=`[ 	
+\f\r]`,N=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,qe=/-->/g,We=/>/g,k=RegExp(`>|${xe}(?:([^\\s"'>=/]+)(${xe}*=${xe}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`,"g"),Fe=/'/g,Ye=/"/g,Xe=/^(?:script|style|textarea|title)$/i,Se=i=>(e,...t)=>({_$litType$:i,strings:e,values:t}),a=Se(1),Je=Se(2),Vi=Se(3),T=Symbol.for("lit-noChange"),d=Symbol.for("lit-nothing"),Ke=new WeakMap,S=A.createTreeWalker(A,129);function Qe(i,e){if(!ke(i)||!i.hasOwnProperty("raw"))throw Error("invalid template strings array");return Ve!==void 0?Ve.createHTML(e):e}var Ze=(i,e)=>{let t=i.length-1,s=[],o,r=e===2?"<svg>":e===3?"<math>":"",n=N;for(let l=0;l<t;l++){let c=i[l],h,u,p=-1,v=0;for(;v<c.length&&(n.lastIndex=v,u=n.exec(c),u!==null);)v=n.lastIndex,n===N?u[1]==="!--"?n=qe:u[1]!==void 0?n=We:u[2]!==void 0?(Xe.test(u[2])&&(o=RegExp("</"+u[2],"g")),n=k):u[3]!==void 0&&(n=k):n===k?u[0]===">"?(n=o??N,p=-1):u[1]===void 0?p=-2:(p=n.lastIndex-u[2].length,h=u[1],n=u[3]===void 0?k:u[3]==='"'?Ye:Fe):n===Ye||n===Fe?n=k:n===qe||n===We?n=N:(n=k,o=void 0);let _=n===k&&i[l+1].startsWith("/>")?" ":"";r+=n===N?c+hi:p>=0?(s.push(h),c.slice(0,p)+we+c.slice(p)+w+_):c+w+(p===-2?l:_)}return[Qe(i,r+(i[t]||"<?>")+(e===2?"</svg>":e===3?"</math>":"")),s]},B=class i{constructor({strings:e,_$litType$:t},s){let o;this.parts=[];let r=0,n=0,l=e.length-1,c=this.parts,[h,u]=Ze(e,t);if(this.el=i.createElement(h,s),S.currentNode=this.el.content,t===2||t===3){let p=this.el.content.firstChild;p.replaceWith(...p.childNodes)}for(;(o=S.nextNode())!==null&&c.length<l;){if(o.nodeType===1){if(o.hasAttributes())for(let p of o.getAttributeNames())if(p.endsWith(we)){let v=u[n++],_=o.getAttribute(p).split(w),W=/([.?@])?(.*)/.exec(v);c.push({type:1,index:r,name:W[2],strings:_,ctor:W[1]==="."?Q:W[1]==="?"?Z:W[1]==="@"?ee:C}),o.removeAttribute(p)}else p.startsWith(w)&&(c.push({type:6,index:r}),o.removeAttribute(p));if(Xe.test(o.tagName)){let p=o.textContent.split(w),v=p.length-1;if(v>0){o.textContent=X?X.emptyScript:"";for(let _=0;_<v;_++)o.append(p[_],z()),S.nextNode(),c.push({type:2,index:++r});o.append(p[v],z())}}}else if(o.nodeType===8)if(o.data===_e)c.push({type:2,index:r});else{let p=-1;for(;(p=o.data.indexOf(w,p+1))!==-1;)c.push({type:7,index:r}),p+=w.length-1}r++}}static createElement(e,t){let s=A.createElement("template");return s.innerHTML=e,s}};function E(i,e,t=i,s){if(e===T)return e;let o=s!==void 0?t._$Co?.[s]:t._$Cl,r=H(e)?void 0:e._$litDirective$;return o?.constructor!==r&&(o?._$AO?.(!1),r===void 0?o=void 0:(o=new r(i),o._$AT(i,t,s)),s!==void 0?(t._$Co??=[])[s]=o:t._$Cl=o),o!==void 0&&(e=E(i,o._$AS(i,e.values),o,s)),e}var J=class{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:t},parts:s}=this._$AD,o=(e?.creationScope??A).importNode(t,!0);S.currentNode=o;let r=S.nextNode(),n=0,l=0,c=s[0];for(;c!==void 0;){if(n===c.index){let h;c.type===2?h=new R(r,r.nextSibling,this,e):c.type===1?h=new c.ctor(r,c.name,c.strings,this,e):c.type===6&&(h=new te(r,this,e)),this._$AV.push(h),c=s[++l]}n!==c?.index&&(r=S.nextNode(),n++)}return S.currentNode=A,o}p(e){let t=0;for(let s of this._$AV)s!==void 0&&(s.strings!==void 0?(s._$AI(e,s,t),t+=s.strings.length-2):s._$AI(e[t])),t++}},R=class i{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,s,o){this.type=2,this._$AH=d,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=s,this.options=o,this._$Cv=o?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,t=this._$AM;return t!==void 0&&e?.nodeType===11&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=E(this,e,t),H(e)?e===d||e==null||e===""?(this._$AH!==d&&this._$AR(),this._$AH=d):e!==this._$AH&&e!==T&&this._(e):e._$litType$!==void 0?this.$(e):e.nodeType!==void 0?this.T(e):Ge(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==d&&H(this._$AH)?this._$AA.nextSibling.data=e:this.T(A.createTextNode(e)),this._$AH=e}$(e){let{values:t,_$litType$:s}=e,o=typeof s=="number"?this._$AC(e):(s.el===void 0&&(s.el=B.createElement(Qe(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===o)this._$AH.p(t);else{let r=new J(o,this),n=r.u(this.options);r.p(t),this.T(n),this._$AH=r}}_$AC(e){let t=Ke.get(e.strings);return t===void 0&&Ke.set(e.strings,t=new B(e)),t}k(e){ke(this._$AH)||(this._$AH=[],this._$AR());let t=this._$AH,s,o=0;for(let r of e)o===t.length?t.push(s=new i(this.O(z()),this.O(z()),this,this.options)):s=t[o],s._$AI(r),o++;o<t.length&&(this._$AR(s&&s._$AB.nextSibling,o),t.length=o)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){let s=je(e).nextSibling;je(e).remove(),e=s}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},C=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,s,o,r){this.type=1,this._$AH=d,this._$AN=void 0,this.element=e,this.name=t,this._$AM=o,this.options=r,s.length>2||s[0]!==""||s[1]!==""?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=d}_$AI(e,t=this,s,o){let r=this.strings,n=!1;if(r===void 0)e=E(this,e,t,0),n=!H(e)||e!==this._$AH&&e!==T,n&&(this._$AH=e);else{let l=e,c,h;for(e=r[0],c=0;c<r.length-1;c++)h=E(this,l[s+c],t,c),h===T&&(h=this._$AH[c]),n||=!H(h)||h!==this._$AH[c],h===d?e=d:e!==d&&(e+=(h??"")+r[c+1]),this._$AH[c]=h}n&&!o&&this.j(e)}j(e){e===d?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}},Q=class extends C{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===d?void 0:e}},Z=class extends C{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==d)}},ee=class extends C{constructor(e,t,s,o,r){super(e,t,s,o,r),this.type=5}_$AI(e,t=this){if((e=E(this,e,t,0)??d)===T)return;let s=this._$AH,o=e===d&&s!==d||e.capture!==s.capture||e.once!==s.once||e.passive!==s.passive,r=e!==d&&(s===d||o);o&&this.element.removeEventListener(this.name,this,s),r&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH=="function"?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},te=class{constructor(e,t,s){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=s}get _$AU(){return this._$AM._$AU}_$AI(e){E(this,e)}},et={M:we,P:w,A:_e,C:1,L:Ze,R:J,D:Ge,V:E,I:R,H:C,N:Z,U:ee,B:Q,F:te},ui=$e.litHtmlPolyfillSupport;ui?.(B,R),($e.litHtmlVersions??=[]).push("3.3.3");var tt=(i,e,t)=>{let s=t?.renderBefore??e,o=s._$litPart$;if(o===void 0){let r=t?.renderBefore??null;s._$litPart$=o=new R(e.insertBefore(z(),r),r,void 0,t??{})}return o._$AI(i),o};var Ae=globalThis,b=class extends ${constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=tt(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return T}};b._$litElement$=!0,b.finalized=!0,Ae.litElementHydrateSupport?.({LitElement:b});var mi=Ae.litElementPolyfillSupport;mi?.({LitElement:b});(Ae.litElementVersions??=[]).push("4.2.2");var ie=i=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(i,e)}):customElements.define(i,e)};var gi={attribute:!0,type:String,converter:I,reflect:!1,hasChanged:G},fi=(i=gi,e,t)=>{let{kind:s,metadata:o}=t,r=globalThis.litPropertyMetadata.get(o);if(r===void 0&&globalThis.litPropertyMetadata.set(o,r=new Map),s==="setter"&&((i=Object.create(i)).wrapped=!0),r.set(t.name,i),s==="accessor"){let{name:n}=t;return{set(l){let c=e.get.call(this);e.set.call(this,l),this.requestUpdate(n,c,i,!0,l)},init(l){return l!==void 0&&this.C(n,void 0,i,l),l}}}if(s==="setter"){let{name:n}=t;return function(l){let c=this[n];e.call(this,l),this.requestUpdate(n,c,i,!0,l)}}throw Error("Unsupported decorator location: "+s)};function O(i){return(e,t)=>typeof t=="object"?fi(i,e,t):((s,o,r)=>{let n=o.hasOwnProperty(r);return o.constructor.createProperty(r,s),n?Object.getOwnPropertyDescriptor(o,r):void 0})(i,e,t)}function f(i){return O({...i,state:!0,attribute:!1})}var it=i=>(...e)=>({_$litDirective$:i,values:e}),oe=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,t,s){this._$Ct=e,this._$AM=t,this._$Ci=s}_$AS(e,t){return this.update(e,t)}update(e,t){return this.render(...t)}};var{I:Ms}=et;var yi={},st=(i,e=yi)=>i._$AH=e;var ot=it(class extends oe{constructor(){super(...arguments),this.key=d}render(i,e){return this.key=i,e}update(i,[e,t]){return e!==this.key&&(st(i),this.key=e),t}});async function rt(i,e,t){let s=new FormData;s.append("file",e,"recording.wav"),s.append("duration",String(t));let o=await fetch("/api/hass_broadcast/upload",{method:"POST",body:s,headers:{Authorization:`Bearer ${i.auth.data.access_token}`}});if(!o.ok)throw new Error(`Upload failed (${o.status})`);return(await o.json()).message_id}async function nt(i){return(await i.connection.sendMessagePromise({type:"hass_broadcast/list"})).messages}async function at(i,e){return(await i.connection.sendMessagePromise({type:"hass_broadcast/delete",message_id:e})).deleted}async function lt(i,e,t,s,o){return{failed:(await i.connection.sendMessagePromise({type:"hass_broadcast/send",message_id:e,targets:t,mode:s,...o!==void 0?{volume:o}:{}})).failed}}var ct="Recording needs a secure connection. Open Home Assistant over HTTPS (or localhost) \u2014 plain http:// to a LAN address cannot use the microphone.";function dt(i){return i?.name==="NotAllowedError"?"Microphone permission was denied. Allow it for this site and try again.":`Could not start recording: ${i?.message??i?.name??"unknown error"}`}function re(i){return i?.states?Object.keys(i.states).filter(e=>e.startsWith("media_player.")).filter(e=>(i.states[e].attributes.supported_features&512)!==0).sort():[]}function pt(i,e,t){let s=e?.length?[...new Set(e)]:i;if(!t?.length)return s;let o=new Set(t);return s.filter(r=>!o.has(r))}function ht(i,e,t){let s=e?.length?new Set(e):void 0,o=new Set(t??[]);return i.filter(r=>(s===void 0||s.has(r))&&!o.has(r))}function ut(i,e){let t=n=>i?.states?.[n]?.attributes?.friendly_name??n,s=re(i),o=new Set(s),r=[...new Set(e.flat())].filter(n=>!o.has(n)).sort();return[...s,...r].map(n=>({entityId:n,name:t(n),available:o.has(n)}))}function mt(i,e,t){let s=i??[];if(t)return s.includes(e)?s:[...s,e];let o=s.filter(r=>r!==e);return o.length?o:void 0}function L(i){if(i===""||i===null||i===void 0)return 60;let e=Number(i);return isNaN(e)?60:Math.min(300,Math.max(5,e))}function Te(i,e,t){return a`
+    <div class="segmented">
+      ${e.map(([s,o])=>a`
+          <button
+            type="button"
+            data-on=${i===s}
+            aria-pressed=${i===s}
+            @click=${()=>t(s)}
+          >
+            ${o}
+          </button>
+        `)}
+    </div>
+  `}function gt(i,e,t){return a`
+    <div class="rows">
+      ${i.map(s=>a`
+          <label>
+            <input
+              type="checkbox"
+              .checked=${e.includes(s.entityId)}
+              @change=${o=>t(s.entityId,o.target.checked)}
+            />
+            <span class=${s.available?"":"missing"}>
+              ${s.name}${s.available?"":" (not available)"}
+            </span>
+          </label>
+        `)}
+    </div>
+  `}function ft(i,e){return a`
+    <div class="field">
+      <label for="mode">Playback mode</label>
+      <select
+        id="mode"
+        .value=${i??"plain"}
+        @change=${t=>e(t.target.value)}
+      >
+        <option value="plain">Plain — just play the message</option>
+        <option value="restore">Restore — put back volume afterwards</option>
+        <option value="chime">Chime — attention tone, then the message</option>
+      </select>
+      <div class="hint">
+        Restore uses a speaker's native announce support when it has any, which
+        ducks and resumes whatever was playing. Speakers without it — Google Cast
+        among them — get volume restored, but an interrupted Spotify or YouTube
+        session may not resume.
+      </div>
+    </div>
+  `}function yt(i,e){return a`
+    <div class="field">
+      <label for="max">Maximum recording length (seconds)</label>
+      <input
+        id="max"
+        type="number"
+        min="5"
+        max="300"
+        .value=${String(i??60)}
+        @change=${t=>e(L(t.target.value))}
+      />
+    </div>
+  `}var vt=x`
+  .field { display: block; margin-bottom: 12px; }
+  label { display: block; margin-bottom: 4px; font-weight: 500; }
+  .hint { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 4px; }
+  input[type="text"], input[type="number"], select { width: 100%; box-sizing: border-box;
+    padding: 8px; border-radius: 4px; border: 1px solid var(--divider-color, #ddd);
+    background: var(--card-background-color, #fff); color: var(--primary-text-color);
+    font: inherit; }
+  .players { border: 1px solid var(--divider-color, #ddd); border-radius: 4px;
+    padding: 8px; }
+  summary { cursor: pointer; font-weight: 500; }
+  .rows { max-height: 220px; overflow-y: auto; margin-top: 8px;
+    border-top: 1px solid var(--divider-color, #ddd); padding-top: 4px; }
+  .rows label { display: flex; align-items: center; gap: 8px; font-weight: normal;
+    margin: 0; padding: 4px 0; }
+  .missing { color: var(--secondary-text-color); }
+  .segmented { display: flex; gap: 6px; }
+  .segmented button { flex: 1; padding: 8px; font: inherit; cursor: pointer;
+    border: 1px solid var(--divider-color, #ddd); border-radius: 6px;
+    background: none; color: var(--primary-text-color); }
+  .segmented button[data-on="true"] { background: var(--primary-color);
+    color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
+`;var Ee=["speakers","history","volume"],Ce={speakers:"pill",history:"list",volume:"icon"},Pe={speakers:["pill","chips","rows"],history:["list","icon"],volume:["icon"]};function P(i){return i.layout==="compact"?"compact":"full"}function vi(i){return Ee.includes(i)}function bi(i,e){return Pe[i].includes(e)?e:Ce[i]}function xi(i){let t=[{type:"speakers",style:i.player_list==="chips"?"chips":i.player_list==="dropdown"?"pill":"rows"}];return i.show_history!==!1&&t.push({type:"history",style:"list"}),t.push({type:"volume",style:"icon"}),t}function ne(i){let e;if(Array.isArray(i.sections)){let t=new Set;e=[];for(let s of i.sections){let o=s?.type;!vi(o)||t.has(o)||(t.add(o),e.push({type:o,style:bi(o,s.style)}))}}else e=xi(i);return e.some(t=>t.type==="speakers")||e.unshift({type:"speakers",style:"pill"}),P(i)==="compact"&&(e=e.map(t=>t.type==="speakers"?{type:"speakers",style:"pill"}:t)),e}function bt(i,e){return i.find(t=>t.type===e)}function $i(i,e){return ut(i,[e.show_players??[],e.hide_players??[]])}var xt=3;function wi(i,e,t){if(!i?.length)return t;let s=i.map(n=>e.find(l=>l.entityId===n)?.name??n),o=s.slice(0,xt).join(", "),r=s.length-xt;return r>0?`${o} +${r} more`:o}function $t(i){let e=ne({...i,layout:"full"}).map(s=>({...s,visible:!0})),t=Ee.filter(s=>!e.some(o=>o.type===s)).map(s=>({type:s,style:Ce[s],visible:!1}));return[...e,...t]}function wt(i){return i.filter(e=>e.visible).map(e=>({type:e.type,style:e.style}))}function _t(i,e,t){let s=e+t;if(!i[e]?.visible||s<0||s>=i.length||!i[s].visible)return i;let o=[...i];return[o[e],o[s]]=[o[s],o[e]],o}function _i(i,e){let t=i[e];if(!t||t.type==="speakers")return i;let s=i.filter((n,l)=>l!==e),o={...t,visible:!t.visible},r=s.filter(n=>n.visible).length;return o.visible?[...s.slice(0,r),o,...s.slice(r)]:[...s,o]}var j={speakers:"Speakers",history:"Recent messages",volume:"Volume"},kt={pill:"Pill \u2014 one line",chips:"Chips",rows:"List \u2014 a row each",list:"List below",icon:"Icon in the header"},M=class extends b{constructor(){super(...arguments);this.config={type:""}}setConfig(t){this.config=t}emit(t){let s={...this.config,...t};s.layout=P(s),"sections"in t||(s.sections=wt($t(s))),delete s.player_list,delete s.show_history;for(let o of Object.keys(s))s[o]===void 0&&delete s[o];this.config=s,this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this.config},bubbles:!0,composed:!0}))}get currentRecordMode(){return this.config.record_mode==="start_stop"?"start_stop":"push_to_talk"}setRecordMode(t){this.emit({record_mode:t})}setRows(t){this.emit({sections:wt(t)})}playerSection(t,s,o,r){let n=this.config[t]??[];return a`
       <details class="players">
         <summary>
-          ${r} — ${Et(n,o,s)}
+          ${s} — ${wi(n,r,o)}
         </summary>
-        ${o.length===0?d`<div class="hint">No media players found.</div>`:this.playerList(t,o)}
+        ${r.length===0?a`<div class="hint">No media players found.</div>`:gt(r,n,(l,c)=>this.emit({[t]:mt(this.config[t],l,c)}))}
       </details>
-    `}playerList(t,r){let s=this.config[t]??[];return d`
-      <div class="rows">
-        ${r.map(o=>d`
-            <label>
-              <input
-                type="checkbox"
-                .checked=${s.includes(o.entityId)}
-                @change=${n=>this.emit({[t]:Ct(this.config[t],o.entityId,n.target.checked)})}
-              />
-              <span class=${o.available?"":"missing"}>
-                ${o.name}${o.available?"":" (not available)"}
-              </span>
-            </label>
-          `)}
+    `}sectionList(){let t=P(this.config)==="compact",s=$t(this.config),o=s.filter(r=>r.visible).length;return a`
+      <div class="section-list">
+        ${s.map((r,n)=>{let l=Pe[r.type],c=l.length>1&&!t;return a`
+            <div class="section-row" data-visible=${r.visible}>
+              <span class="section-name">${j[r.type]}</span>
+              <button
+                class="mini"
+                title="Move up"
+                aria-label="Move ${j[r.type]} up"
+                ?disabled=${!r.visible||n===0}
+                @click=${()=>this.setRows(_t(s,n,-1))}
+              >
+                ↑
+              </button>
+              <button
+                class="mini"
+                title="Move down"
+                aria-label="Move ${j[r.type]} down"
+                ?disabled=${!r.visible||n>=o-1}
+                @click=${()=>this.setRows(_t(s,n,1))}
+              >
+                ↓
+              </button>
+              <button
+                class="mini"
+                title=${r.type==="speakers"?"The card needs a way to pick speakers":r.visible?"Hide":"Show"}
+                aria-label="${r.visible?"Hide":"Show"} ${j[r.type]}"
+                aria-pressed=${r.visible}
+                ?disabled=${r.type==="speakers"}
+                @click=${()=>this.setRows(_i(s,n))}
+              >
+                ${r.visible?"\u25C9":"\u25CB"}
+              </button>
+              ${c&&r.visible?a`
+                    <!-- The chosen option is marked with ?selected rather than
+                         the select's .value: with mapped options, .value is
+                         set before the options exist and silently falls back
+                         to the first one. -->
+                    <select
+                      class="section-style"
+                      aria-label="${j[r.type]} style"
+                      @change=${h=>{let u=h.target.value;this.setRows(s.map((p,v)=>v===n?{...p,style:u}:p))}}
+                    >
+                      ${l.map(h=>a`<option value=${h} ?selected=${h===r.style}>
+                            ${kt[h]}
+                          </option>`)}
+                    </select>
+                  `:r.visible&&!t?a`<span class="section-style section-fixed">${kt[r.style]}</span>`:d}
+            </div>
+          `})}
       </div>
-    `}render(){let t=St(this.hass,this.config);return d`
+      <div class="hint">
+        ${t?"In Compact the speakers are a single pill, and the other sections are in the \u22EE menu, in this order.":"Icon sections sit in the header; the rest stack below the record button, in this order."}
+      </div>
+    `}render(){let t=$i(this.hass,this.config);return a`
       <div class="field">
         <label for="title">Card name</label>
         <input
@@ -30,59 +150,29 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
           type="text"
           placeholder="Voice Broadcast"
           .value=${this.config.title??""}
-          @change=${r=>this.emit({title:r.target.value.trim()||void 0})}
+          @change=${s=>this.emit({title:s.target.value.trim()||void 0})}
         />
       </div>
 
       <div class="field">
+        <label>Layout</label>
+        ${Te(P(this.config),[["full","Full"],["compact","Compact"]],s=>this.emit({layout:s}))}
+      </div>
+
+      <div class="field">
+        <label>Card sections</label>
+        ${this.sectionList()}
+      </div>
+
+      <div class="field">
         <label>Recording</label>
-        <div class="segmented">
-          ${[["push_to_talk","Push to talk"],["start_stop","Tap to start and stop"]].map(([r,s])=>d`
-              <button
-                type="button"
-                data-on=${this.currentRecordMode===r}
-                @click=${()=>this.setRecordMode(r)}
-              >
-                ${s}
-              </button>
-            `)}
-        </div>
+        ${Te(this.currentRecordMode,[["push_to_talk","Push to talk"],["start_stop","Tap to start and stop"]],s=>this.setRecordMode(s))}
         <div class="hint">
           Push to talk records only while the button is held.
         </div>
       </div>
 
-      <div class="field">
-        <label for="player-list">Speaker list style</label>
-        <select
-          id="player-list"
-          .value=${this.config.player_list??"rows"}
-          @change=${r=>this.emit({player_list:r.target.value})}
-        >
-          <option value="rows">List — one row per speaker</option>
-          <option value="chips">Chips — compact pills</option>
-          <option value="dropdown">Dropdown — a single summary line</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label for="mode">Playback mode</label>
-        <select
-          id="mode"
-          .value=${this.config.mode??"plain"}
-          @change=${r=>this.emit({mode:r.target.value})}
-        >
-          <option value="plain">Plain — just play the message</option>
-          <option value="restore">Restore — put back volume afterwards</option>
-          <option value="chime">Chime — attention tone, then the message</option>
-        </select>
-        <div class="hint">
-          Restore uses a speaker's native announce support when it has any, which
-          ducks and resumes whatever was playing. Speakers without it — Google Cast
-          among them — get volume restored, but an interrupted Spotify or YouTube
-          session may not resume.
-        </div>
-      </div>
+      ${ft(this.config.mode,s=>this.emit({mode:s}))}
 
       <div class="field">
         ${this.playerSection("show_players","Players to show","every player",t)}
@@ -97,129 +187,216 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
         <div class="hint">Removed after the list above.</div>
       </div>
 
-      <div class="field">
-        <label for="max">Maximum recording length (seconds)</label>
-        <input
-          id="max"
-          type="number"
-          min="5"
-          max="300"
-          .value=${String(this.config.max_duration??60)}
-          @change=${r=>this.emit({max_duration:ue(r.target.value)})}
-        />
-      </div>
-
-      <div class="field">
-        <label>
-          <input
-            type="checkbox"
-            .checked=${this.config.show_history!==!1}
-            @change=${r=>this.emit({show_history:r.target.checked})}
-          />
-          Show recent recordings
-        </label>
-      </div>
-    `}};E.styles=R`
-    .field { display: block; margin-bottom: 12px; }
-    label { display: block; margin-bottom: 4px; font-weight: 500; }
-    .hint { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 4px; }
-    input[type="text"], input[type="number"], select { width: 100%; box-sizing: border-box;
-      padding: 8px; border-radius: 4px; border: 1px solid var(--divider-color, #ddd);
-      background: var(--card-background-color, #fff); color: var(--primary-text-color);
-      font: inherit; }
-    .players { border: 1px solid var(--divider-color, #ddd); border-radius: 4px;
-      padding: 8px; }
-    summary { cursor: pointer; font-weight: 500; }
-    .rows { max-height: 220px; overflow-y: auto; margin-top: 8px;
-      border-top: 1px solid var(--divider-color, #ddd); padding-top: 4px; }
-    .players label { display: flex; align-items: center; gap: 8px; font-weight: normal;
-      margin: 0; padding: 4px 0; }
-    .missing { color: var(--secondary-text-color); }
-    .segmented { display: flex; gap: 6px; }
-    .segmented button { flex: 1; padding: 8px; font: inherit; cursor: pointer;
-      border: 1px solid var(--divider-color, #ddd); border-radius: 6px;
-      background: none; color: var(--primary-text-color); }
-    .segmented button[data-on="true"] { background: var(--primary-color);
-      color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
-  `,p([M({attribute:!1})],E.prototype,"hass",2),p([m()],E.prototype,"config",2),E=p([G("hass-broadcast-card-editor")],E);function Ve(i){return Number.isFinite(i)?Math.min(1,Math.max(0,i)):0}function Q(i){return new Array(Math.max(0,i)).fill(0)}function Fe(i,e){if(e<=0)return[];if(i.length===0)return Q(e);let t=[];for(let r=0;r<e;r++){let s=Math.floor(r*i.length/e),o=Math.max(s+1,Math.floor((r+1)*i.length/e)),n=0;for(let a=s;a<o&&a<i.length;a++)n=Math.max(n,i[a]);t.push(n)}return t}function ge(i){let e=i.reduce((t,r)=>Math.max(t,r),0);return e<=0?[...i]:i.map(t=>t/e)}var Z=class{constructor(){this.peaks=[];this.pending=0}get length(){return this.peaks.length}push(e,t){if(this.windowStart===void 0)return this.windowStart=t,this.pending=Ve(e),!1;let r=!1;return t-this.windowStart>=50&&(this.peaks.push(this.pending),this.pending=0,this.windowStart=t,r=!0),this.pending=Math.max(this.pending,Ve(e)),r}reset(){this.peaks=[],this.pending=0,this.windowStart=void 0}all(){return[...this.peaks]}tail(e){let t=this.peaks.slice(-e);return[...Q(e-t.length),...t]}};function Ye(i,e,t){return{source:{kind:"fresh",blob:i},url:URL.createObjectURL(i),duration:e,peaks:ge(Fe(t,48))}}function fe(i){return i.source.kind==="stored"?i.source.id:void 0}var Pt=async(i,e)=>{let t=globalThis.AudioContext??globalThis.webkitAudioContext;if(!t)return[];let r=new t;try{let o=(await r.decodeAudioData(await i.arrayBuffer())).getChannelData(0),n=[];for(let a=0;a<e;a++){let l=Math.floor(a*o.length/e),g=Math.floor((a+1)*o.length/e),f=0;for(let h=l;h<g;h++)f=Math.max(f,Math.abs(o[h]));n.push(f)}return ge(n)}finally{await r.close?.()}};async function Ke(i,e,t=Pt){let r=await fetch(`/api/hass_broadcast/media/${e.id}.${e.extension}`,{headers:{Authorization:`Bearer ${i.auth.data.access_token}`}});if(!r.ok)throw new Error(`Could not load that recording (${r.status})`);let s=await r.blob(),o=[];try{o=await t(s,48)}catch{o=[]}return{source:{kind:"stored",id:e.id},url:URL.createObjectURL(s),duration:e.duration,peaks:o}}function ee(i){i&&URL.revokeObjectURL(i.url)}var Ge=R`
-  ha-card {
-    padding: 16px;
+      ${yt(this.config.max_duration,s=>this.emit({max_duration:s}))}
+    `}};M.styles=[vt,x`
+      .section-list { display: flex; flex-direction: column; gap: 6px; }
+      .section-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center;
+        gap: 2px 4px; padding: 4px 6px 6px 10px;
+        border: 1px solid var(--divider-color, #ddd); border-radius: 8px; }
+      .section-row[data-visible="false"] { opacity: 0.55; }
+      .section-name { min-width: 0; }
+      .section-style { grid-column: 1 / -1; }
+      .section-row select { padding: 6px; }
+      .section-fixed { font-size: 0.85em; color: var(--secondary-text-color); }
+      .mini { width: 30px; height: 30px; padding: 0; font: inherit; border: none;
+        border-radius: 6px; background: none; color: var(--primary-text-color); cursor: pointer; }
+      .mini:hover:not([disabled]) { background: var(--secondary-background-color, rgba(0,0,0,.06)); }
+      .mini[disabled] { opacity: 0.3; cursor: default; }
+    `],m([O({attribute:!1})],M.prototype,"hass",2),m([f()],M.prototype,"config",2),M=m([ie("hass-broadcast-card-editor")],M);function St(i){return Number.isFinite(i)?Math.min(1,Math.max(0,i)):0}function le(i){return new Array(Math.max(0,i)).fill(0)}function At(i,e){if(e<=0)return[];if(i.length===0)return le(e);let t=[];for(let s=0;s<e;s++){let o=Math.floor(s*i.length/e),r=Math.max(o+1,Math.floor((s+1)*i.length/e)),n=0;for(let l=o;l<r&&l<i.length;l++)n=Math.max(n,i[l]);t.push(n)}return t}function Me(i){let e=i.reduce((t,s)=>Math.max(t,s),0);return e<=0?[...i]:i.map(t=>t/e)}var ae=class{constructor(){this.peaks=[];this.pending=0}get length(){return this.peaks.length}push(e,t){if(this.windowStart===void 0)return this.windowStart=t,this.pending=St(e),!1;let s=!1;return t-this.windowStart>=50&&(this.peaks.push(this.pending),this.pending=0,this.windowStart=t,s=!0),this.pending=Math.max(this.pending,St(e)),s}reset(){this.peaks=[],this.pending=0,this.windowStart=void 0}all(){return[...this.peaks]}tail(e){let t=this.peaks.slice(-e);return[...le(e-t.length),...t]}};function Tt(i,e,t){return{source:{kind:"fresh",blob:i},url:URL.createObjectURL(i),duration:e,peaks:Me(At(t,48))}}function de(i){return i.source.kind==="stored"?i.source.id:void 0}var ki=async(i,e)=>{let t=globalThis.AudioContext??globalThis.webkitAudioContext;if(!t)return[];let s=new t;try{let r=(await s.decodeAudioData(await i.arrayBuffer())).getChannelData(0),n=[];for(let l=0;l<e;l++){let c=Math.floor(l*r.length/e),h=Math.floor((l+1)*r.length/e),u=0;for(let p=c;p<h;p++)u=Math.max(u,Math.abs(r[p]));n.push(u)}return Me(n)}finally{await s.close?.()}};async function Et(i,e,t=ki){let s=await fetch(`/api/hass_broadcast/media/${e.id}.${e.extension}`,{headers:{Authorization:`Bearer ${i.auth.data.access_token}`}});if(!s.ok)throw new Error(`Could not load that recording (${s.status})`);let o=await s.blob(),r=[];try{r=await t(o,48)}catch{r=[]}return{source:{kind:"stored",id:e.id},url:URL.createObjectURL(o),duration:e.duration,peaks:r}}function pe(i){i&&URL.revokeObjectURL(i.url)}function V(i){let e=Number.isFinite(i)&&i>0?Math.floor(i):0;return`${Math.floor(e/60)}:${String(e%60).padStart(2,"0")}`}function Ct(i,e){return i.getFullYear()===e.getFullYear()&&i.getMonth()===e.getMonth()&&i.getDate()===e.getDate()}function Re(i){return i.toLocaleTimeString(void 0,{hour:"2-digit",minute:"2-digit"})}function Pt(i,e=new Date){let t=new Date(i);if(Number.isNaN(t.getTime()))return"Unknown time";let s=(e.getTime()-t.getTime())/1e3;if(s<60)return"Just now";if(s<3600){let n=Math.round(s/60);return`${n} minute${n===1?"":"s"} ago`}if(Ct(t,e))return`Today ${Re(t)}`;let o=new Date(e);return o.setDate(e.getDate()-1),Ct(t,o)?`Yesterday ${Re(t)}`:`${t.toLocaleDateString(void 0,{month:"short",day:"numeric"})} ${Re(t)}`}function Mt(i,e){let t=i.length*2,s=new ArrayBuffer(44+t),o=new DataView(s),r=(n,l)=>{for(let c=0;c<l.length;c++)o.setUint8(n+c,l.charCodeAt(c))};return r(0,"RIFF"),o.setUint32(4,36+t,!0),r(8,"WAVE"),r(12,"fmt "),o.setUint32(16,16,!0),o.setUint16(20,1,!0),o.setUint16(22,1,!0),o.setUint32(24,e,!0),o.setUint32(28,e*2,!0),o.setUint16(32,2,!0),o.setUint16(34,16,!0),r(36,"data"),o.setUint32(40,t,!0),new Int16Array(s,44).set(i),new Blob([s],{type:"audio/wav"})}var Rt=16e3,Si="/api/hass_broadcast/static/recorder-worklet.js",q=class{constructor(){this.chunks=[];this.active=!1}static isSupported(){return typeof window<"u"&&window.isSecureContext===!0&&typeof navigator<"u"&&!!navigator.mediaDevices?.getUserMedia&&typeof AudioWorkletNode<"u"}onLevel(e){this.levelCallback=e}async start(){this.chunks=[];try{this.stream=await navigator.mediaDevices.getUserMedia({audio:!0}),this.context=new AudioContext({sampleRate:Rt}),await this.context.audioWorklet.addModule(Si);let e=this.context.createMediaStreamSource(this.stream);this.node=new AudioWorkletNode(this.context,"recorder-worklet"),this.node.port.onmessage=t=>{this.chunks.push(t.data),this.levelCallback&&this.levelCallback(Ai(t.data))},e.connect(this.node),this.node.connect(this.context.destination),this.active=!0}catch(e){throw await this.release(),e}}async stop(){if(!this.active)throw new Error("Recorder.stop() called with no active recording session");let e=this.context?.sampleRate??Rt,t=this.chunks;await this.release();let s=t.reduce((n,l)=>n+l.length,0),o=new Int16Array(s),r=0;for(let n of t)o.set(n,r),r+=n.length;return{blob:Mt(o,e),duration:s/e}}async release(){this.node?.port.close(),this.node?.disconnect(),this.stream?.getTracks().forEach(e=>e.stop());try{await this.context?.close()}catch{}finally{this.context=void 0,this.stream=void 0,this.node=void 0,this.chunks=[],this.active=!1}}};function Ai(i){let e=0;for(let t of i)e=Math.max(e,Math.abs(t));return e/32768}var Ti=.4,he=class{constructor(e,t){this.host=e;this.options=t;this.phase="idle";this.elapsed=0;this.level=0;this.recorder=new q;this.envelope=new ae;this.busy=!1;this.disconnected=!1;this.stopRequested=!1;e.addController(this)}get supported(){return q.isSupported()}hostConnected(){this.disconnected=!1}hostDisconnected(){this.disconnected=!0,this.clearTimer(),this.phase==="recording"&&!this.busy&&(this.phase="idle",this.level=0,this.release())}setSending(e){this.phase=e?"sending":"idle",this.host.requestUpdate()}async onPressStart(e){if(!(this.phase==="sending"||!this.supported)){if(this.options.recordMode()==="start_stop"){await(this.phase==="recording"?this.stopRecording():this.startRecording());return}e.preventDefault(),!this.busy&&(this.stopRequested=!1,await this.startRecording(),this.stopRequested&&this.phase==="recording"&&await this.stopRecording())}}async onPressEnd(){if(this.options.recordMode()==="push_to_talk"){if(this.phase!=="recording"){this.stopRequested=!0;return}await this.stopRecording()}}async startRecording(){if(this.busy||this.phase!=="idle")return;this.busy=!0,this.options.onStart?.();try{this.recorder.onLevel(t=>{this.envelope.push(t,Date.now())&&(this.level=this.envelope.tail(1)[0],this.host.requestUpdate())}),this.envelope.reset(),await this.recorder.start()}catch(t){this.options.onError(dt(t),t?.name==="NotAllowedError"),this.host.requestUpdate();return}finally{this.busy=!1}if(this.disconnected){this.release();return}this.phase="recording",this.elapsed=0,this.level=0,this.host.requestUpdate();let e=this.options.maxDuration();this.timer=window.setInterval(()=>{this.elapsed+=1,this.host.requestUpdate(),this.elapsed>=e&&this.stopRecording()},1e3)}async stopRecording(){if(this.busy||this.phase!=="recording")return;this.busy=!0,this.clearTimer();let e;try{let{blob:t,duration:s}=await this.recorder.stop();this.phase="idle",this.options.recordMode()==="push_to_talk"&&s<Ti?this.options.onError("Hold the button while you speak.",!1):e={blob:t,duration:s,peaks:this.envelope.all()}}catch(t){this.phase="idle",this.options.onError(`Could not finish recording: ${t?.message??t}`,!1)}finally{this.busy=!1,this.level=0,this.host.requestUpdate()}e&&await this.options.onTake(e)}clearTimer(){this.timer!==void 0&&(window.clearInterval(this.timer),this.timer=void 0)}release(){this.busy=!0,this.recorder.stop().catch(()=>{}).finally(()=>{this.busy=!1})}};async function Ot(i){let{hass:e,clip:t,targets:s}=i,o=de(t);if(o===void 0){let n=t.source.blob;o=await rt(e,n,t.duration),i.onStored?.(o)}let{failed:r}=await lt(e,o,s,i.mode,i.volume);return r.length===0?{kind:"sent",targets:s}:r.length>=s.length?{kind:"failed",failed:r}:{kind:"partial",failed:r}}function Oe(i,e){return e.map(t=>i?.states?.[t]?.attributes?.friendly_name??t).join(", ")}function Lt(i,e){switch(e.kind){case"sent":return{kind:"info",text:`Sent to ${Oe(i,e.targets)}`};case"partial":return{kind:"error",text:`Played, but not on ${Oe(i,e.failed)}.`};case"failed":return{kind:"error",text:`Could not play on any speaker: ${Oe(i,e.failed)}.`}}}var Ei=x`
+  .mic-wrap {
+    --mic-color: var(--error-color, #db4437);
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--mic);
+    height: var(--mic);
+  }
+  .mic-wrap > * {
+    grid-area: 1 / 1;
   }
 
-  /* --- status line ------------------------------------------------ */
-  .status {
-    /* Fixed, clipped single line: the messages routed here (send failures
-       naming several speakers, upload errors) are long and variable-length
-       and would otherwise wrap to two or three lines at phone width,
-       pushing everything below down — the exact reflow this redesign
-       exists to remove. The full text is still reachable via the
-       "title" attribute. */
-    height: 20px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.85em;
-    line-height: 20px;
-    text-align: center;
-    margin-bottom: 4px;
-  }
-  .status.error {
-    color: var(--error-color, #db4437);
-  }
-  .status.info {
-    color: var(--secondary-text-color);
-  }
-
-  /* --- waveform strip --------------------------------------------- */
-  .wave {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2px;
-    height: 64px;
-    padding: 0 4px;
-    border-radius: 10px;
-    background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-    /* Seeking is horizontal-only; a full-width band that blocked all
-       touch-action trapped vertical scroll on phones even when idle and
-       non-seekable. Vertical panning is left to the browser. */
-    touch-action: pan-y;
-  }
-  .wave.seekable {
+  .mic {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: var(--mic);
+    height: var(--mic);
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--mic-color);
+    color: #fff;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--mic-color) 35%, transparent);
     cursor: pointer;
+    /* Stops the browser claiming the gesture as a scroll or a long-press. */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 180ms ease, background 180ms ease;
   }
-  .bar {
-    flex: 1;
-    min-width: 2px;
-    border-radius: 2px;
-    /* Centred in a flex row, so a bar of height h reads as mirrored around
-       the middle without drawing two of them. */
-    background: var(--divider-color, #ddd);
-    transition: height 80ms linear;
+  .mic[disabled] {
+    background: var(--disabled-text-color, #bdbdbd);
+    box-shadow: none;
+    cursor: default;
   }
-  .bar.live,
-  .bar.played {
-    background: var(--primary-color, #03a9f4);
+  .mic:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 4px;
+  }
+  .mic-wrap[data-recording="true"] .mic {
+    box-shadow: none;
+  }
+  .mic-glyph {
+    grid-area: 1 / 1;
+    display: grid;
+    place-items: center;
+    width: 42%;
+    height: 42%;
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+  .mic-glyph svg {
+    width: 100%;
+    height: 100%;
+  }
+  .mic-glyph-stop {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  /* Start-stop needs a visible "tap again to stop"; push-to-talk does not,
+     because the finger is already on the button. */
+  .mic-wrap[data-mode="start_stop"][data-recording="true"] .mic-glyph-mic {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  .mic-wrap[data-mode="start_stop"][data-recording="true"] .mic-glyph-stop {
+    opacity: 1;
+    transform: none;
   }
 
-  /* --- player row -------------------------------------------------- */
-  .player {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    height: 40px;
-    padding: 0 4px;
+  /* The blob: scale follows the voice (--grow), shape wobbles on its own.
+     Two layers so the outline never reads as a plain circle. */
+  .mic-level {
+    z-index: 1;
+    position: relative;
+    width: var(--mic);
+    height: var(--mic);
+    opacity: 0;
+    transform: scale(1);
+    transition: opacity 200ms ease, transform 90ms linear;
+    pointer-events: none;
   }
-  .player .time {
-    flex: 1;
-    font-size: 0.85em;
-    font-variant-numeric: tabular-nums;
-    color: var(--secondary-text-color);
+  .mic-wrap[data-recording="true"] .mic-level {
+    opacity: 1;
+    transform: scale(var(--grow, 1));
   }
+  /* Absolutely centred rather than grid-centred: the blobs are larger than
+     the button, and a grid item that overflows its track is aligned to the
+     start, not the middle. \`translate\` is kept apart from the \`transform\`
+     the spin animates. */
+  .blob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--mic-color) 55%, #fff),
+      var(--mic-color) 65%
+    );
+  }
+  .blob-inner {
+    width: calc(var(--mic) * 1.12);
+    height: calc(var(--mic) * 1.12);
+    opacity: 0.32;
+    animation: blob-shape 4s ease-in-out infinite, blob-spin 9s linear infinite;
+  }
+  .blob-outer {
+    width: calc(var(--mic) * 1.22);
+    height: calc(var(--mic) * 1.22);
+    opacity: 0.16;
+    animation: blob-shape 5s ease-in-out infinite alternate,
+      blob-spin 13s linear infinite reverse;
+  }
+  @keyframes blob-shape {
+    0%,
+    100% {
+      border-radius: 42% 58% 63% 37% / 45% 40% 60% 55%;
+    }
+    33% {
+      border-radius: 60% 40% 35% 65% / 55% 62% 38% 45%;
+    }
+    66% {
+      border-radius: 38% 62% 55% 45% / 62% 38% 62% 38%;
+    }
+  }
+  @keyframes blob-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* The countdown: a white arc on the button's rim that closes over
+     max_duration. Attached only while recording, so it restarts per take. */
+  .mic-arc {
+    z-index: 3;
+    width: var(--mic);
+    height: var(--mic);
+    transform: rotate(-90deg);
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  .mic-arc circle {
+    fill: none;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+  }
+  .mic-arc-track {
+    stroke: rgba(255, 255, 255, 0.25);
+  }
+  .mic-arc-fill {
+    stroke: #fff;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+  .mic-wrap[data-recording="true"] .mic-arc {
+    opacity: 1;
+  }
+  .mic-wrap[data-recording="true"] .mic-arc-fill {
+    animation: mic-countdown var(--limit, 60s) linear forwards;
+  }
+  @keyframes mic-countdown {
+    from {
+      stroke-dashoffset: 100;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob {
+      animation: none;
+      border-radius: 50%;
+    }
+    .mic-level,
+    .mic-wrap[data-recording="true"] .mic-level {
+      transform: none;
+      transition: none;
+    }
+    .mic-glyph {
+      transition: none;
+    }
+    /* The countdown keeps running: it carries information, not decoration. */
+  }
+`,Ci=x`
   .icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: none;
     width: 36px;
     height: 36px;
     padding: 0;
@@ -229,6 +406,10 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
     color: var(--primary-text-color);
     cursor: pointer;
   }
+  .icon svg {
+    width: 20px;
+    height: 20px;
+  }
   .icon:hover:not([disabled]) {
     background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
   }
@@ -236,366 +417,787 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
     color: var(--disabled-text-color, #bdbdbd);
     cursor: default;
   }
+  .icon[data-active="true"] {
+    color: var(--primary-color);
+  }
   .icon:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
-
-  /* --- volume override ---------------------------------------------- */
-  .volume-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 0;
-  }
-  .volume-toggle {
-    padding: 6px 12px;
-    font: inherit;
-    font-size: 0.85em;
-    border: 1px solid var(--divider-color, #ddd);
-    border-radius: 14px;
-    background: none;
-    color: var(--primary-text-color);
-    cursor: pointer;
-  }
-  .volume-toggle[data-on="true"] {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: var(--text-primary-color, #fff);
-  }
-  .volume-slider {
-    flex: 1;
-  }
-  .volume-value {
-    min-width: 3ch;
-    font-size: 0.85em;
-    font-variant-numeric: tabular-nums;
-    color: var(--secondary-text-color);
-  }
-
-  /* --- broadcast --------------------------------------------------- */
-  .broadcast {
-    display: block;
-    width: 100%;
-    margin: 16px 0;
-    padding: 14px;
-    font: inherit;
-    font-weight: 500;
-    border: none;
-    border-radius: 24px;
-    background: var(--primary-color, #03a9f4);
-    color: var(--text-primary-color, #fff);
-    cursor: pointer;
-  }
-  .broadcast[disabled] {
-    background: var(--disabled-text-color, #bdbdbd);
-    cursor: default;
-  }
-  .broadcast:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
-
-  /* --- record button ----------------------------------------------- */
-  .record-row {
-    display: flex;
-    justify-content: center;
-    /* Reserved unconditionally (not just while recording) so the pulse
-       ring never shifts layout. The ring's box-shadow spreads up to 28px
-       while fading to transparent, so at 16px its tail is faint but not
-       fully gone by the time it reaches the rows above/below. */
-    padding: 16px 0;
-  }
-  .record {
-    position: relative;
-    width: 96px;
-    height: 96px;
-    border: none;
-    border-radius: 50%;
-    background: var(--error-color, #db4437);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-    cursor: pointer;
-    /* Stops the browser claiming the gesture as a scroll or a long-press. */
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
-    transition: transform 120ms ease, box-shadow 120ms ease;
-  }
-  .record[data-recording="true"] {
-    transform: scale(0.92);
-  }
-  /* Two rings pulse outward on pseudo-elements rather than the button
-     itself, so the button's own box-shadow transition above stays
-     untouched. The second ring starts half a cycle behind the first, so a
-     new ring is always emerging before the previous one finishes fading —
-     a continuous pulse instead of one ring restarting after a gap. */
-  .record[data-recording="true"]::before,
-  .record[data-recording="true"]::after {
-    content: "";
+  .sr-only {
     position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    pointer-events: none;
-    animation: record-pulse 2.8s ease-out infinite;
-  }
-  .record[data-recording="true"]::after {
-    animation-delay: 1.4s;
-  }
-  @keyframes record-pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(219, 68, 55, 0.55);
-    }
-    100% {
-      box-shadow: 0 0 0 28px rgba(219, 68, 55, 0);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .record[data-recording="true"]::before,
-    .record[data-recording="true"]::after {
-      animation: none;
-      box-shadow: none;
-    }
-    .record[data-recording="true"]::after {
-      box-shadow: 0 0 0 8px rgba(219, 68, 55, 0.25);
-    }
-  }
-  .record[disabled] {
-    background: var(--disabled-text-color, #bdbdbd);
-    box-shadow: none;
-    cursor: default;
-  }
-  .record:focus-visible {
-    outline: 3px solid var(--primary-color);
-    outline-offset: 4px;
-  }
-
-  /* --- sections ---------------------------------------------------- */
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin: 8px 0 6px;
-    font-size: 0.8em;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--secondary-text-color);
-  }
-  .section-head .count {
-    font-weight: 400;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .empty {
-    padding: 12px 0;
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-  }
-
-  /* --- speakers: rows ---------------------------------------------- */
-  .target-rows {
-    max-height: 208px;
-    overflow-y: auto;
-  }
-  .target-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 8px;
-    font: inherit;
-    text-align: left;
-    border: none;
-    border-radius: 8px;
-    background: none;
-    color: var(--primary-text-color);
-    cursor: pointer;
-  }
-  .target-row[data-on="true"] {
-    background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
-  }
-  .target-name {
-    flex: 1;
-  }
-  .target-note {
-    font-size: 0.8em;
-    color: var(--secondary-text-color);
-  }
-  .target-check {
-    width: 20px;
-    text-align: center;
-    color: var(--primary-color);
-  }
-
-  /* --- speakers: chips --------------------------------------------- */
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .chip {
-    padding: 8px 14px;
-    font: inherit;
-    border-radius: 18px;
-    border: 1px solid var(--divider-color, #ddd);
-    background: none;
-    color: var(--primary-text-color);
-    cursor: pointer;
-  }
-  .chip[data-on="true"] {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: var(--text-primary-color, #fff);
-  }
-
-  /* --- speakers: dropdown ------------------------------------------ */
-  .dropdown {
-    position: relative;
-  }
-  .dropdown-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 12px;
-    font: inherit;
-    text-align: left;
-    border: 1px solid var(--divider-color, #ddd);
-    border-radius: 8px;
-    background: none;
-    color: var(--primary-text-color);
-    cursor: pointer;
-  }
-  .dropdown-panel {
-    position: absolute;
-    z-index: 2;
-    left: 0;
-    right: 0;
-    max-height: 240px;
-    overflow-y: auto;
-    margin-top: 4px;
-    padding: 4px;
-    border: 1px solid var(--divider-color, #ddd);
-    border-radius: 8px;
-    background: var(--card-background-color, #fff);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-  }
-
-  /* --- history ----------------------------------------------------- */
-  .history {
-    border-top: 1px solid var(--divider-color, #ddd);
-    margin-top: 8px;
-    padding-top: 4px;
-  }
-  .history-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    border-radius: 8px;
-  }
-  .history-row[data-loaded="true"] {
-    background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
-  }
-  .history-row[data-loading="true"] {
-    opacity: 0.5;
-  }
-  .history-load {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    flex: 1;
-    padding: 10px 8px;
-    font: inherit;
-    text-align: left;
-    border: none;
-    background: none;
-    color: var(--primary-text-color);
-    cursor: pointer;
-  }
-  .history-length {
-    font-size: 0.85em;
-    font-variant-numeric: tabular-nums;
-    color: var(--secondary-text-color);
-  }
-  /* The card's height must not depend on how many messages are stored, so
-     the three slots are reserved whether or not a message fills them. */
-  .history-slots {
-    display: flex;
-    flex-direction: column;
-  }
-  .history-slot {
-    display: flex;
-    align-items: center;
-    height: 40px;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
     overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
-  .history-slot > * {
-    flex: 1;
-    min-width: 0;
+  /* Harness-only: outline every fixed slot. */
+  :host([data-show-slots]) .slot {
+    outline: 1.5px dashed #d946ef;
+    outline-offset: 1px;
   }
-  .history-slot .empty {
-    padding: 0;
-  }
-  .history-all {
-    padding: 2px 6px;
-    margin: -2px -6px;
-    font: inherit;
-    font-weight: 400;
-    letter-spacing: 0;
-    text-transform: none;
-    border: none;
-    border-radius: 6px;
-    background: none;
-    color: var(--primary-color);
-    cursor: pointer;
-  }
-  .history-all[data-disabled="true"] {
-    color: var(--disabled-text-color, #bdbdbd);
-    cursor: default;
-  }
+`,Dt=[Ei,Ci,x`
+    ha-card {
+      padding: 16px;
+    }
+    .card {
+      position: relative;
+    }
+    .title {
+      overflow: hidden;
+      font-size: 1.05em;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hint {
+      color: var(--secondary-text-color);
+      font-size: 0.9em;
+      white-space: nowrap;
+    }
+    .caption {
+      font-size: 0.75em;
+      color: var(--secondary-text-color);
+      white-space: nowrap;
+    }
 
-  /* --- history dialog ---------------------------------------------- */
-  .history-dialog {
-    width: min(420px, calc(100vw - 32px));
-    padding: 8px 12px 12px;
-    border: none;
-    border-radius: 12px;
-    background: var(--card-background-color, #fff);
-    color: var(--primary-text-color);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  }
-  .history-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.5);
-  }
-  .dialog-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 0.8em;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--secondary-text-color);
-  }
-  /* Retention runs to 200, so the full list scrolls — a modal owns the
-     viewport, so this is the one scroller with no page scroll to fight. */
-  .dialog-list {
-    max-height: min(60vh, 420px);
-    overflow-y: auto;
-  }
-`;function j(i){let e=Number.isFinite(i)&&i>0?Math.floor(i):0;return`${Math.floor(e/60)}:${String(e%60).padStart(2,"0")}`}function Je(i,e){return i.getFullYear()===e.getFullYear()&&i.getMonth()===e.getMonth()&&i.getDate()===e.getDate()}function me(i){return i.toLocaleTimeString(void 0,{hour:"2-digit",minute:"2-digit"})}function Xe(i,e=new Date){let t=new Date(i);if(Number.isNaN(t.getTime()))return"Unknown time";let r=(e.getTime()-t.getTime())/1e3;if(r<60)return"Just now";if(r<3600){let n=Math.round(r/60);return`${n} minute${n===1?"":"s"} ago`}if(Je(t,e))return`Today ${me(t)}`;let s=new Date(e);return s.setDate(e.getDate()-1),Je(t,s)?`Yesterday ${me(t)}`:`${t.toLocaleDateString(void 0,{month:"short",day:"numeric"})} ${me(t)}`}var Ze=3;function Qe(i,e,t){return d`
+    /* --- layered slots ---------------------------------------------- */
+    .layers {
+      display: grid;
+      min-width: 0;
+    }
+    .layer {
+      grid-area: 1 / 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+    .layer[data-on="true"] {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .status {
+      overflow: hidden;
+      font-size: 0.85em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status.error {
+      color: var(--error-color, #db4437);
+    }
+    .status.info {
+      color: var(--secondary-text-color);
+    }
+    .timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--error-color, #db4437);
+      transition: color 300ms ease;
+    }
+    .timer::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .timer[data-warning="true"] {
+      color: var(--warning-color, #ff9800);
+    }
+    .clip-length {
+      font-size: 0.85em;
+      font-variant-numeric: tabular-nums;
+      color: var(--secondary-text-color);
+    }
+
+    /* --- waveform ----------------------------------------------------- */
+    .wave {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2px;
+      min-width: 0;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+      /* Seeking is horizontal-only; vertical panning stays with the page. */
+      touch-action: pan-y;
+    }
+    .wave.seekable {
+      cursor: pointer;
+    }
+    .wave-strip {
+      height: 36px;
+    }
+    .wave-mini {
+      height: 28px;
+      padding: 0 4px;
+      border-radius: 8px;
+    }
+    .bar {
+      flex: 1;
+      min-width: 1px;
+      border-radius: 2px;
+      background: var(--divider-color, #ddd);
+    }
+    .bar.played {
+      background: var(--primary-color, #03a9f4);
+    }
+    .wave .bar:not(.played) {
+      background: color-mix(in srgb, var(--primary-color, #03a9f4) 45%, transparent);
+    }
+    /* Drawn in once per clip (the element is keyed on it): bars grow from
+       the centre line, left to right. */
+    .wave.reveal .bar {
+      animation: bar-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+      animation-delay: calc(var(--i, 0) * 12ms + 100ms);
+    }
+    @keyframes bar-in {
+      from {
+        transform: scaleY(0.05);
+      }
+      to {
+        transform: scaleY(1);
+      }
+    }
+
+    /* --- send --------------------------------------------------------- */
+    /* Both side slots share one shape — a 56px button row, then a caption —
+       so Discard and Send line up whatever their button sizes. */
+    .send-wrap,
+    .pop {
+      display: grid;
+      grid-template-rows: 56px auto;
+      justify-items: center;
+      align-items: center;
+      gap: 2px;
+    }
+    .send-wrap-pill {
+      display: block;
+    }
+    .send {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0;
+      border: none;
+      font: inherit;
+      font-weight: 500;
+      background: var(--primary-color, #03a9f4);
+      color: var(--text-primary-color, #fff);
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease;
+    }
+    .send svg {
+      width: 22px;
+      height: 22px;
+    }
+    .send-round {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+    }
+    .send-pill {
+      width: 84px;
+      height: 32px;
+      border-radius: 16px;
+      font-size: 0.9em;
+    }
+    .send-pill svg {
+      width: 16px;
+      height: 16px;
+    }
+    /* Always rendered, so users learn where it is before they need it. */
+    .send[disabled] {
+      background: var(--secondary-background-color, #e5e8ee);
+      color: var(--disabled-text-color, #9aa3af);
+      cursor: default;
+    }
+    .send[data-sending="true"] {
+      background: var(--primary-color, #03a9f4);
+      color: var(--text-primary-color, #fff);
+    }
+    .send:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 3px;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin 800ms linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* --- full layout --------------------------------------------------- */
+    .full .head {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 36px;
+    }
+    .full .head .title {
+      flex: 1;
+    }
+    .head-actions {
+      display: flex;
+      gap: 2px;
+    }
+    .full .strip {
+      height: 40px;
+      margin-top: 8px;
+    }
+    .full .strip .layer-idle,
+    .full .strip .layer-recording,
+    .full .strip .layer-status {
+      justify-content: center;
+    }
+    .full .strip .play {
+      width: 36px;
+      height: 36px;
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    }
+    .core {
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      align-items: center;
+      height: 132px;
+    }
+    .core-side {
+      display: flex;
+      justify-content: center;
+    }
+    .core-mic {
+      display: grid;
+      place-items: center;
+    }
+    .pop {
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .pop[data-on="true"] {
+      opacity: 1;
+      transform: none;
+    }
+    .pop .discard {
+      width: 44px;
+      height: 44px;
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    }
+    .section {
+      margin-top: 8px;
+    }
+    .section-speakers[data-style="pill"] {
+      display: flex;
+      justify-content: center;
+    }
+
+    /* --- compact layout ------------------------------------------------ */
+    .compact {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+    .compact-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .compact-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 32px;
+    }
+    .compact-status {
+      flex: 1;
+      height: 32px;
+    }
+    .compact-status .layer-idle {
+      gap: 10px;
+    }
+    .compact-status .icon {
+      width: 30px;
+      height: 30px;
+    }
+    .compact-status .icon svg {
+      width: 18px;
+      height: 18px;
+    }
+    .compact-speakers {
+      flex: 1;
+      min-width: 0;
+    }
+    .compact .pill-wrap {
+      width: 100%;
+    }
+    .compact .pill {
+      width: 100%;
+    }
+
+    /* --- popovers and the compact menu --------------------------------- */
+    .popover-wrap {
+      position: relative;
+    }
+    .popover {
+      position: absolute;
+      z-index: 4;
+      top: calc(100% + 4px);
+      right: 0;
+      min-width: 240px;
+      padding: 8px;
+      border-radius: 12px;
+      background: var(--card-background-color, #fff);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    .menu {
+      padding: 4px 0;
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 44px;
+      padding: 4px 14px;
+      box-sizing: border-box;
+      font: inherit;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--primary-text-color);
+      cursor: pointer;
+    }
+    .menu-item > svg {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      color: var(--secondary-text-color);
+    }
+    button.menu-item:hover {
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    }
+    .menu-volume {
+      cursor: default;
+    }
+    .menu-volume .volume-row {
+      flex: 1;
+    }
+
+    /* --- volume override ----------------------------------------------- */
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+    .volume-toggle {
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.85em;
+      border: 1px solid var(--divider-color, #ddd);
+      border-radius: 14px;
+      background: none;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .volume-toggle[data-on="true"] {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+    }
+    .volume-slider {
+      flex: 1;
+      min-width: 0;
+    }
+    .volume-value {
+      min-width: 4ch;
+      font-size: 0.85em;
+      font-variant-numeric: tabular-nums;
+      color: var(--secondary-text-color);
+    }
+
+    /* --- section heads ------------------------------------------------- */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 8px 0 6px;
+      font-size: 0.8em;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--secondary-text-color);
+    }
+    .section-head .count {
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .empty {
+      padding: 12px 0;
+      font-size: 0.9em;
+      color: var(--secondary-text-color);
+    }
+
+    /* --- speakers: pill ------------------------------------------------ */
+    .pill-wrap {
+      position: relative;
+      max-width: 100%;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      height: 32px;
+      padding: 0 8px 0 12px;
+      box-sizing: border-box;
+      font: inherit;
+      font-size: 0.85em;
+      border: 1px solid var(--divider-color, #ddd);
+      border-radius: 16px;
+      background: none;
+      color: var(--primary-text-color);
+      cursor: pointer;
+    }
+    .pill[disabled] {
+      color: var(--secondary-text-color);
+      cursor: default;
+    }
+    .pill-icon svg,
+    .pill-chevron svg {
+      display: block;
+      width: 16px;
+      height: 16px;
+      color: var(--secondary-text-color);
+    }
+    .pill-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pill-panel {
+      position: absolute;
+      z-index: 4;
+      top: calc(100% + 4px);
+      left: 50%;
+      width: min(300px, 90vw);
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 4px 8px 8px;
+      box-sizing: border-box;
+      transform: translateX(-50%);
+      border-radius: 12px;
+      background: var(--card-background-color, #fff);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    .compact .pill-panel {
+      left: 0;
+      transform: none;
+    }
+
+    /* --- speakers: rows ------------------------------------------------ */
+    .target-rows {
+      max-height: 208px;
+      overflow-y: auto;
+    }
+    .target-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 8px;
+      font: inherit;
+      text-align: left;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: var(--primary-text-color);
+      cursor: pointer;
+    }
+    .target-row[data-on="true"] {
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    }
+    .target-name {
+      flex: 1;
+    }
+    .target-note {
+      font-size: 0.8em;
+      color: var(--secondary-text-color);
+    }
+    .target-check {
+      width: 20px;
+      text-align: center;
+      color: var(--primary-color);
+    }
+
+    /* --- speakers: chips ----------------------------------------------- */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.9em;
+      border-radius: 16px;
+      border: 1px solid var(--divider-color, #ddd);
+      background: none;
+      color: var(--primary-text-color);
+      cursor: pointer;
+    }
+    .chip[data-on="true"] {
+      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, transparent);
+      border-color: transparent;
+      color: var(--primary-color, #03a9f4);
+      font-weight: 500;
+    }
+
+    /* --- history ------------------------------------------------------- */
+    .history {
+      border-top: 1px solid var(--divider-color, #ddd);
+      padding-top: 4px;
+    }
+    .history-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 8px;
+    }
+    .history-row[data-loaded="true"] {
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    }
+    .history-row[data-loading="true"] {
+      opacity: 0.5;
+    }
+    .history-load {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      flex: 1;
+      padding: 10px 8px;
+      font: inherit;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--primary-text-color);
+      cursor: pointer;
+    }
+    .history-length {
+      font-size: 0.85em;
+      font-variant-numeric: tabular-nums;
+      color: var(--secondary-text-color);
+    }
+    /* The card's height must not depend on how many messages are stored, so
+       the three slots are reserved whether or not a message fills them. */
+    .history-slots {
+      display: flex;
+      flex-direction: column;
+    }
+    .history-slot {
+      display: flex;
+      align-items: center;
+      height: 40px;
+      overflow: hidden;
+    }
+    .history-slot > * {
+      flex: 1;
+      min-width: 0;
+    }
+    .history-slot .empty {
+      padding: 0;
+    }
+    .history-all {
+      padding: 2px 6px;
+      margin: -2px -6px;
+      font: inherit;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      border: none;
+      border-radius: 6px;
+      background: none;
+      color: var(--primary-color);
+      cursor: pointer;
+    }
+    .history-all[data-disabled="true"] {
+      color: var(--disabled-text-color, #bdbdbd);
+      cursor: default;
+    }
+
+    /* --- history dialog ------------------------------------------------ */
+    .history-dialog {
+      width: min(420px, calc(100vw - 32px));
+      padding: 8px 12px 12px;
+      border: none;
+      border-radius: 12px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+    .history-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .dialog-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.8em;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--secondary-text-color);
+    }
+    /* Retention runs to 200, so the full list scrolls — a modal owns the
+       viewport, so this is the one scroller with no page scroll to fight. */
+    .dialog-list {
+      max-height: min(60vh, 420px);
+      overflow-y: auto;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .layer,
+      .pop,
+      .send,
+      .timer {
+        transition: none;
+      }
+      .wave.reveal .bar {
+        animation: none;
+      }
+    }
+  `];var y=i=>Je`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d=${i} /></svg>`,Ut=y("M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"),It=y("M7 7h10v10H7z"),Nt=y("M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"),zt=y("M8 5v14l11-7z"),Ht=y("M6 5h4v14H6zm8 0h4v14h-4z"),Bt=y("M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"),ue=y("M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.95 8.95 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"),me=y("M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"),jt=y("M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"),Le=y("M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 2c1.1 0 2 .9 2 2s-.9 2-2 2a2 2 0 0 1 0-4zm0 16c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"),_o=y("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"),ko=y("M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"),Vt=y("M7 10l5 5 5-5z");function ge(i){return i?a`<span class="status ${i.kind}" title=${i.text}>${i.text}</span>`:d}function fe(i,e){return a`<span class="timer" data-warning=${e}>${i}</span>`}function ye(i,e,t){return a`
+    <div class="layers slot ${i}" data-active=${e}>
+      ${Object.keys(t).map(s=>a`
+          <div
+            class="layer layer-${s}"
+            data-on=${s===e}
+            ?inert=${s!==e}
+            aria-hidden=${s!==e}
+          >
+            ${t[s]}
+          </div>
+        `)}
+    </div>
+  `}function qt(i){let e=i.sections.find(s=>s.type==="speakers"),t=i.sections.filter(s=>s.type!=="speakers");return a`
+    <div class="card compact">
+      <div class="compact-mic slot">${i.mic(72)}</div>
+      <div class="compact-body">
+        <div class="compact-row">
+          ${ye("compact-status",i.view,{idle:a`
+              <span class="title">${i.title}</span>
+              <span class="hint">${i.hint}</span>
+            `,recording:fe(i.timer,i.timerWarning),review:a`
+              ${i.play()} ${i.waveform("wave-mini")} ${i.discard()}
+            `,status:ge(i.status)})}
+          ${t.length?a`
+                <div class="popover-wrap slot">
+                  <button
+                    class="icon"
+                    title="More"
+                    aria-label="More"
+                    aria-expanded=${i.menuOpen}
+                    @click=${()=>i.onMenuOpenChange(!i.menuOpen)}
+                  >
+                    ${jt}
+                  </button>
+                  ${i.menuOpen?Pi(i,t):d}
+                </div>
+              `:d}
+        </div>
+        <div class="compact-row">
+          <div class="compact-speakers slot">
+            ${e?.type==="speakers"?i.speakers(e):d}
+          </div>
+          <div class="slot">${i.send("pill")}</div>
+        </div>
+      </div>
+      ${i.historyDialog()}
+    </div>
+  `}function Pi(i,e){return a`
+    <div class="popover menu" role="menu">
+      ${e.map(t=>t.type==="history"?a`
+              <button
+                class="menu-item"
+                role="menuitem"
+                @click=${()=>{i.onMenuOpenChange(!1),i.onOpenHistory()}}
+              >
+                ${ue}<span>Recent messages</span>
+              </button>
+            `:t.type==="volume"?a`
+                <div class="menu-item menu-volume">
+                  ${me}${i.volumePanel()}
+                </div>
+              `:d)}
+    </div>
+  `}function Wt(i){let e=i.sections.filter(s=>s.style==="icon"),t=i.sections.filter(s=>s.style!=="icon");return a`
+    <div class="card full">
+      <div class="head slot">
+        <span class="title">${i.title}</span>
+        <span class="head-actions">
+          ${e.map(s=>s.type==="history"?i.historyButton():s.type==="volume"?i.volumeButton():"")}
+        </span>
+      </div>
+
+      ${ye("strip",i.view,{idle:a`<span class="hint">${i.hint}</span>`,recording:fe(i.timer,i.timerWarning),review:a`
+          ${i.play()} ${i.waveform("wave-strip")}
+          <span class="clip-length">${i.clipLength}</span>
+        `,status:ge(i.status)})}
+
+      <div class="core">
+        <div class="core-side slot">
+          <div class="pop" data-on=${i.reviewing} ?inert=${!i.reviewing}>
+            ${i.discard()}
+            <span class="caption">Discard</span>
+          </div>
+        </div>
+        <div class="core-mic slot">${i.mic(96)}</div>
+        <div class="core-side slot">${i.send("round")}</div>
+      </div>
+
+      ${t.map(s=>s.type==="speakers"?a`<div class="section section-speakers slot" data-style=${s.style}>
+              ${i.speakers(s)}
+            </div>`:s.type==="history"?a`<div class="section slot">${i.historyList()}</div>`:"")}
+      ${i.historyDialog()}
+    </div>
+  `}var Ft=3;function Yt(i,e,t){return a`
     <div
       class="history-row"
       data-loaded="${e.loadedId===i.id}"
       data-loading="${e.loadingId===i.id}"
     >
       <button class="history-load" @click=${()=>e.onLoad(i)}>
-        <span class="history-when">${Xe(i.created,t)}</span>
-        <span class="history-length">${j(i.duration)}</span>
+        <span class="history-when">${Pt(i.created,t)}</span>
+        <span class="history-length">${V(i.duration)}</span>
       </button>
-      ${i.can_delete?d`
+      ${i.can_delete?a`
             <button
               class="icon"
               title="Delete"
@@ -604,19 +1206,19 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
             >
               ✕
             </button>
-          `:c}
+          `:d}
     </div>
-  `}function Mt(i,e){let t=()=>i.onDialogOpenChange?.(!1);return d`
+  `}function De(i,e=i.now??new Date){let t=()=>i.onDialogOpenChange?.(!1);return a`
     <dialog class="history-dialog" @close=${t} @cancel=${t}>
       <div class="dialog-head">
         <span>Recent messages</span>
         <button class="icon" title="Close" aria-label="Close" @click=${t}>✕</button>
       </div>
       <div class="dialog-list">
-        ${i.messages.length===0?d`<div class="empty">Nothing recorded yet</div>`:i.messages.map(r=>Qe(r,i,e))}
+        ${i.messages.length===0?a`<div class="empty">Nothing recorded yet</div>`:i.messages.map(s=>Yt(s,i,e))}
       </div>
     </dialog>
-  `}function et(i){let e=i.now??new Date,t=i.messages.length===0,r=i.messages.slice(0,Ze);return d`
+  `}function Kt(i){let e=i.now??new Date,t=i.messages.length===0,s=i.messages.slice(0,Ft);return a`
     <div class="history">
       <div class="section-head">
         <span>Recent messages</span>
@@ -630,45 +1232,47 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
         </button>
       </div>
       <div class="history-slots">
-        ${Array.from({length:Ze},(s,o)=>d`
+        ${Array.from({length:Ft},(o,r)=>a`
             <div class="history-slot">
-              ${r[o]?Qe(r[o],i,e):o===0&&t?d`<div class="empty">Nothing recorded yet</div>`:c}
+              ${s[r]?Yt(s[r],i,e):r===0&&t?a`<div class="empty">Nothing recorded yet</div>`:d}
             </div>
           `)}
       </div>
-      ${i.dialogOpen?Mt(i,e):c}
+      ${i.dialogOpen?De(i,e):d}
     </div>
-  `}var Tt=K`<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-  <path fill="currentColor" d="M8 5v14l11-7z" />
-</svg>`,Rt=K`<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-  <path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z" />
-</svg>`,Ot=K`<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-  <path fill="currentColor" d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z" />
-</svg>`;function tt(i){let e=i.playing?"Pause":"Play";return d`
-    <div class="player" data-enabled=${i.enabled}>
+  `}var Mi=.35;function Gt(i){let e=Math.min(1,Math.max(0,i.level||0));return a`
+    <div
+      class="mic-wrap"
+      data-recording=${i.recording}
+      data-mode=${i.recordMode}
+      style="--mic:${i.size}px;--grow:${(1+e*Mi).toFixed(3)};--limit:${i.maxDuration}s"
+    >
+      <div class="mic-level" aria-hidden="true">
+        <span class="blob blob-outer"></span>
+        <span class="blob blob-inner"></span>
+      </div>
       <button
-        class="icon"
-        ?disabled=${!i.enabled}
-        title=${e}
-        aria-label=${e}
-        @click=${i.onToggle}
+        class="mic"
+        ?disabled=${i.disabled}
+        @pointerdown=${i.onPressStart}
+        @pointerup=${i.onPressEnd}
+        @pointercancel=${i.onPressEnd}
+        @pointerleave=${i.onPressEnd}
+        @contextmenu=${t=>t.preventDefault()}
+        @keydown=${t=>{!t.repeat&&(t.key===" "||t.key==="Enter")&&i.onPressStart(t)}}
+        @keyup=${t=>{(t.key===" "||t.key==="Enter")&&i.onPressEnd()}}
+        title=${i.label}
+        aria-label=${i.label}
       >
-        ${i.playing?Rt:Tt}
+        <span class="mic-glyph mic-glyph-mic">${Ut}</span>
+        <span class="mic-glyph mic-glyph-stop">${It}</span>
       </button>
-      <span class="time"
-        >${j(i.position)} / ${j(i.duration)}</span
-      >
-      <button
-        class="icon"
-        ?disabled=${!i.enabled}
-        title="Clear"
-        aria-label="Clear"
-        @click=${i.onClear}
-      >
-        ${Ot}
-      </button>
+      <svg class="mic-arc" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="mic-arc-track" cx="50" cy="50" r="46" pathLength="100" />
+        <circle class="mic-arc-fill" cx="50" cy="50" r="46" pathLength="100" />
+      </svg>
     </div>
-  `}var rt=2;function Ut(i,e){if(e.length===0)return"No speakers selected";let t=e.map(o=>i.find(n=>n.entityId===o)?.name??o),r=t.slice(0,rt).join(", "),s=t.length-rt;return s>0?`${r} +${s}`:r}function it(i,e){let t=i.selected.includes(e.entityId);return d`
+  `}var Xt=2;function Jt(i,e){if(e.length===0)return"No speakers selected";let t=e.map(r=>i.find(n=>n.entityId===r)?.name??r),s=t.slice(0,Xt).join(", "),o=t.length-Xt;return o>0?`${s} +${o}`:s}function Qt(i,e){let t=i.selected.includes(e.entityId);return a`
     <button
       class="target-row"
       role="checkbox"
@@ -677,10 +1281,10 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
       @click=${()=>i.onToggle(e.entityId)}
     >
       <span class="target-name">${e.name}</span>
-      ${e.available?c:d`<span class="target-note">unavailable</span>`}
+      ${e.available?d:a`<span class="target-note">unavailable</span>`}
       <span class="target-check" aria-hidden="true">${t?"\u2713":""}</span>
     </button>
-  `}function Lt(i,e){let t=i.selected.includes(e.entityId);return d`
+  `}function Ri(i,e){let t=i.selected.includes(e.entityId);return a`
     <button
       class="chip"
       role="checkbox"
@@ -690,52 +1294,60 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
     >
       ${e.name}${e.available?"":" (unavailable)"}
     </button>
-  `}function st(i){let e=d`
+  `}function Zt(i){let e=a`
     <div class="section-head">
       <span>Speakers</span>
       <span class="count">${i.selected.length} of ${i.players.length}</span>
     </div>
-  `;return i.players.length===0?d`${e}<div class="empty">No speakers found</div>`:i.style==="chips"?d`
+  `;return i.players.length===0?i.style==="pill"?a`<div class="pill-wrap">
+          <button class="pill" disabled>
+            <span class="pill-icon">${Le}</span>
+            <span class="pill-text">No speakers found</span>
+          </button>
+        </div>`:a`${e}<div class="empty">No speakers found</div>`:i.style==="chips"?a`
       ${e}
-      <div class="chips">${i.players.map(t=>Lt(i,t))}</div>
-    `:i.style==="dropdown"?d`
-      ${e}
-      <div class="dropdown">
+      <div class="chips">${i.players.map(t=>Ri(i,t))}</div>
+    `:i.style==="pill"?a`
+      <div class="pill-wrap">
         <button
-          class="dropdown-summary"
+          class="pill"
           aria-expanded=${i.open}
+          aria-haspopup="true"
+          title=${Jt(i.players,i.selected)}
           @click=${()=>i.onOpenChange(!i.open)}
         >
-          <span>${Ut(i.players,i.selected)}</span>
-          <span aria-hidden="true">${i.open?"\u25B4":"\u25BE"}</span>
+          <span class="pill-icon">${Le}</span>
+          <span class="pill-text">${Jt(i.players,i.selected)}</span>
+          <span class="pill-chevron">${Vt}</span>
         </button>
-        ${i.open?d`
-              <!-- Absolutely positioned: an inline panel would push the
-                   broadcast button and the history list down the card. -->
-              <div class="dropdown-panel">
-                ${i.players.map(t=>it(i,t))}
+        ${i.open?a`
+              <!-- Absolutely positioned: an inline panel would push
+                   everything below it down the card. -->
+              <div class="pill-panel">
+                ${e}
+                ${i.players.map(t=>Qt(i,t))}
               </div>
-            `:c}
+            `:d}
       </div>
-    `:d`
+    `:a`
     ${e}
-    <div class="target-rows">${i.players.map(t=>it(i,t))}</div>
-  `}function Dt(i){let t=i.currentTarget.getBoundingClientRect();return t.width===0?0:Math.min(1,Math.max(0,(i.clientX-t.left)/t.width))}function ot(i){let e=r=>i.progress!==void 0&&r/i.bars.length<i.progress,t=r=>{i.seekable&&i.onSeek(Dt(r))};return d`
+    <div class="target-rows">${i.players.map(t=>Qt(i,t))}</div>
+  `}function Oi(i){let t=i.currentTarget.getBoundingClientRect();return t.width===0?0:Math.min(1,Math.max(0,(i.clientX-t.left)/t.width))}function ei(i){let e=s=>i.progress!==void 0&&s/i.bars.length<i.progress,t=s=>{i.seekable&&i.onSeek(Oi(s))};return a`
     <div
-      class="wave ${i.seekable?"seekable":""}"
-      @pointerdown=${r=>{i.seekable&&(r.currentTarget.setPointerCapture(r.pointerId),t(r))}}
-      @pointermove=${r=>{i.seekable&&r.buttons>0&&t(r)}}
-      @pointerup=${r=>{i.seekable&&r.currentTarget.releasePointerCapture(r.pointerId)}}
-      @pointercancel=${r=>{i.seekable&&r.currentTarget.releasePointerCapture(r.pointerId)}}
+      class="wave ${i.seekable?"seekable":""} ${i.className??""}"
+      @pointerdown=${s=>{i.seekable&&(s.currentTarget.setPointerCapture(s.pointerId),t(s))}}
+      @pointermove=${s=>{i.seekable&&s.buttons>0&&t(s)}}
+      @pointerup=${s=>{i.seekable&&s.currentTarget.releasePointerCapture(s.pointerId)}}
+      @pointercancel=${s=>{i.seekable&&s.currentTarget.releasePointerCapture(s.pointerId)}}
     >
-      ${i.bars.map((r,s)=>d`
+      ${i.bars.map((s,o)=>a`
           <div
-            class="bar ${e(s)?"played":i.recording?"live":""}"
-            style="height:${Math.max(2,Math.round(r*100))}%"
+            class="bar ${e(o)?"played":i.recording?"live":""}"
+            style="height:${Math.max(2,Math.round(s*100))}%;--i:${o}"
           ></div>
         `)}
     </div>
-  `}function nt(i){return d`
+  `}function Ue(i){return a`
     <div class="volume-row">
       <button
         class="volume-toggle"
@@ -746,7 +1358,7 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
       >
         Set volume
       </button>
-      ${i.enabled?d`
+      ${i.enabled?a`
             <input
               type="range"
               class="volume-slider"
@@ -758,53 +1370,72 @@ var at=Object.defineProperty;var lt=Object.getOwnPropertyDescriptor;var p=(i,e,t
               @input=${e=>i.onChange(Number(e.target.value))}
             />
             <span class="volume-value">${Math.round(i.value*100)}%</span>
-          `:c}
+          `:d}
     </div>
-  `}var Nt="Voice Broadcast",It=.4,u=class extends b{constructor(){super(...arguments);this.config={type:""};this.phase="idle";this.elapsed=0;this.selected=[];this.history=[];this.bars=[];this.position=0;this.playing=!1;this.pickerOpen=!1;this.historyOpen=!1;this.volumeOverride=!1;this.volume=1;this.recorder=new S;this.envelope=new Z;this.busy=!1;this.disconnected=!1;this.stopRequested=!1}setConfig(t){this.config=t,this.selected=t.targets?[...t.targets]:[]}getCardSize(){return this.config.show_history===!1?3:6}static getConfigElement(){return document.createElement("hass-broadcast-card-editor")}static getStubConfig(){return{type:"custom:hass-broadcast-card",targets:[],mode:"plain",record_mode:"push_to_talk",player_list:"rows"}}connectedCallback(){super.connectedCallback(),this.disconnected=!1,S.isSupported()||(this.status={kind:"error",text:Ie}),this.refreshHistory()}updated(){let t=this.renderRoot?.querySelector?.("dialog");t&&!t.open&&t.showModal?.()}disconnectedCallback(){super.disconnectedCallback(),this.disconnected=!0,this.clearTimer(),this.stopPlayback(),ee(this.clip),this.clip=void 0,this.bars=[],this.historyOpen=!1,this.phase==="recording"&&!this.busy&&(this.phase="idle",this.busy=!0,this.recorder.stop().catch(()=>{}).finally(()=>{this.busy=!1}))}clearTimer(){this.timer!==void 0&&(window.clearInterval(this.timer),this.timer=void 0)}async refreshHistory(){if(!(!this.hass||this.config.show_history===!1))try{this.history=await Le(this.hass)}catch{this.history=[]}}get players(){return Be(X(this.hass),this.config.show_players,this.config.hide_players)}get targets(){return qe(this.selected,this.config.show_players,this.config.hide_players)}get recordMode(){return this.config.record_mode==="start_stop"?"start_stop":"push_to_talk"}async onPressStart(t){if(!(this.phase==="sending"||!S.isSupported())){if(this.recordMode==="start_stop"){await(this.phase==="recording"?this.stopRecording():this.startRecording());return}t.preventDefault(),!this.busy&&(this.stopRequested=!1,await this.startRecording(),this.stopRequested&&this.phase==="recording"&&await this.stopRecording())}}async onPressEnd(){if(this.recordMode==="push_to_talk"){if(this.phase!=="recording"){this.stopRequested=!0;return}await this.stopRecording()}}async startRecording(){if(this.busy||this.phase==="recording")return;this.busy=!0,this.status=void 0;try{this.recorder.onLevel(r=>{this.envelope.push(r,Date.now())&&(this.bars=this.envelope.tail(48))}),this.envelope.reset(),await this.recorder.start()}catch(r){this.fail(ze(r));return}finally{this.busy=!1}if(this.disconnected){this.busy=!0,this.recorder.stop().catch(()=>{}).finally(()=>{this.busy=!1});return}this.phase="recording",this.elapsed=0;let t=ue(this.config.max_duration);this.timer=window.setInterval(()=>{this.elapsed+=1,this.elapsed>=t&&this.stopRecording()},1e3)}async stopRecording(){if(!(this.busy||this.phase!=="recording")){this.busy=!0,this.clearTimer();try{let{blob:t,duration:r}=await this.recorder.stop();if(this.recordMode==="push_to_talk"&&r<It){this.phase="idle",this.fail("Hold the button while you speak.");return}this.setClip(Ye(t,r,this.envelope.all())),this.phase="idle"}catch(t){this.fail(`Could not finish recording: ${t?.message??t}`),this.phase="idle"}finally{this.busy=!1}}}setClip(t){this.stopPlayback(),this.clip&&this.clip!==t&&ee(this.clip),this.clip=t,this.bars=t.peaks.length?t.peaks:[]}clearClip(){this.stopPlayback(),ee(this.clip),this.clip=void 0,this.bars=[]}seek(t){if(!this.clip)return;this.position=t*this.clip.duration;let r=this.ensureAudio();r&&r.src===this.clip.url&&(r.currentTime=this.position)}ensureAudio(){if(!(typeof Audio>"u"))return this.audio||(this.audio=new Audio,this.audio.addEventListener("timeupdate",()=>{this.position=this.audio?.currentTime??0}),this.audio.addEventListener("ended",()=>{this.playing=!1,this.position=0})),this.audio}togglePlay(){let t=this.ensureAudio();if(!(!t||!this.clip)){if(this.playing){t.pause(),this.playing=!1;return}t.src!==this.clip.url&&(t.src=this.clip.url,t.currentTime=this.position),t.play().then(()=>{this.playing=!0},r=>{this.fail(`Could not play that here: ${r?.message??r}`)})}}stopPlayback(){this.audio?.pause(),this.playing=!1,this.position=0}fail(t){this.status={kind:"error",text:t}}toggleTarget(t){this.selected=this.selected.includes(t)?this.selected.filter(r=>r!==t):[...this.selected,t]}get canBroadcast(){return this.clip!==void 0&&this.targets.length>0&&this.phase==="idle"}async messageId(t){let r=fe(t);if(r!==void 0)return r;let s=t.source.blob,o=await Ue(this.hass,s,t.duration);return this.clip===t&&(this.clip={...t,source:{kind:"stored",id:o}}),o}async broadcast(){if(this.phase!=="idle")return;let t=this.clip;if(!t){this.fail("Record a message or pick one from below first.");return}let r=this.targets;if(r.length===0){this.fail("Pick at least one speaker first.");return}this.phase="sending",this.status=void 0;try{let s=await this.messageId(t),{failed:o}=await Ne(this.hass,s,r,this.config.mode??"plain",this.volumeOverride?this.volume:void 0);this.phase="idle",o.length===0?this.status={kind:"info",text:`Sent to ${this.describe(r)}`}:o.length>=r.length?this.fail(`Could not play on any speaker: ${this.describe(o)}.`):this.fail(`Played, but not on ${this.describe(o)}.`),await this.refreshHistory()}catch(s){this.phase="idle",this.fail(`Could not send: ${s?.message??s}`)}}async loadMessage(t){this.loadingId=t.id,this.historyOpen=!1,this.status=void 0;try{this.setClip(await Ke(this.hass,t))}catch(r){this.fail(r?.message??String(r))}finally{this.loadingId=void 0}}describe(t){return t.map(r=>this.hass?.states?.[r]?.attributes?.friendly_name??r).join(", ")}async deleteRecording(t){try{await De(this.hass,t)&&await this.refreshHistory()}catch(r){r?.code==="not_authorized"?this.fail("You do not have permission to delete this recording."):this.fail(`Could not delete: ${r?.message??r}`)}}get recordHint(){return this.phase==="recording"?`Recording\u2026 ${this.elapsed}s`:this.phase==="sending"?"Broadcasting\u2026":this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}get recordLabel(){return this.phase==="sending"?"Broadcasting":this.phase==="recording"?this.recordMode==="push_to_talk"?"Recording \u2014 release to stop":"Recording \u2014 tap to stop":this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}render(){return d`
-      <ha-card .header=${this.config.title?.trim()||Nt}>
-        ${ot({bars:this.bars.length?this.bars:Q(48),progress:this.phase==="recording"?void 0:this.clip?this.position/(this.clip.duration||1):void 0,seekable:this.phase==="idle"&&this.clip!==void 0,recording:this.phase==="recording",onSeek:t=>this.seek(t)})}
-
-        ${tt({enabled:this.phase==="idle"&&this.clip!==void 0,playing:this.playing,position:this.position,duration:this.clip?.duration??0,onToggle:()=>this.togglePlay(),onClear:()=>this.clearClip()})}
-
-        <div class="record-row">
-          <button
-            class="record"
-            data-recording=${this.phase==="recording"}
-            ?disabled=${!S.isSupported()||this.phase==="sending"}
-            @pointerdown=${this.onPressStart}
-            @pointerup=${this.onPressEnd}
-            @pointercancel=${this.onPressEnd}
-            @pointerleave=${this.onPressEnd}
-            @contextmenu=${t=>t.preventDefault()}
-            @keydown=${t=>{!t.repeat&&(t.key===" "||t.key==="Enter")&&this.onPressStart(t)}}
-            @keyup=${t=>{(t.key===" "||t.key==="Enter")&&this.onPressEnd()}}
-            title=${this.recordLabel}
-            aria-label=${this.recordLabel}
-          ></button>
-        </div>
-        <div
-          class="status ${this.status?.kind??"info"}"
-          title=${this.status?.text??this.recordHint}
-          aria-live="polite"
-        >
-          ${this.status?.text??this.recordHint}
-        </div>
-
-        ${st({players:this.players.map(t=>({entityId:t,name:this.hass?.states?.[t]?.attributes?.friendly_name??t,available:this.hass?.states?.[t]?.state!=="unavailable"})),selected:this.selected,style:this.config.player_list??"rows",open:this.pickerOpen,onToggle:t=>this.toggleTarget(t),onOpenChange:t=>{this.pickerOpen=t}})}
-
-        ${nt({enabled:this.volumeOverride,value:this.volume,onToggle:()=>{this.volumeOverride=!this.volumeOverride},onChange:t=>{this.volume=t}})}
-
+  `}function ti(i){return a`
+    <div class="popover-wrap">
+      <button
+        class="icon"
+        data-active=${i.enabled}
+        aria-expanded=${i.open}
+        title="Broadcast volume"
+        aria-label="Broadcast volume"
+        @click=${()=>i.onOpenChange(!i.open)}
+      >
+        ${me}
+      </button>
+      ${i.open?a`<div class="popover">${Ue(i)}</div>`:d}
+    </div>
+  `}var Li="Voice Broadcast",Di=4e3,Ui=10,Ii=.25,g=class extends b{constructor(){super(...arguments);this.config={type:""};this.selected=[];this.history=[];this.position=0;this.playing=!1;this.pickerOpen=!1;this.historyOpen=!1;this.volumeOpen=!1;this.menuOpen=!1;this.volumeOverride=!1;this.volume=1;this.rec=new he(this,{recordMode:()=>this.recordMode,maxDuration:()=>L(this.config.max_duration),onStart:()=>this.setStatus(void 0),onError:(t,s)=>this.fail(t,s),onTake:t=>{this.setClip(Tt(t.blob,t.duration,t.peaks))}})}setConfig(t){this.config=t,this.selected=t.targets?[...t.targets]:[]}get layout(){return P(this.config)}get sections(){return ne(this.config)}getCardSize(){if(this.layout==="compact")return 2;let t=5;for(let s of this.sections)s.type==="speakers"?t+=s.style==="rows"?4:s.style==="chips"?1:0:s.type==="history"&&s.style==="list"&&(t+=3);return t}getGridOptions(){return{columns:12,min_columns:6}}static getConfigElement(){return document.createElement("hass-broadcast-card-editor")}static getStubConfig(){return{type:"custom:hass-broadcast-card",targets:[],mode:"plain",record_mode:"push_to_talk",layout:"full",sections:[{type:"speakers",style:"pill"},{type:"history",style:"icon"},{type:"volume",style:"icon"}]}}connectedCallback(){super.connectedCallback(),this.rec.supported||(this.status={kind:"error",text:ct,sticky:!0}),this.refreshHistory()}updated(){let t=this.renderRoot?.querySelector?.("dialog");t&&!t.open&&t.showModal?.()}disconnectedCallback(){super.disconnectedCallback(),this.stopPlayback(),this.clearStatusTimer(),pe(this.clip),this.clip=void 0,this.historyOpen=!1,this.menuOpen=!1,this.volumeOpen=!1}async refreshHistory(){if(!(!this.hass||!bt(this.sections,"history")))try{this.history=await nt(this.hass)}catch{this.history=[]}}get players(){return pt(re(this.hass),this.config.show_players,this.config.hide_players)}get targets(){return ht(this.selected,this.config.show_players,this.config.hide_players)}get recordMode(){return this.config.record_mode==="start_stop"?"start_stop":"push_to_talk"}clearStatusTimer(){this.statusTimer!==void 0&&(window.clearTimeout(this.statusTimer),this.statusTimer=void 0)}setStatus(t){this.clearStatusTimer(),this.status=t,t&&!t.sticky&&(this.statusTimer=window.setTimeout(()=>{this.statusTimer=void 0,this.status===t&&(this.status=void 0)},Di))}fail(t,s=!1){this.setStatus({kind:"error",text:t,sticky:s})}setClip(t){this.stopPlayback(),this.clip&&this.clip!==t&&pe(this.clip),this.clip=t}clearClip(){this.stopPlayback(),pe(this.clip),this.clip=void 0}seek(t){if(!this.clip)return;this.position=t*this.clip.duration;let s=this.ensureAudio();s&&s.src===this.clip.url&&(s.currentTime=this.position)}ensureAudio(){if(!(typeof Audio>"u"))return this.audio||(this.audio=new Audio,this.audio.addEventListener("timeupdate",()=>{this.position=this.audio?.currentTime??0}),this.audio.addEventListener("ended",()=>{this.playing=!1,this.position=0})),this.audio}togglePlay(){let t=this.ensureAudio();if(!(!t||!this.clip)){if(this.playing){t.pause(),this.playing=!1;return}t.src!==this.clip.url&&(t.src=this.clip.url,t.currentTime=this.position),t.play().then(()=>{this.playing=!0},s=>{this.fail(`Could not play that here: ${s?.message??s}`)})}}stopPlayback(){this.audio?.pause(),this.playing=!1,this.position=0}toggleTarget(t){this.selected=this.selected.includes(t)?this.selected.filter(s=>s!==t):[...this.selected,t]}get canBroadcast(){return this.clip!==void 0&&this.targets.length>0&&this.rec.phase==="idle"}async broadcast(){if(this.rec.phase!=="idle")return;let t=this.clip;if(!t){this.fail("Record a message or pick one from below first.");return}let s=this.targets;if(s.length===0){this.fail("Pick at least one speaker first.");return}this.rec.setSending(!0),this.setStatus(void 0);try{let o=await Ot({hass:this.hass,clip:t,targets:s,mode:this.config.mode??"plain",volume:this.volumeOverride?this.volume:void 0,onStored:r=>{this.clip===t&&(this.clip={...t,source:{kind:"stored",id:r}})}});this.rec.setSending(!1),this.setStatus(Lt(this.hass,o)),await this.refreshHistory()}catch(o){this.rec.setSending(!1),this.fail(`Could not send: ${o?.message??o}`)}}async loadMessage(t){this.loadingId=t.id,this.historyOpen=!1,this.setStatus(void 0);try{this.setClip(await Et(this.hass,t))}catch(s){this.fail(s?.message??String(s))}finally{this.loadingId=void 0}}async deleteRecording(t){try{await at(this.hass,t)&&await this.refreshHistory()}catch(s){s?.code==="not_authorized"?this.fail("You do not have permission to delete this recording."):this.fail(`Could not delete: ${s?.message??s}`)}}get hint(){return this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}get recordLabel(){return this.rec.phase==="sending"?"Broadcasting":this.rec.phase==="recording"?this.recordMode==="push_to_talk"?"Recording \u2014 release to stop":"Recording \u2014 tap to stop":this.hint}get view(){return this.rec.phase==="recording"?"recording":this.status?"status":this.clip?"review":"idle"}get timerWarning(){let t=L(this.config.max_duration),s=Math.min(Ui,t*Ii);return this.rec.phase==="recording"&&t-this.rec.elapsed<=s}historyProps(){return{messages:this.history,loadedId:this.clip?de(this.clip):void 0,loadingId:this.loadingId,onLoad:t=>void this.loadMessage(t),onDelete:t=>void this.deleteRecording(t),onDialogOpenChange:t=>{this.historyOpen=t}}}get parts(){let t=this.rec.phase==="recording",s=this.rec.phase==="sending",o=this.clip!==void 0&&!t,r={enabled:this.volumeOverride,value:this.volume,onToggle:()=>{this.volumeOverride=!this.volumeOverride},onChange:n=>{this.volume=n}};return{title:this.config.title?.trim()||Li,view:this.view,sections:this.sections,hint:this.hint,timer:V(this.rec.elapsed),timerWarning:this.timerWarning,status:this.status,reviewing:o,mic:n=>Gt({size:n,recording:t,disabled:!this.rec.supported||s,recordMode:this.recordMode,level:this.rec.level,maxDuration:L(this.config.max_duration),label:this.recordLabel,onPressStart:l=>void this.rec.onPressStart(l),onPressEnd:()=>void this.rec.onPressEnd()}),play:()=>a`
         <button
-          class="broadcast"
-          ?disabled=${!this.canBroadcast}
-          @click=${this.broadcast}
+          class="icon play"
+          ?disabled=${!o||s}
+          title=${this.playing?"Pause":"Play"}
+          aria-label=${this.playing?"Pause":"Play"}
+          @click=${()=>this.togglePlay()}
         >
-          ${this.phase==="sending"?"Broadcasting\u2026":"Broadcast"}
+          ${this.playing?Ht:zt}
         </button>
-
-        ${this.config.show_history===!1?c:et({messages:this.history,loadedId:this.clip?fe(this.clip):void 0,loadingId:this.loadingId,dialogOpen:this.historyOpen,onLoad:t=>void this.loadMessage(t),onDelete:t=>void this.deleteRecording(t),onDialogOpenChange:t=>{this.historyOpen=t}})}
+      `,waveform:n=>a`${ot(this.clip?.url??"none",ei({bars:this.clip?.peaks.length?this.clip.peaks:le(48),progress:this.clip?this.position/(this.clip.duration||1):void 0,seekable:o&&!s,recording:!1,onSeek:l=>this.seek(l),className:`${n} reveal`}))}`,clipLength:V(this.clip?.duration??0),discard:()=>a`
+        <button
+          class="icon discard"
+          ?disabled=${!o||s}
+          title="Discard"
+          aria-label="Discard"
+          @click=${()=>this.clearClip()}
+        >
+          ${Bt}
+        </button>
+      `,send:n=>{let l=this.targets.length,c=l>1?`Send to ${l}`:"Send";return a`
+          <div class="send-wrap send-wrap-${n}">
+            <button
+              class="send send-${n}"
+              ?disabled=${!this.canBroadcast}
+              data-sending=${s}
+              title=${c}
+              aria-label=${s?"Broadcasting":c}
+              @click=${()=>void this.broadcast()}
+            >
+              ${s?a`<span class="spinner" aria-hidden="true"></span>`:Nt}
+              ${n==="pill"?a`<span>Send</span>`:d}
+            </button>
+            ${n==="round"?a`<span class="caption">${c}</span>`:d}
+          </div>
+        `},speakers:n=>Zt({players:this.players.map(l=>({entityId:l,name:this.hass?.states?.[l]?.attributes?.friendly_name??l,available:this.hass?.states?.[l]?.state!=="unavailable"})),selected:this.selected,style:n.style,open:this.pickerOpen,onToggle:l=>this.toggleTarget(l),onOpenChange:l=>{this.pickerOpen=l}}),historyList:()=>Kt({...this.historyProps(),dialogOpen:!1}),historyButton:()=>a`
+        <button
+          class="icon"
+          title="Recent messages"
+          aria-label="Recent messages"
+          @click=${()=>{this.historyOpen=!0}}
+        >
+          ${ue}
+        </button>
+      `,volumeButton:()=>ti({...r,open:this.volumeOpen,onOpenChange:n=>{this.volumeOpen=n}}),volumePanel:()=>Ue(r),historyDialog:()=>this.historyOpen?De(this.historyProps()):d,menuOpen:this.menuOpen,onMenuOpenChange:n=>{this.menuOpen=n},onOpenHistory:()=>{this.historyOpen=!0}}}render(){let t=this.parts;return a`
+      <ha-card>
+        ${this.layout==="compact"?qt(t):Wt(t)}
+        <div class="sr-only" aria-live="polite">${this.status?.text??""}</div>
       </ha-card>
-    `}};u.styles=Ge,p([M({attribute:!1})],u.prototype,"hass",2),p([m()],u.prototype,"config",2),p([m()],u.prototype,"phase",2),p([m()],u.prototype,"elapsed",2),p([m()],u.prototype,"status",2),p([m()],u.prototype,"selected",2),p([m()],u.prototype,"history",2),p([m()],u.prototype,"clip",2),p([m()],u.prototype,"bars",2),p([m()],u.prototype,"loadingId",2),p([m()],u.prototype,"position",2),p([m()],u.prototype,"playing",2),p([m()],u.prototype,"pickerOpen",2),p([m()],u.prototype,"historyOpen",2),p([m()],u.prototype,"volumeOverride",2),p([m()],u.prototype,"volume",2),u=p([G("hass-broadcast-card")],u);window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-card",name:"Voice Broadcast",description:"Record a voice message and play it on your speakers.",preview:!1});export{u as HassBroadcastCard};
+    `}};g.styles=Dt,m([O({attribute:!1})],g.prototype,"hass",2),m([f()],g.prototype,"config",2),m([f()],g.prototype,"status",2),m([f()],g.prototype,"selected",2),m([f()],g.prototype,"history",2),m([f()],g.prototype,"clip",2),m([f()],g.prototype,"loadingId",2),m([f()],g.prototype,"position",2),m([f()],g.prototype,"playing",2),m([f()],g.prototype,"pickerOpen",2),m([f()],g.prototype,"historyOpen",2),m([f()],g.prototype,"volumeOpen",2),m([f()],g.prototype,"menuOpen",2),m([f()],g.prototype,"volumeOverride",2),m([f()],g.prototype,"volume",2),g=m([ie("hass-broadcast-card")],g);window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-card",name:"Voice Broadcast",description:"Record a voice message and play it on your speakers.",preview:!1});export{g as HassBroadcastCard,Di as STATUS_MS};
 /*! Bundled license information:
 
 @lit/reactive-element/css-tag.js:
@@ -909,6 +1540,27 @@ lit-html/is-server.js:
   (**
    * @license
    * Copyright 2017 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/directive.js:
+  (**
+   * @license
+   * Copyright 2017 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/directive-helpers.js:
+  (**
+   * @license
+   * Copyright 2020 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/directives/keyed.js:
+  (**
+   * @license
+   * Copyright 2021 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 */

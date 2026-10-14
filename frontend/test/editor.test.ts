@@ -3,9 +3,13 @@ import { describe, it, expect } from "vitest";
 import {
   HassBroadcastCardEditor,
   clampMaxDuration,
+  moveRow,
   playerOptions,
+  sectionRows,
+  sectionsConfig,
   selectionSummary,
   toggleInList,
+  toggleRow,
 } from "../src/editor";
 import { renderedText } from "./helpers";
 
@@ -274,20 +278,114 @@ describe("editor record mode and list style", () => {
     expect(editor.currentRecordMode).toBe("push_to_talk");
   });
 
-  it("writes player_list when a style is picked", () => {
-    const { editor, configs } = newEditor();
-
-    editor.emit({ player_list: "dropdown" });
-
-    expect(configs[configs.length - 1].player_list).toBe("dropdown");
-  });
-
-  it("shows rows as the style when the key is absent", () => {
+  it("shows a legacy card's rows style as the speakers' current style", () => {
     const { editor } = newEditor();
 
-    // The select's `.value` property binding, not just the field's label —
-    // the previous assertion only checked the label text and could not
-    // fail no matter which style ended up selected.
-    expect(renderedText(editor.render())).toContain(".value=rows");
+    // The option actually marked selected, not just the field's label.
+    expect(renderedText(editor.render())).toMatch(/value=rows\s*\?selected=true/);
+  });
+});
+
+describe("editor layout and sections", () => {
+  it("migrates a legacy card the first time anything is saved", () => {
+    const { editor, configs } = newEditor({
+      type: "custom:hass-broadcast-card",
+      player_list: "dropdown",
+      show_history: false,
+    });
+
+    editor.setRecordMode("start_stop");
+
+    const saved = configs[configs.length - 1];
+    expect(saved.layout).toBe("full");
+    expect(saved.sections).toEqual([
+      { type: "speakers", style: "pill" },
+      { type: "volume", style: "icon" },
+    ]);
+    expect(saved).not.toHaveProperty("player_list");
+    expect(saved).not.toHaveProperty("show_history");
+  });
+
+  it("drops a key patched to undefined instead of saving it empty", () => {
+    const { editor, configs } = newEditor({
+      type: "custom:hass-broadcast-card",
+      title: "Old",
+    });
+
+    editor.emit({ title: undefined });
+
+    expect(configs[0]).not.toHaveProperty("title");
+  });
+
+  it("writes the layout picked", () => {
+    const { editor, configs } = newEditor();
+
+    editor.emit({ layout: "compact" });
+
+    expect(configs[0].layout).toBe("compact");
+  });
+
+  it("keeps a chosen speaker style through compact and back", () => {
+    const config: any = {
+      type: "custom:hass-broadcast-card",
+      layout: "compact",
+      sections: [{ type: "speakers", style: "chips" }],
+    };
+
+    expect(sectionRows(config)[0]).toEqual({
+      type: "speakers",
+      style: "chips",
+      visible: true,
+    });
+  });
+
+  it("lists hidden sections after the visible ones so they can be shown", () => {
+    const rows = sectionRows({
+      type: "custom:hass-broadcast-card",
+      sections: [{ type: "volume" }, { type: "speakers", style: "pill" }],
+    });
+
+    expect(rows.map((row) => [row.type, row.visible])).toEqual([
+      ["volume", true],
+      ["speakers", true],
+      ["history", false],
+    ]);
+  });
+
+  it("reorders only among visible sections", () => {
+    const rows = sectionRows({
+      type: "custom:hass-broadcast-card",
+      sections: [{ type: "speakers" }, { type: "volume" }],
+    });
+
+    const down = moveRow(rows, 0, 1);
+    expect(sectionsConfig(down).map((s) => s.type)).toEqual(["volume", "speakers"]);
+    // The hidden history row is last; volume cannot be pushed past it.
+    expect(moveRow(rows, 1, 1)).toBe(rows);
+    expect(moveRow(rows, 2, -1)).toBe(rows);
+  });
+
+  it("shows a hidden section at the end of the visible ones, and never hides speakers", () => {
+    const rows = sectionRows({
+      type: "custom:hass-broadcast-card",
+      sections: [{ type: "speakers" }],
+    });
+    const historyIndex = rows.findIndex((row) => row.type === "history");
+
+    const shown = toggleRow(rows, historyIndex);
+    expect(sectionsConfig(shown).map((s) => s.type)).toEqual(["speakers", "history"]);
+
+    expect(toggleRow(rows, 0)).toBe(rows);
+  });
+
+  it("hides the style choices in compact, where they would change nothing", () => {
+    const { editor } = newEditor({
+      type: "custom:hass-broadcast-card",
+      layout: "compact",
+    });
+
+    const text = renderedText(editor.render());
+    expect(text).not.toContain("Speakers style");
+    expect(text).toContain("⋮ menu");
   });
 });

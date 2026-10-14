@@ -14,6 +14,10 @@ export function renderedText(node: any): string {
       .map((part, index) => part + renderedText(node.values[index]))
       .join("");
   }
+  // A directive result such as keyed(key, template): render what it wraps.
+  if (typeof node === "object" && "_$litDirective$" in node && "values" in node) {
+    return renderedText(node.values);
+  }
   if (typeof node === "symbol") {
     return "";
   }

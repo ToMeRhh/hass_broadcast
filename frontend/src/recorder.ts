@@ -20,6 +20,28 @@ const MAX_GAIN = 10;
 
 const WORKLET_URL = "/api/hass_broadcast/static/recorder-worklet.js";
 
+/**
+ * Overrides of the shipped capture settings. The card never passes any; they
+ * exist so the dev harness's sound lab (frontend/dev/lab.ts) can compare
+ * alternatives through this same recorder rather than a copy of it.
+ */
+export interface CaptureOptions {
+  sampleRate?: number;
+  constraints?: MediaTrackConstraints;
+  normalize?: boolean;
+}
+
+// The browser's call processing is off: noise suppression warbles, gain
+// control pumps, and on Android echo cancellation puts the mic in its
+// narrowband voice-call mode — for an echo that cannot happen, since nothing
+// plays while recording. stop() makes up the level.
+export const RAW_MIC: MediaTrackConstraints = {
+  channelCount: 1,
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+};
+
 /** Captures microphone audio as Int16 PCM and returns it as a WAV blob. */
 export class Recorder {
   private context?: AudioContext;
@@ -28,6 +50,7 @@ export class Recorder {
   private chunks: Int16Array[] = [];
   private levelCallback?: (level: number) => void;
   private active = false;
+  private options: CaptureOptions = {};
 
   /**
    * Recording needs a secure context; browsers hide the API otherwise.
@@ -52,23 +75,22 @@ export class Recorder {
     this.levelCallback = callback;
   }
 
+  /** What the browser granted for the live take, which may differ from what was asked. */
+  get trackSettings(): MediaTrackSettings | undefined {
+    return this.stream?.getAudioTracks()[0]?.getSettings();
+  }
+
   /** `maxSeconds` is the longest this take may run; it caps the sample rate. */
-  async start(maxSeconds: number): Promise<void> {
+  async start(maxSeconds: number, options: CaptureOptions = {}): Promise<void> {
     this.chunks = [];
+    this.options = options;
     try {
-      // The browser's call processing is off: noise suppression warbles,
-      // gain control pumps, and on Android echo cancellation puts the mic in
-      // its narrowband voice-call mode — for an echo that cannot happen,
-      // since nothing plays while recording. stop() makes up the level.
       this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
+        audio: options.constraints ?? RAW_MIC,
       });
-      this.context = new AudioContext({ sampleRate: captureRate(maxSeconds) });
+      this.context = new AudioContext({
+        sampleRate: options.sampleRate ?? captureRate(maxSeconds),
+      });
       await this.context.audioWorklet.addModule(WORKLET_URL);
 
       const source = this.context.createMediaStreamSource(this.stream);
@@ -99,6 +121,7 @@ export class Recorder {
     }
     const sampleRate = this.context?.sampleRate ?? CAPTURE_RATES[0];
     const chunks = this.chunks;
+    const boost = this.options.normalize ?? true;
     await this.release();
 
     const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
@@ -108,7 +131,9 @@ export class Recorder {
       samples.set(chunk, offset);
       offset += chunk.length;
     }
-    normalize(samples);
+    if (boost) {
+      normalize(samples);
+    }
 
     return {
       blob: encodeWav(samples, sampleRate),

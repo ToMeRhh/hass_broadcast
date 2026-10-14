@@ -63,9 +63,9 @@ export function installRecorderMock(options: RecorderMockOptions): void {
     originalOnLevel.call(this, callback);
   };
 
-  Recorder.prototype.start = async function (maxSeconds: number) {
+  Recorder.prototype.start = async function (maxSeconds, captureOptions) {
     if (!options.useFake()) {
-      return originalStart.call(this, maxSeconds);
+      return originalStart.call(this, maxSeconds, captureOptions);
     }
     if (options.micDenied()) {
       // The same rejection the browser gives, so the card's error mapping is

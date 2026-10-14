@@ -11,6 +11,7 @@ Lovelace card and play it on media players. Python integration in
 npm test                        # card tests, vitest (210)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
+                                # /lab: A/B recording-quality presets by ear
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 npm run check:layout            # headless: no element moves between card states
 ```

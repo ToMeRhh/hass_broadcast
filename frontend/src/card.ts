@@ -12,6 +12,9 @@ import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
 import { clampMaxDuration } from "./editor-fields";
 import "./editor";
+// One bundle defines both cards, so the single Lovelace resource the
+// integration registers brings the tile along with the card.
+import "./tile";
 import {
   Clip,
   freshClip,

@@ -118,6 +118,45 @@ try {
       await page.close();
     }
   }
+
+  // The tile: idle → recording → sending → result, in both shapes.
+  for (const shape of ["Square", "Horizontal"]) {
+    const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+    await page.goto(URL);
+    const app = page.locator("dev-app");
+    await app.locator("label", { hasText: "Simulated recording" }).locator("input").check();
+    await page
+      .locator("hass-broadcast-tile-editor")
+      .locator("button", { hasText: shape })
+      .click();
+    await page.waitForTimeout(300);
+    const tile = page.locator("hass-broadcast-tile");
+    await tile.scrollIntoViewIfNeeded();
+    const states = {};
+    const capture = async (name, settle = 400) => {
+      await page.waitForTimeout(settle);
+      states[name] = await geometry(page, "hass-broadcast-tile");
+      await tile.screenshot({ path: join(shots, `tile-${shape}-${name}.png`) });
+    };
+    await capture("idle");
+    const mic = await tile.locator("button.mic").boundingBox();
+    await page.mouse.move(mic.x + mic.width / 2, mic.y + mic.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(1200);
+    await capture("recording");
+    await page.mouse.up();
+    await capture("sending", 80);
+    await capture("result", 1000);
+    for (const name of Object.keys(states)) {
+      const problems = diff(states.idle, states[name]);
+      if (problems.length) {
+        failures += 1;
+        console.error(`✗ tile ${shape}: idle → ${name}\n    ${problems.join("\n    ")}`);
+      }
+    }
+    console.log(`tile ${shape}: ${Object.keys(states).join(", ")} checked`);
+    await page.close();
+  }
 } finally {
   await browser.close();
   server.kill();

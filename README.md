@@ -19,7 +19,8 @@ speakers — a simple intercom, without leaving the UI.
 - **Three playback modes**: plain, restore the volume afterwards, or a chime first
 - **Optional broadcast volume**, with each speaker's own volume put back afterwards
 - **Recent messages** to replay or re-send, with automatic retention
-- **No services, no entities** — installing it adds a dashboard card and nothing else
+- **A one-tap intercom tile** that sends straight to the speakers you chose
+- **No services, no entities** — installing it adds dashboard cards and nothing else
 
 ## Installation
 
@@ -98,6 +99,39 @@ restyle or hide from the editor's **Card sections** list:
 | Speakers | `pill` (one line that opens a list), `chips`, `rows` | Cannot be hidden. Always a pill in Compact |
 | Recent messages | `list` (three rows below the card) or `icon` (a header button) | Either way, opens the full list in a dialog |
 | Volume | `icon` | A header button that opens the volume control |
+
+For a one-tap intercom button that sends straight to fixed speakers, see the
+[broadcast tile](#broadcast-tile).
+
+### Broadcast tile
+
+The **Voice Broadcast Tile** is a second card for the call you make every
+day: hold it, speak, and let go — the message goes straight to the speakers
+you chose, with no review step and no picker. It shows ✓ when every speaker
+played it, and names any that did not.
+
+```yaml
+type: custom:hass-broadcast-tile
+name: Kids' rooms
+targets:
+  - media_player.kids_room
+  - media_player.bedroom
+shape: square        # square (3×2 in a sections view) or horizontal (6×1)
+mode: plain
+max_duration: 30
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `name` | `Intercom` | The tile's label |
+| `targets` | first speaker found | Every message goes to all of these. A tile with none is disabled |
+| `shape` | `square` | `square` or `horizontal` |
+| `mode` | `plain` | As for the card |
+| `max_duration` | `60` | As for the card |
+
+The tile is always hold-to-talk: release is what sends, so a tap-to-start
+tile would send the moment you tapped to stop. Its recordings appear in the
+card's recent messages like any other.
 
 Broadcasting happens from the card. This integration deliberately registers no
 Home Assistant service and creates no entities — installing it adds the card,

@@ -168,7 +168,7 @@ export class RecordingController implements ReactiveController {
         }
       });
       this.envelope.reset();
-      await this.recorder.start();
+      await this.recorder.start(this.options.maxDuration());
     } catch (err: any) {
       // A denied permission stays denied until the user changes it, so it
       // stays on screen rather than timing out under them.

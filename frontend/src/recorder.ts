@@ -1,6 +1,23 @@
 import { encodeWav } from "./wav";
 
-const TARGET_RATE = 16000;
+/**
+ * Context rates to record at, best first. Everything a speaker can reproduce
+ * of a voice is under 24 kHz, so 48 kHz loses nothing; 16 kHz cuts at 8 kHz,
+ * which is telephone audio and sounds it.
+ */
+const CAPTURE_RATES = [48000, 32000, 24000, 16000];
+// MAX_UPLOAD_BYTES in const.py. The upload is uncompressed, so the rate is
+// what decides whether the longest take the card allows still fits.
+const UPLOAD_BUDGET = 10 * 1024 * 1024;
+const WAV_HEADER_BYTES = 44;
+// Headroom for the stop timer, which fires on a one-second tick.
+const OVERRUN_SECONDS = 1;
+
+// -1 dBFS, and at most +20 dB: enough to rescue a quiet mic, not so much that
+// a near-silent take turns into amplified hiss.
+const TARGET_PEAK = 0.89 * 32767;
+const MAX_GAIN = 10;
+
 const WORKLET_URL = "/api/hass_broadcast/static/recorder-worklet.js";
 
 /** Captures microphone audio as Int16 PCM and returns it as a WAV blob. */
@@ -35,11 +52,23 @@ export class Recorder {
     this.levelCallback = callback;
   }
 
-  async start(): Promise<void> {
+  /** `maxSeconds` is the longest this take may run; it caps the sample rate. */
+  async start(maxSeconds: number): Promise<void> {
     this.chunks = [];
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.context = new AudioContext({ sampleRate: TARGET_RATE });
+      // The browser's call processing is off: noise suppression warbles,
+      // gain control pumps, and on Android echo cancellation puts the mic in
+      // its narrowband voice-call mode — for an echo that cannot happen,
+      // since nothing plays while recording. stop() makes up the level.
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      });
+      this.context = new AudioContext({ sampleRate: captureRate(maxSeconds) });
       await this.context.audioWorklet.addModule(WORKLET_URL);
 
       const source = this.context.createMediaStreamSource(this.stream);
@@ -68,7 +97,7 @@ export class Recorder {
     if (!this.active) {
       throw new Error("Recorder.stop() called with no active recording session");
     }
-    const sampleRate = this.context?.sampleRate ?? TARGET_RATE;
+    const sampleRate = this.context?.sampleRate ?? CAPTURE_RATES[0];
     const chunks = this.chunks;
     await this.release();
 
@@ -79,6 +108,7 @@ export class Recorder {
       samples.set(chunk, offset);
       offset += chunk.length;
     }
+    normalize(samples);
 
     return {
       blob: encodeWav(samples, sampleRate),
@@ -103,6 +133,38 @@ export class Recorder {
       this.chunks = [];
       this.active = false;
     }
+  }
+}
+
+/** The best rate at which a `maxSeconds` take still fits in one upload. */
+export function captureRate(maxSeconds: number): number {
+  const bytesPerSecond = (rate: number) => rate * 2;
+  const fits = (rate: number) =>
+    WAV_HEADER_BYTES + bytesPerSecond(rate) * (maxSeconds + OVERRUN_SECONDS) <=
+    UPLOAD_BUDGET;
+  return CAPTURE_RATES.find(fits) ?? CAPTURE_RATES[CAPTURE_RATES.length - 1];
+}
+
+/**
+ * Scale a take in place so its loudest sample sits just under full scale.
+ *
+ * Only ever boosts: with the browser's gain control off, a quiet mic gives a
+ * quiet take, and a speaker across the room has nothing to raise it with.
+ */
+export function normalize(samples: Int16Array): void {
+  let max = 0;
+  for (const sample of samples) {
+    max = Math.max(max, Math.abs(sample));
+  }
+  if (max === 0) {
+    return;
+  }
+  const gain = Math.min(MAX_GAIN, TARGET_PEAK / max);
+  if (gain <= 1) {
+    return;
+  }
+  for (let i = 0; i < samples.length; i++) {
+    samples[i] = Math.round(samples[i] * gain);
   }
 }
 

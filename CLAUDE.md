@@ -8,7 +8,7 @@ Lovelace card and play it on media players. Python integration in
 
 ```bash
 .venv/bin/python -m pytest -q   # integration tests (59)
-npm test                        # card tests, vitest (199)
+npm test                        # card tests, vitest (210)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
@@ -50,6 +50,13 @@ deliberately, so there is one default rather than one per card age.
 only when `sections` is absent (`resolveSections` in `sections.ts`), and the
 editor drops them on its first save. All config normalisation lives in
 `resolveSections`; don't interpret `sections` anywhere else.
+
+The bundle defines two cards: `hass-broadcast-card` and
+`hass-broadcast-tile` (`tile.ts`, imported from `card.ts` so the one Lovelace
+resource brings both). Both drive the microphone through `RecordingController`
+(`recording.ts`) and send through `sendClip` (`sending.ts`); they differ only
+in what they do with a finished take. The tile is push-to-talk regardless of
+config, because its release is what sends.
 
 The record core (strip, mic, Discard, Send) is not a section and is not
 configurable: it is what guarantees no layout shift between states. Any

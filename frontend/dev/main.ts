@@ -64,6 +64,16 @@ export class DevApp extends LitElement {
 
   private card?: HTMLElement & { setConfig(config: any): void; hass: any };
   private editor?: HTMLElement & { setConfig(config: any): void; hass: any };
+  @state() private tileConfig: any = {
+    type: "custom:hass-broadcast-tile",
+    name: "Kids' rooms",
+    targets: ["media_player.kids_room", "media_player.bedroom"],
+    shape: "square",
+    mode: "plain",
+    max_duration: 30,
+  };
+  private tile?: HTMLElement & { setConfig(config: any): void; hass: any };
+  private tileEditor?: HTMLElement & { setConfig(config: any): void; hass: any };
 
   static styles = css`
     :host {
@@ -80,6 +90,11 @@ export class DevApp extends LitElement {
       overflow: auto;
     }
     .frame { width: 100%; }
+    .tile-label {
+      margin: 28px 0 8px; font-size: 11px; letter-spacing: 0.09em;
+      text-transform: uppercase; color: var(--secondary-text-color, #888);
+    }
+    .tile-frame > * { display: block; height: 100%; }
     .panel {
       background: #1f2430;
       color: #e6e6e6;
@@ -131,6 +146,7 @@ export class DevApp extends LitElement {
   private remount(): void {
     this.card = undefined;
     this.editor = undefined;
+    this.tile = undefined;
     this.generation += 1;
   }
 
@@ -142,6 +158,30 @@ export class DevApp extends LitElement {
       backend.reseed();
       this.remount();
     }
+  }
+
+  private get tileElement(): HTMLElement {
+    if (!this.tile) {
+      const element = document.createElement("hass-broadcast-tile") as any;
+      element.setConfig(this.tileConfig);
+      element.hass = hass;
+      this.tile = element;
+    }
+    return this.tile!;
+  }
+
+  private get tileEditorElement(): HTMLElement {
+    if (!this.tileEditor) {
+      const element = document.createElement("hass-broadcast-tile-editor") as any;
+      element.hass = hass;
+      element.setConfig(this.tileConfig);
+      element.addEventListener("config-changed", (event: any) => {
+        this.tileConfig = event.detail.config;
+        (this.tileElement as any).setConfig(this.tileConfig);
+      });
+      this.tileEditor = element;
+    }
+    return this.tileEditor!;
   }
 
   private get cardElement(): HTMLElement {
@@ -190,9 +230,22 @@ export class DevApp extends LitElement {
     void this.generation;
     const card = this.cardElement;
     card.toggleAttribute("data-show-slots", this.showSlots);
+    this.tileElement.toggleAttribute("data-show-slots", this.showSlots);
     return html`
       <div class="stage">
-        <div class="frame" style="max-width:${this.width}px">${card}</div>
+        <div class="frame" style="max-width:${this.width}px">
+          ${card}
+          <div class="tile-label">Tile</div>
+          <!-- Sized like its sections-view grid cell: 3×2 or 6×1. -->
+          <div
+            class="tile-frame"
+            style=${this.tileConfig.shape === "horizontal"
+              ? "width:248px;height:56px"
+              : "width:120px;height:120px"}
+          >
+            ${this.tileElement}
+          </div>
+        </div>
       </div>
 
       <div class="panel">
@@ -296,6 +349,9 @@ export class DevApp extends LitElement {
 
         <h2>Card config</h2>
         <div class="editor-host">${this.editorElement}</div>
+
+        <h2>Tile config</h2>
+        <div class="editor-host">${this.tileEditorElement}</div>
 
         <div class="note">
           This is the real editor element. Changes apply to the card on the left

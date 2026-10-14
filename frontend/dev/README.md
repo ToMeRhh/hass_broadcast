@@ -74,3 +74,8 @@ checks the same thing automatically, in headless Chromium.
 Layout, sections, and push-to-talk versus tap-to-start live in the real editor
 at the bottom of the panel, not in these controls, because they are card
 configuration rather than simulated conditions.
+
+Below the card is a **broadcast tile**, in a box the size of its
+sections-view grid cell, with the real tile editor under the card's in the
+panel. Its sends go through the same mocked backend, so the broadcast-result
+and latency switches apply to it too.

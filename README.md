@@ -26,10 +26,16 @@ speakers — a simple intercom, without leaving the UI.
 
 ### HACS (recommended)
 
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ToMeRhh&repository=hass_broadcast&category=integration)
+
+The button above opens this repository in your own Home Assistant's HACS, adding
+it as a custom repository if needed — then skip to step 3. Or, by hand:
+
 1. In HACS, choose **Integrations → ⋮ → Custom repositories**.
 2. Add `https://github.com/ToMeRhh/hass_broadcast` as an **Integration**.
 3. Install **Voice Broadcast**, then restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration** and add **Voice Broadcast**.
+4. Go to **Settings → Devices & services → Add integration** and add **Voice Broadcast**
+   ([open it directly](https://my.home-assistant.io/redirect/config_flow_start/?domain=hass_broadcast)).
 
 ### Manual
 

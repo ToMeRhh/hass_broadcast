@@ -3,6 +3,7 @@
 //
 // Deliberately dependency-free beyond esbuild, which is already a devDependency:
 // node's own http/fs is enough, and a dev-only tool should not add packages.
+import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { networkInterfaces } from "node:os";
@@ -66,12 +67,12 @@ const reloadPlugin = {
 };
 
 const ctx = await esbuild.context({
-  entryPoints: [join(DEV_DIR, "main.ts")],
+  entryPoints: { dev: join(DEV_DIR, "main.ts"), lab: join(DEV_DIR, "lab.ts") },
   bundle: true,
   format: "esm",
   target: "es2021",
   sourcemap: true,
-  outfile: join(BUILD_DIR, "dev.js"),
+  outdir: BUILD_DIR,
   plugins: [reloadPlugin],
 });
 await ctx.watch();
@@ -120,6 +121,14 @@ createServer(async (req, res) => {
     await serveFile(res, join(DEV_DIR, "index.html"));
     return;
   }
+  if (path === "/lab") {
+    await serveFile(res, join(DEV_DIR, "lab.html"));
+    return;
+  }
+  if (path === "/lab/mp3" && req.method === "POST") {
+    await transcode(req, res, url.searchParams.get("bitrate") ?? "128k");
+    return;
+  }
   if (path.startsWith("/.build/")) {
     await serveFile(res, safeJoin(BUILD_DIR, path.slice("/.build".length)));
     return;
@@ -139,6 +148,44 @@ createServer(async (req, res) => {
   // getUserMedia and the harness substitutes a simulated recorder.
   console.log("\n  Real microphone on localhost; simulated recording on every other address.\n");
 });
+
+/**
+ * The sound lab's MP3 step: the ffmpeg command async_transcode_to_mp3 in
+ * audio_processing.py runs, with the bitrate left to the preset. Keep the two
+ * in step, or the lab stops predicting what the speaker plays.
+ */
+async function transcode(req, res, bitrate) {
+  if (!/^\d{2,3}k$/.test(bitrate)) {
+    res.writeHead(400).end(`bad bitrate: ${bitrate}`);
+    return;
+  }
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+
+  const ffmpeg = spawn("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
+    "-codec:a", "libmp3lame", "-ar", "44100", "-b:a", bitrate, "-f", "mp3", "pipe:1",
+  ]);
+  const out = [];
+  const err = [];
+  ffmpeg.stdout.on("data", (chunk) => out.push(chunk));
+  ffmpeg.stderr.on("data", (chunk) => err.push(chunk));
+  ffmpeg.stdin.on("error", () => {});
+  ffmpeg.stdin.end(Buffer.concat(chunks));
+
+  const code = await new Promise((done) => {
+    ffmpeg.on("error", () => done("missing"));
+    ffmpeg.on("close", done);
+  });
+  if (code === "missing") {
+    res.writeHead(501).end("ffmpeg is not on PATH; install it to hear the MP3 step");
+  } else if (code !== 0) {
+    res.writeHead(500).end(`ffmpeg failed: ${Buffer.concat(err).toString().trim()}`);
+  } else {
+    res.writeHead(200, { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" });
+    res.end(Buffer.concat(out));
+  }
+}
 
 /** Every URL this server can be reached on, so a phone or tablet has one to type. */
 function addresses() {

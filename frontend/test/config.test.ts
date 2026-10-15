@@ -14,6 +14,7 @@ describe("resolveConfig defaults", () => {
       selected: [],
       recordMode: "push_to_talk",
       maxDuration: 60,
+      noiseSuppression: false,
       mode: "plain",
     });
   });
@@ -31,6 +32,7 @@ describe("resolveConfig defaults", () => {
         selected: ["media_player.b"],
         record_mode: "start_stop",
         max_duration: 120,
+        noise_suppression: true,
         mode: "restore",
       }),
     ).toEqual({
@@ -43,6 +45,7 @@ describe("resolveConfig defaults", () => {
       selected: ["media_player.b"],
       recordMode: "start_stop",
       maxDuration: 120,
+      noiseSuppression: true,
       mode: "restore",
     });
   });

@@ -31,6 +31,8 @@ export interface CardConfig {
   record_mode?: RecordMode;
   /** Recording time limit in seconds. */
   max_duration?: number;
+  /** The browser's noise suppression on the mic. Absent means off. */
+  noise_suppression?: boolean;
   mode?: BroadcastMode;
 }
 
@@ -46,6 +48,7 @@ export interface ResolvedConfig {
   selected: string[];
   recordMode: RecordMode;
   maxDuration: number;
+  noiseSuppression: boolean;
   mode: BroadcastMode;
 }
 
@@ -95,6 +98,7 @@ export function resolveConfig(config: CardConfig): ResolvedConfig {
     selected,
     recordMode: oneOf(config.record_mode, ["push_to_talk", "start_stop"] as const),
     maxDuration: clampMaxDuration(config.max_duration),
+    noiseSuppression: config.noise_suppression === true,
     mode: resolveMode(config.mode),
   };
 }

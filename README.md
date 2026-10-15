@@ -98,7 +98,8 @@ The card's editor is Home Assistant's own form, in four sections:
 - **Speakers** — the speakers the card offers, and which of them are ticked
   when it opens. A new card starts with every speaker that can play audio;
   remove the ones you do not want.
-- **Recording** — hold to talk, or tap to start and stop; and the time limit.
+- **Recording** — hold to talk, or tap to start and stop; the time limit; and
+  noise suppression, for a noisy room.
 - **Playback** — what happens on the speakers: just play the message, play a
   chime first, or pause what was playing and resume it afterwards.
 
@@ -147,6 +148,7 @@ max_duration: 30
 | `shape` | `square` | `square` or `horizontal` |
 | `mode` | `plain` | As for the card |
 | `max_duration` | `60` | As for the card |
+| `noise_suppression` | `false` | As for the card |
 
 The tile is always hold-to-talk: release is what sends, so a tap-to-start
 tile would send the moment you tapped to stop. Its recordings appear in the
@@ -199,6 +201,7 @@ mode: restore
 | `selected` | `[]` | Speakers ticked when the card opens. One that is not in `speakers` is ignored, and never broadcast to |
 | `record_mode` | `push_to_talk` | `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop) |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to **5–300**; invalid values fall back to 60 |
+| `noise_suppression` | `false` | The browser's noise suppression on the microphone: filters out a TV, fan or kitchen in the background. Leave it off in a quiet room — it can make a voice sound slightly processed |
 | `mode` | `plain` | `plain`, `chime` or `restore` — see [Behavioural restrictions](#behavioural-restrictions) below |
 
 ## Requirements and restrictions
@@ -376,7 +379,8 @@ card. Whenever anything under `frontend/src/` changes, run `npm run build` and c
 regenerated bundle in the same change. CI fails if the committed bundle is stale.
 
 Releases are cut with **Actions → Release → Run workflow**, which bumps the version in
-`manifest.json`, tags, and publishes a GitHub release. The version is also the card's
+`manifest.json`, tags, and publishes a GitHub release with `hass_broadcast.zip` attached —
+the asset HACS installs, since `hacs.json` sets `zip_release`. The version is also the card's
 cache-busting query string, so a change reaches users only once it is released.
 
 ## License

@@ -7,10 +7,11 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (64)
-npm test                        # card tests, vitest (189)
+.venv/bin/python -m pytest -q   # integration tests (65)
+npm test                        # card tests, vitest (197)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
+                                # /lab: A/B recording-quality presets by ear
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 npm run check:layout            # headless: no element moves between card states
 npm run dev:editor              # the editors, drawn by HA's own frontend (gallery), :8100
@@ -50,8 +51,9 @@ so code that touches Home Assistant internals must tolerate both (see
 The card's config is flat, one key per editor field: `title`, `layout`
 (`full` | `compact`), `speaker_picker` (`dropdown` | `chips` | `list`),
 `recent_messages` (`off` | `button` | `list`), `volume_control`, `speakers`,
-`selected`, `record_mode`, `max_duration`, `mode`. The tile's is `name`,
-`speakers`, `shape`, `max_duration`, `mode`. Nothing is ordered: the layouts
+`selected`, `record_mode`, `max_duration`, `noise_suppression`, `mode`. The
+tile's is `name`, `speakers`, `shape`, `max_duration`, `noise_suppression`,
+`mode`. Nothing is ordered: the layouts
 decide placement. The README's options tables are the reference.
 
 All config interpretation lives in `resolveConfig` in `config.ts` — defaults,
@@ -72,6 +74,11 @@ config, not to write an editor element. `forms.test.ts` holds that every config
 key has exactly one field. Features newer than the 2024.11 minimum degrade
 acceptably: select `mode: box` (2025.3) falls back to a plain select, and
 `visible` (2026.8) is ignored, so the speaker-picker field shows in compact too.
+
+`noise_suppression` (both cards) turns on the browser's noise suppression and
+nothing else; absent or `false` means off (HA's boolean selector writes
+`false` when it is switched off). The rest of the browser's call processing
+stays off — see `RAW_MIC` in `recorder.ts` for why.
 
 The bundle defines two cards: `hass-broadcast-card` and
 `hass-broadcast-tile` (`tile.ts`, imported from `card.ts` so the one Lovelace
@@ -171,7 +178,13 @@ HACS does not see it — `v0.1.0` is one such orphan tag, predating any release.
 To cut a release: **Actions → Release → Run workflow**, choose `patch`/`minor`/
 `major`. It runs both test suites, rebuilds the bundle, bumps `manifest.json`,
 commits `chore: release vX.Y.Z`, pushes an annotated tag, and publishes a GitHub
-release with generated notes. Don't tag or bump by hand; the workflow keeps the
+release with generated notes and `hass_broadcast.zip` attached.
+
+`hacs.json` sets `zip_release`, so HACS installs that zip (the contents of
+`custom_components/hass_broadcast/`, at the zip root) instead of the repository
+tree, and GitHub counts its downloads as installs. HACS reads `hacs.json` from the
+tag it installs, so releases before v0.7.1 still install from the tree.
+`tests/test_hacs.py` checks that `filename` matches the domain. Don't tag or bump by hand; the workflow keeps the
 manifest version, the tag, and the release in agreement.
 
 Commit subjects follow Conventional Commits (`fix:`, `feat:`, `docs:`,

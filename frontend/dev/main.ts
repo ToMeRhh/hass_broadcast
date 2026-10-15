@@ -306,6 +306,9 @@ export class DevApp extends LitElement {
           />
           Simulated recording
         </label>
+        <div class="note">
+          <a href="/lab" style="color:#8fb4ff">Sound lab →</a> compare capture settings by ear.
+        </div>
         ${INSECURE
           ? html`<div class="note">
               Forced on: <code>${location.host}</code> is not a secure context, so

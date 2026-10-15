@@ -72,6 +72,7 @@ export class HassBroadcastCard extends LitElement {
   private rec = new RecordingController(this, {
     recordMode: () => this.recordMode,
     maxDuration: () => this.resolved.maxDuration,
+    noiseSuppression: () => this.resolved.noiseSuppression,
     onStart: () => this.setStatus(undefined),
     onError: (text, sticky) => this.fail(text, sticky),
     onTake: (take) => {

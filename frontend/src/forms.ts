@@ -63,6 +63,18 @@ const timeLimitField = {
   },
 };
 
+const noiseSuppressionField = { name: "noise_suppression", selector: { boolean: {} } };
+
+/** Helper text, only where a field's label cannot carry its meaning. */
+const HELPERS: Record<string, string> = {
+  title: "Leave empty for “Voice Broadcast”",
+  name: "Leave empty for “Intercom”",
+  noise_suppression:
+    "Filters out background noise such as a TV or fan. Leave it off in a quiet room: it can make a voice sound slightly processed.",
+};
+
+const helper = (field: { name: string }) => HELPERS[field.name];
+
 const playbackSection = {
   type: "expandable",
   name: "",
@@ -102,6 +114,7 @@ const LABELS: Record<string, string> = {
   selected: "Selected when the card opens",
   record_mode: "Recording",
   max_duration: "Time limit",
+  noise_suppression: "Noise suppression",
   mode: "When it plays",
   shape: "Shape",
 };
@@ -200,13 +213,13 @@ export const cardForm = {
           },
         },
         timeLimitField,
+        noiseSuppressionField,
       ],
     },
     playbackSection,
   ],
   computeLabel: label,
-  computeHelper: (field: { name: string }) =>
-    field.name === "title" ? "Leave empty for “Voice Broadcast”" : undefined,
+  computeHelper: helper,
 };
 
 export const tileForm = {
@@ -249,12 +262,11 @@ export const tileForm = {
       flatten: true,
       title: "Recording",
       icon: "mdi:microphone",
-      schema: [timeLimitField],
+      schema: [timeLimitField, noiseSuppressionField],
     },
     playbackSection,
   ],
   computeLabel: (field: { name: string }) =>
     field.name === "speakers" ? "Sends to" : label(field),
-  computeHelper: (field: { name: string }) =>
-    field.name === "name" ? "Leave empty for “Intercom”" : undefined,
+  computeHelper: helper,
 };

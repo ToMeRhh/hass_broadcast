@@ -64,7 +64,7 @@ async def test_encodes_at_a_universally_decodable_sample_rate(
 ) -> None:
     """The MP3 must be MPEG-1 Layer III, not a 16 kHz MPEG-2 variant.
 
-    Capture is 16 kHz mono, and without an explicit rate ffmpeg carries that
+    Capture can be 16 kHz mono, and without an explicit rate ffmpeg carries that
     through to the MP3 -- which makes it MPEG-2 Layer III, since MPEG-1 only
     defines 32/44.1/48 kHz. Low-sample-rate MP3 is the variant embedded
     hardware decoders are least reliable at. Resampling is what makes "MP3"
@@ -91,6 +91,8 @@ async def test_encodes_at_a_universally_decodable_sample_rate(
     argv = exec_mock.call_args.args
     assert "-ar" in argv, f"no sample rate forced: {argv}"
     assert argv[argv.index("-ar") + 1] == "44100"
+    # Full-band capture deserves a bitrate that keeps it full-band.
+    assert argv[argv.index("-b:a") + 1] == "128k"
 
 
 async def test_warns_when_falling_back_to_wav(

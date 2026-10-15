@@ -27,10 +27,11 @@ const CARD_KEYS = [
   "selected",
   "record_mode",
   "max_duration",
+  "noise_suppression",
   "mode",
 ];
 
-const TILE_KEYS = ["name", "speakers", "shape", "max_duration", "mode"];
+const TILE_KEYS = ["name", "speakers", "shape", "max_duration", "noise_suppression", "mode"];
 
 describe.each([
   ["card", cardForm, CARD_KEYS],

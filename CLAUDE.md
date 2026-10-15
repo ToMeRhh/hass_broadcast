@@ -7,7 +7,7 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (59)
+.venv/bin/python -m pytest -q   # integration tests (65)
 npm test                        # card tests, vitest (210)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
@@ -148,7 +148,13 @@ HACS does not see it — `v0.1.0` is one such orphan tag, predating any release.
 To cut a release: **Actions → Release → Run workflow**, choose `patch`/`minor`/
 `major`. It runs both test suites, rebuilds the bundle, bumps `manifest.json`,
 commits `chore: release vX.Y.Z`, pushes an annotated tag, and publishes a GitHub
-release with generated notes. Don't tag or bump by hand; the workflow keeps the
+release with generated notes and `hass_broadcast.zip` attached.
+
+`hacs.json` sets `zip_release`, so HACS installs that zip (the contents of
+`custom_components/hass_broadcast/`, at the zip root) instead of the repository
+tree, and GitHub counts its downloads as installs. HACS reads `hacs.json` from the
+tag it installs, so releases before v0.7.1 still install from the tree.
+`tests/test_hacs.py` checks that `filename` matches the domain. Don't tag or bump by hand; the workflow keeps the
 manifest version, the tag, and the release in agreement.
 
 Commit subjects follow Conventional Commits (`fix:`, `feat:`, `docs:`,

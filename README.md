@@ -365,7 +365,8 @@ card. Whenever anything under `frontend/src/` changes, run `npm run build` and c
 regenerated bundle in the same change. CI fails if the committed bundle is stale.
 
 Releases are cut with **Actions → Release → Run workflow**, which bumps the version in
-`manifest.json`, tags, and publishes a GitHub release. The version is also the card's
+`manifest.json`, tags, and publishes a GitHub release with `hass_broadcast.zip` attached —
+the asset HACS installs, since `hacs.json` sets `zip_release`. The version is also the card's
 cache-busting query string, so a change reaches users only once it is released.
 
 ## License

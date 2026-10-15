@@ -1,34 +1,28 @@
-import { TemplateResult, html } from "lit";
+import { TemplateResult, html, nothing } from "lit";
 
 import { layers, statusText, timerText } from "../ui/strip";
 import { CardParts } from "./parts";
 
 /**
- * Full: header, a one-line strip, the record core, then the user's sections.
+ * Full: header, a one-line strip, the record core, then the speakers.
  *
- *   [ Title                    (icon sections) ]
- *   [ hint | ● 0:07 | ▶ waveform 0:07 | status ]   ← one 40px layered slot
- *   [ (discard)        ( MIC )         (send)  ]   ← fixed 132px core
- *   [ list-style sections, in config order     ]
+ *   [ Title           (recent messages) (volume) ]
+ *   [ hint | ● 0:07 | ▶ waveform 0:07 | status   ]   ← one 40px layered slot
+ *   [ (discard)        ( MIC )         (send)    ]   ← fixed 132px core
+ *   [ speaker picker                             ]
+ *   [ recent messages, when shown as a list      ]
  *
  * The mic never moves. Discard fades in beside it while reviewing; Send is
  * always there and only enabled once there is something to send.
  */
 export function fullLayout(parts: CardParts): TemplateResult {
-  const icons = parts.sections.filter((section) => section.style === "icon");
-  const below = parts.sections.filter((section) => section.style !== "icon");
   return html`
     <div class="card full">
       <div class="head slot">
         <span class="title">${parts.title}</span>
         <span class="head-actions">
-          ${icons.map((section) =>
-            section.type === "history"
-              ? parts.historyButton()
-              : section.type === "volume"
-                ? parts.volumeButton()
-                : "",
-          )}
+          ${parts.recentMessages === "button" ? parts.historyButton() : nothing}
+          ${parts.volumeControl ? parts.volumeButton() : nothing}
         </span>
       </div>
 
@@ -53,15 +47,12 @@ export function fullLayout(parts: CardParts): TemplateResult {
         <div class="core-side slot">${parts.send("round")}</div>
       </div>
 
-      ${below.map((section) =>
-        section.type === "speakers"
-          ? html`<div class="section section-speakers slot" data-style=${section.style}>
-              ${parts.speakers(section)}
-            </div>`
-          : section.type === "history"
-            ? html`<div class="section slot">${parts.historyList()}</div>`
-            : "",
-      )}
+      <div class="section section-speakers slot" data-style=${parts.speakerPicker}>
+        ${parts.speakers()}
+      </div>
+      ${parts.recentMessages === "list"
+        ? html`<div class="section slot">${parts.historyList()}</div>`
+        : nothing}
       ${parts.historyDialog()}
     </div>
   `;

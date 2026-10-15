@@ -126,19 +126,18 @@ the card form.
 
 ### Version tolerance
 
-`hacs.json` requires Home Assistant 2024.11. The plan must verify against
-the frontend source, before implementation, the release in which each of
-these landed, and record the result here:
+`hacs.json` requires Home Assistant 2024.11. Verified against
+home-assistant/frontend's merged pull requests:
 
-- `getConfigForm()` for custom cards;
-- `select` `mode: box` with `image` / `description`;
-- `visible` on schema fields (blog post dated 2026-07-31, so 2026.8).
+| Feature | Frontend PR | Home Assistant |
+|---|---|---|
+| `getConfigForm()` for custom cards | #16142, June 2023 | 2023.7 |
+| `select` `mode: box` (`ha-select-box`) | #24370, Feb 2025 | 2025.3 |
+| `visible` on schema fields | #53168, July 2026 | 2026.8 |
 
-Where a feature is newer than 2024.11, the form must still work there: an
-unknown `visible` showing the speaker-picker field in `compact` too is
-acceptable; a missing `box` mode falling back to a plain select is
-acceptable. If `getConfigForm()` itself is newer than 2024.11, raise the
-`hacs.json` minimum to that release.
+So the minimum stays 2024.11. Below 2025.3 the picture choices fall back to a
+plain select; below 2026.8 `visible` is ignored and the speaker-picker field
+shows in `compact` too. Both are acceptable.
 
 ## Code structure
 
@@ -167,20 +166,29 @@ and its pointer to `resolveSections` becomes `resolveConfig`.
 replacement is HA's own design gallery, run locally:
 
 - `frontend/dev/editor/` holds a committed gallery page and a script.
-- The script shallow-clones `home-assistant/frontend` at a pinned release tag
-  (initially `20260930.3`) into a gitignored cache, provisions Node 24 and
-  pnpm there without touching the system install, copies the page into
-  `gallery/src/pages/misc/`, and runs the gallery with
-  `SKIP_FETCH_NIGHTLY_TRANSLATIONS=1` (otherwise it stops for a GitHub login).
-- The page imports our real `card.ts` and `tile.ts`, wraps each in HA's
+- The script fetches `home-assistant/frontend` at a pinned `dev` commit into
+  `.cache/hass-broadcast-editor/` (gitignored), downloads the Node release its
+  `.nvmrc` names there without touching the system install, installs with
+  `corepack pnpm`, copies the page into `gallery/src/pages/misc/`, and runs
+  the gallery with `SKIP_FETCH_NIGHTLY_TRANSLATIONS=1` (otherwise it stops
+  for a GitHub login).
+  - A commit, not a release tag: tag `20260930.3`'s lockfile left a Babel
+    plugin unresolvable and the gallery did not build.
+  - Not under `node_modules`: Node refuses to strip types from `.ts` files
+    there, and the gallery's build scripts are TypeScript.
+- The script builds our real bundle, unminified, into the gallery's static
+  files; the page imports it at runtime, wraps each card in HA's
   `hui-card-element-editor` against the gallery's fake `hass` with six demo
-  speakers, and shows the live card beside it, in light and dark.
+  speakers, and shows the live card under each editor, in light and dark.
+  Each card starts from its own `getStubConfig(hass)`.
 - `npm run dev:editor -- --screenshots` drives it with `playwright-core` and
-  writes the README's editor images.
+  writes the README's editor images. Picture options read dark mode from one
+  page-wide context, so it switches that context between the two shots.
 - Not in CI (it would clone a large repo), same policy as `check:layout`.
 
-`frontend/dev/README.md` documents it; the dev harness drops its embedded
-editors and gets a YAML box for card config instead.
+`frontend/dev/README.md` documents it. The dev harness drops its embedded
+editors for button rows per appearance option (which `check:layout` drives)
+plus a JSON box holding the whole card config.
 
 ## README
 
@@ -209,8 +217,9 @@ Rewritten in the same change:
   speaker, tile the first.
 - Existing card/tile tests move to the new keys; editor tests are deleted
   with the editors.
-- `npm run check:layout` passes for every layout × speaker_picker ×
-  recent_messages combination it already covers.
+- `npm run check:layout` passes for full, full with the list picker and the
+  recent-messages list (the tallest card), and compact, at phone and desktop
+  widths, plus both tile shapes.
 - CI's bundle-is-rebuilt check still passes; `pytest` unchanged.
 
 ## Out of scope

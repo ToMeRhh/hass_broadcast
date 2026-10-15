@@ -4,14 +4,13 @@ import { keyed } from "lit/directives/keyed.js";
 
 import {
   BroadcastMessage,
-  BroadcastMode,
   deleteMessage,
   listMessages,
 } from "./api";
 import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
-import { clampMaxDuration } from "./editor-fields";
-import "./editor";
+import { CardConfig, ResolvedConfig, resolveConfig } from "./config";
+import { cardForm } from "./forms";
 // One bundle defines both cards, so the single Lovelace resource the
 // integration registers brings the tile along with the card.
 import "./tile";
@@ -26,13 +25,6 @@ import { formatClock } from "./format";
 import { BAR_COUNT, silence } from "./levels";
 import { RecordMode, RecordingController } from "./recording";
 import { Status, outcomeStatus, sendClip } from "./sending";
-import {
-  Layout,
-  Section,
-  findSection,
-  resolveLayout,
-  resolveSections,
-} from "./sections";
 import { cardStyles } from "./styles";
 import { compactLayout } from "./layouts/compact";
 import { fullLayout } from "./layouts/full";
@@ -44,7 +36,7 @@ import { targetList } from "./ui/targets";
 import { visualizer } from "./ui/visualizer";
 import { volumeButton, volumeControl } from "./ui/volume";
 
-const DEFAULT_TITLE = "Voice Broadcast";
+export type { CardConfig };
 
 /** How long a non-sticky status message holds its slot. */
 export const STATUS_MS = 4000;
@@ -53,29 +45,6 @@ export const STATUS_MS = 4000;
 const WARN_SECONDS = 10;
 /** …or the last quarter of it, whichever is shorter. */
 const WARN_FRACTION = 0.25;
-
-export interface CardConfig {
-  type: string;
-  /** Card heading, renamable from the editor. Blank falls back to DEFAULT_TITLE. */
-  title?: string;
-  targets?: string[];
-  /** Only these speakers appear on the card. Empty means "every one found". */
-  show_players?: string[];
-  /** Speakers to leave off the card, applied after show_players. */
-  hide_players?: string[];
-  mode?: BroadcastMode;
-  max_duration?: number;
-  /** How the record button behaves. Absent means push-to-talk. */
-  record_mode?: RecordMode;
-  /** Absent means full. */
-  layout?: Layout;
-  /** What the card shows around its record core. See sections.ts. */
-  sections?: { type: string; style?: string }[];
-  /** Legacy, read only when `sections` is absent. */
-  show_history?: boolean;
-  /** Legacy, read only when `sections` is absent. */
-  player_list?: "rows" | "chips" | "dropdown";
-}
 
 @customElement("hass-broadcast-card")
 export class HassBroadcastCard extends LitElement {
@@ -102,7 +71,7 @@ export class HassBroadcastCard extends LitElement {
 
   private rec = new RecordingController(this, {
     recordMode: () => this.recordMode,
-    maxDuration: () => clampMaxDuration(this.config.max_duration),
+    maxDuration: () => this.resolved.maxDuration,
     onStart: () => this.setStatus(undefined),
     onError: (text, sticky) => this.fail(text, sticky),
     onTake: (take) => {
@@ -114,59 +83,58 @@ export class HassBroadcastCard extends LitElement {
 
   setConfig(config: CardConfig): void {
     this.config = config;
-    this.selected = config.targets ? [...config.targets] : [];
+    this.selected = [...resolveConfig(config).selected];
   }
 
-  // Not `layout`: Lovelace assigns `layout` ("grid", "masonry", "panel") to
-  // every card it hosts, and a getter-only property by that name throws, so
-  // the card is never created.
-  private get cardLayout(): Layout {
-    return resolveLayout(this.config);
-  }
-
-  private get sections(): Section[] {
-    return resolveSections(this.config);
+  // Never add a getter named `layout`: Lovelace assigns `layout` ("grid",
+  // "masonry", "panel") to every card it hosts, and a getter-only property by
+  // that name throws, so the card is never created. Read `resolved.layout`.
+  private get resolved(): ResolvedConfig {
+    return resolveConfig(this.config);
   }
 
   getCardSize(): number {
     // Lovelace counts in 50px units. Compact is two rows by design; full is
-    // header + strip + core + a speaker pill, plus whatever stacks below.
-    if (this.cardLayout === "compact") {
+    // header + strip + core + a speaker dropdown, plus whatever stacks below.
+    const config = this.resolved;
+    if (config.layout === "compact") {
       return 2;
     }
     let size = 5;
-    for (const section of this.sections) {
-      if (section.type === "speakers") {
-        size += section.style === "rows" ? 4 : section.style === "chips" ? 1 : 0;
-      } else if (section.type === "history" && section.style === "list") {
-        size += 3;
-      }
+    size += config.speakerPicker === "list" ? 4 : config.speakerPicker === "chips" ? 1 : 0;
+    if (config.recentMessages === "list") {
+      size += 3;
     }
     return size;
   }
 
   getGridOptions() {
     // No `rows`: the sections view then sizes the card to its content, which
-    // is what a card whose height depends on its sections needs.
+    // is what a card whose height depends on its config needs.
     return { columns: 12, min_columns: 6 };
   }
 
-  static getConfigElement() {
-    return document.createElement("hass-broadcast-card-editor");
+  /** Home Assistant draws the editor from this schema; see forms.ts. */
+  static getConfigForm() {
+    return cardForm;
   }
 
-  static getStubConfig(): CardConfig {
+  /**
+   * A new card offers every speaker, so the editor starts from the full list
+   * and the user removes the ones they do not want.
+   */
+  static getStubConfig(hass?: any): CardConfig {
     return {
       type: "custom:hass-broadcast-card",
-      targets: [],
-      mode: "plain",
-      record_mode: "push_to_talk",
       layout: "full",
-      sections: [
-        { type: "speakers", style: "pill" },
-        { type: "history", style: "icon" },
-        { type: "volume", style: "icon" },
-      ],
+      speaker_picker: "dropdown",
+      recent_messages: "button",
+      volume_control: true,
+      speakers: discoverPlayers(hass),
+      selected: [],
+      record_mode: "push_to_talk",
+      max_duration: 60,
+      mode: "plain",
     };
   }
 
@@ -210,7 +178,7 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private async refreshHistory(): Promise<void> {
-    if (!this.hass || !findSection(this.sections, "history")) {
+    if (!this.hass || this.resolved.recentMessages === "off") {
       return;
     }
     try {
@@ -221,30 +189,20 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private get players(): string[] {
-    return visiblePlayers(
-      discoverPlayers(this.hass),
-      this.config.show_players,
-      this.config.hide_players,
-    );
+    return visiblePlayers(discoverPlayers(this.hass), this.resolved.speakers);
   }
 
   /**
-   * The speakers a broadcast actually goes to. `targets` is saved config and
-   * may name a speaker the filters have since removed from the card; sending
-   * to one nobody can see is the failure mode this guards.
+   * The speakers a broadcast actually goes to: the selection, limited to the
+   * speakers the card offers. Sending to one nobody can see on the card is the
+   * failure mode this guards.
    */
   private get targets(): string[] {
-    return allowedTargets(
-      this.selected,
-      this.config.show_players,
-      this.config.hide_players,
-    );
+    return allowedTargets(this.selected, this.resolved.speakers);
   }
 
   private get recordMode(): RecordMode {
-    return this.config.record_mode === "start_stop"
-      ? "start_stop"
-      : "push_to_talk";
+    return this.resolved.recordMode;
   }
 
   // --- status --------------------------------------------------------------
@@ -401,7 +359,7 @@ export class HassBroadcastCard extends LitElement {
         hass: this.hass,
         clip,
         targets,
-        mode: this.config.mode ?? "plain",
+        mode: this.resolved.mode,
         volume: this.volumeOverride ? this.volume : undefined,
         onStored: (id) => {
           // The upload can outlive the clip it was for: a Discard tap
@@ -495,7 +453,7 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private get timerWarning(): boolean {
-    const limit = clampMaxDuration(this.config.max_duration);
+    const limit = this.resolved.maxDuration;
     const window = Math.min(WARN_SECONDS, limit * WARN_FRACTION);
     return this.rec.phase === "recording" && limit - this.rec.elapsed <= window;
   }
@@ -527,10 +485,13 @@ export class HassBroadcastCard extends LitElement {
         this.volume = value;
       },
     };
+    const config = this.resolved;
     return {
-      title: this.config.title?.trim() || DEFAULT_TITLE,
+      title: config.title,
       view: this.view,
-      sections: this.sections,
+      speakerPicker: config.speakerPicker,
+      recentMessages: config.recentMessages,
+      volumeControl: config.volumeControl,
       hint: this.hint,
       timer: formatClock(this.rec.elapsed),
       timerWarning: this.timerWarning,
@@ -543,7 +504,7 @@ export class HassBroadcastCard extends LitElement {
           disabled: !this.rec.supported || sending,
           recordMode: this.recordMode,
           level: this.rec.level,
-          maxDuration: clampMaxDuration(this.config.max_duration),
+          maxDuration: this.resolved.maxDuration,
           label: this.recordLabel,
           onPressStart: (event) => void this.rec.onPressStart(event),
           onPressEnd: () => void this.rec.onPressEnd(),
@@ -604,7 +565,7 @@ export class HassBroadcastCard extends LitElement {
           </div>
         `;
       },
-      speakers: (section) =>
+      speakers: () =>
         targetList({
           players: this.players.map((entityId) => ({
             entityId,
@@ -613,7 +574,7 @@ export class HassBroadcastCard extends LitElement {
             available: this.hass?.states?.[entityId]?.state !== "unavailable",
           })),
           selected: this.selected,
-          style: section.style,
+          style: config.speakerPicker,
           open: this.pickerOpen,
           onToggle: (entityId) => this.toggleTarget(entityId),
           onOpenChange: (open) => {
@@ -660,7 +621,7 @@ export class HassBroadcastCard extends LitElement {
     const parts = this.parts;
     return html`
       <ha-card>
-        ${this.cardLayout === "compact" ? compactLayout(parts) : fullLayout(parts)}
+        ${this.resolved.layout === "compact" ? compactLayout(parts) : fullLayout(parts)}
         <div class="sr-only" aria-live="polite">${this.status?.text ?? ""}</div>
       </ha-card>
     `;

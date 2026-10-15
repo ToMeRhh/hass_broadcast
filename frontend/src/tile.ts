@@ -2,14 +2,14 @@ import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import { BroadcastMode } from "./api";
-import { clampMaxDuration } from "./editor-fields";
+import { clampMaxDuration, resolveMode } from "./config";
 import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { formatClock } from "./format";
 import { discoverPlayers } from "./players";
 import { RecordingController, Take } from "./recording";
 import { Outcome, describeTargets, outcomeStatus, sendClip } from "./sending";
 import { iconStyles, micStyles } from "./styles";
-import "./tile-editor";
+import { tileForm } from "./forms";
 import { checkIcon, closeIcon, warnIcon } from "./ui/icons";
 import { mic } from "./ui/mic";
 import { layers, timerText } from "./ui/strip";
@@ -21,7 +21,7 @@ export interface TileConfig {
   type: string;
   name?: string;
   /** The speakers every message goes to. */
-  targets?: string[];
+  speakers?: string[];
   shape?: "square" | "horizontal";
   mode?: BroadcastMode;
   max_duration?: number;
@@ -168,7 +168,7 @@ export class HassBroadcastTile extends LitElement {
   }
 
   private get targets(): string[] {
-    return this.config.targets ?? [];
+    return Array.isArray(this.config.speakers) ? this.config.speakers : [];
   }
 
   getCardSize(): number {
@@ -181,8 +181,9 @@ export class HassBroadcastTile extends LitElement {
       : { rows: 1, columns: 6, min_rows: 1, max_rows: 1, min_columns: 4 };
   }
 
-  static getConfigElement() {
-    return document.createElement("hass-broadcast-tile-editor");
+  /** Home Assistant draws the editor from this schema; see forms.ts. */
+  static getConfigForm() {
+    return tileForm;
   }
 
   /** Pre-picks the first speaker found, so a fresh tile works at once. */
@@ -191,7 +192,7 @@ export class HassBroadcastTile extends LitElement {
     return {
       type: "custom:hass-broadcast-tile",
       name: "Intercom",
-      targets: first ? [first] : [],
+      speakers: first ? [first] : [],
       shape: "square",
       mode: "plain",
     };
@@ -242,7 +243,7 @@ export class HassBroadcastTile extends LitElement {
           peaks: [],
         },
         targets: this.targets,
-        mode: this.config.mode ?? "plain",
+        mode: resolveMode(this.config.mode),
       });
       this.showResult(this.describe(outcome));
     } catch (err: any) {

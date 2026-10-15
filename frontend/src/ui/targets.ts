@@ -2,7 +2,9 @@ import { TemplateResult, html, nothing } from "lit";
 
 import { chevronIcon, speakerIcon } from "./icons";
 
-export type ListStyle = "rows" | "chips" | "pill";
+import type { SpeakerPicker } from "../config";
+
+export type ListStyle = SpeakerPicker;
 
 export interface TargetPlayer {
   entityId: string;
@@ -15,7 +17,7 @@ export interface TargetProps {
   players: TargetPlayer[];
   selected: string[];
   style: ListStyle;
-  /** Pill only: whether the overlay panel is showing. */
+  /** Dropdown only: whether the overlay panel is showing. */
   open: boolean;
   onToggle: (entityId: string) => void;
   onOpenChange: (open: boolean) => void;
@@ -92,7 +94,7 @@ export function targetList(props: TargetProps): TemplateResult {
   `;
 
   if (props.players.length === 0) {
-    return props.style === "pill"
+    return props.style === "dropdown"
       ? html`<div class="pill-wrap">
           <button class="pill" disabled>
             <span class="pill-icon">${speakerIcon}</span>
@@ -109,7 +111,7 @@ export function targetList(props: TargetProps): TemplateResult {
     `;
   }
 
-  if (props.style === "pill") {
+  if (props.style === "dropdown") {
     return html`
       <div class="pill-wrap">
         <button

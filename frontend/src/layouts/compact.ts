@@ -8,14 +8,13 @@ import { CardParts } from "./parts";
  * Compact: two rows beside the mic.
  *
  *   ( MIC ) [ title · hint | ● 0:07 | ▶ wave ✕ | status ] [⋮]
- *           [ speaker pill                      ] [ Send ]
+ *           [ speaker dropdown                  ] [ Send ]
  *
- * Row 1 is one layered slot; row 2 never changes. Every section other than
- * the speakers lives in the ⋮ menu, in config order.
+ * Row 1 is one layered slot; row 2 never changes. Recent messages and the
+ * volume control, when shown, live in the ⋮ menu.
  */
 export function compactLayout(parts: CardParts): TemplateResult {
-  const speakers = parts.sections.find((section) => section.type === "speakers");
-  const menu = parts.sections.filter((section) => section.type !== "speakers");
+  const menu = parts.recentMessages !== "off" || parts.volumeControl;
   return html`
     <div class="card compact">
       <div class="compact-mic slot">${parts.mic(72)}</div>
@@ -32,7 +31,7 @@ export function compactLayout(parts: CardParts): TemplateResult {
             `,
             status: statusText(parts.status),
           })}
-          ${menu.length
+          ${menu
             ? html`
                 <div class="popover-wrap slot">
                   <button
@@ -44,15 +43,13 @@ export function compactLayout(parts: CardParts): TemplateResult {
                   >
                     ${moreIcon}
                   </button>
-                  ${parts.menuOpen ? menuPanel(parts, menu) : nothing}
+                  ${parts.menuOpen ? menuPanel(parts) : nothing}
                 </div>
               `
             : nothing}
         </div>
         <div class="compact-row">
-          <div class="compact-speakers slot">
-            ${speakers?.type === "speakers" ? parts.speakers(speakers) : nothing}
-          </div>
+          <div class="compact-speakers slot">${parts.speakers()}</div>
           <div class="slot">${parts.send("pill")}</div>
         </div>
       </div>
@@ -61,31 +58,26 @@ export function compactLayout(parts: CardParts): TemplateResult {
   `;
 }
 
-function menuPanel(parts: CardParts, menu: CardParts["sections"]): TemplateResult {
+function menuPanel(parts: CardParts): TemplateResult {
   return html`
     <div class="popover menu" role="menu">
-      ${menu.map((section) =>
-        section.type === "history"
-          ? html`
-              <button
-                class="menu-item"
-                role="menuitem"
-                @click=${() => {
-                  parts.onMenuOpenChange(false);
-                  parts.onOpenHistory();
-                }}
-              >
-                ${historyIcon}<span>Recent messages</span>
-              </button>
-            `
-          : section.type === "volume"
-            ? html`
-                <div class="menu-item menu-volume">
-                  ${volumeIcon}${parts.volumePanel()}
-                </div>
-              `
-            : nothing,
-      )}
+      ${parts.recentMessages !== "off"
+        ? html`
+            <button
+              class="menu-item"
+              role="menuitem"
+              @click=${() => {
+                parts.onMenuOpenChange(false);
+                parts.onOpenHistory();
+              }}
+            >
+              ${historyIcon}<span>Recent messages</span>
+            </button>
+          `
+        : nothing}
+      ${parts.volumeControl
+        ? html`<div class="menu-item menu-volume">${volumeIcon}${parts.volumePanel()}</div>`
+        : nothing}
     </div>
   `;
 }

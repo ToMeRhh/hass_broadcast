@@ -520,7 +520,7 @@ export const cardStyles = [
     .section {
       margin-top: 8px;
     }
-    .section-speakers[data-style="pill"] {
+    .section-speakers[data-style="dropdown"] {
       display: flex;
       justify-content: center;
     }

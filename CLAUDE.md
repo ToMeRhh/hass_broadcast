@@ -7,12 +7,14 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (59)
-npm test                        # card tests, vitest (210)
+.venv/bin/python -m pytest -q   # integration tests (64)
+npm test                        # card tests, vitest (189)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 npm run check:layout            # headless: no element moves between card states
+npm run dev:editor              # the editors, drawn by HA's own frontend (gallery), :8100
+npm run dev:editor -- --screenshots   # regenerate docs/images/editor-{light,dark}.png
 ```
 
 `check:layout` drives the harness in headless Chromium (`playwright-core`, a
@@ -21,12 +23,17 @@ review and sending. It is not in CI, because CI would have to download a
 browser, so run it after any change to the card's markup or CSS. First run on
 a machine: `npx playwright-core install chromium`.
 
-`npm run dev` renders the real card and editor against a mocked `hass`, with
+`npm run dev` renders the real card and tile against a mocked `hass`, with
 live reload and switches for the states that are painful to reach on a live
 install (mic denied, partial broadcast failure, empty history, latency). Real
 microphone capture works because `localhost` is a secure context. It is a
 separate esbuild entry point and never touches the shipped bundle. Iterate on
 card UI there rather than by deploying to Home Assistant.
+
+The editors cannot be shown there: they are Home Assistant's own forms. `npm
+run dev:editor` runs HA's design gallery from a pinned home-assistant/frontend
+commit in `.cache/` with a page of ours (`frontend/dev/editor/`), so iterate on
+`forms.ts` there. Its first run downloads a lot; it is not in CI.
 
 Use `.venv/bin/python`, not a bare `python`. The test env pins
 `pytest-homeassistant-custom-component`, which is what pins the Home Assistant
@@ -40,16 +47,31 @@ so code that touches Home Assistant internals must tolerate both (see
 
 ## Card configuration keys
 
-`record_mode` (`push_to_talk` | `start_stop`), `layout` (`full` | `compact`)
-and `sections` (an ordered list of `{type, style}`) are card config, all
-written by the editor. An absent `record_mode` means push-to-talk and an
-absent `layout` means full — cards predating those keys changed on upgrade,
-deliberately, so there is one default rather than one per card age.
+The card's config is flat, one key per editor field: `title`, `layout`
+(`full` | `compact`), `speaker_picker` (`dropdown` | `chips` | `list`),
+`recent_messages` (`off` | `button` | `list`), `volume_control`, `speakers`,
+`selected`, `record_mode`, `max_duration`, `mode`. The tile's is `name`,
+`speakers`, `shape`, `max_duration`, `mode`. Nothing is ordered: the layouts
+decide placement. The README's options tables are the reference.
 
-`sections` replaced `player_list` and `show_history`. Both are still *read*,
-only when `sections` is absent (`resolveSections` in `sections.ts`), and the
-editor drops them on its first save. All config normalisation lives in
-`resolveSections`; don't interpret `sections` anywhere else.
+All config interpretation lives in `resolveConfig` in `config.ts` — defaults,
+compact forcing the dropdown, and `speakers` absent (every speaker) versus `[]`
+(none; HA's entity picker saves `[]` when the last one is removed). Don't read
+raw config keys anywhere else in the card.
+
+There are no legacy keys and no migration: the integration had no installs
+when the config was flattened (2026-10-15), so `sections`, `player_list`,
+`show_history`, `show_players`, `hide_players` and `targets` were simply
+removed. Don't reintroduce compatibility readers for them.
+
+The editors are `getConfigForm()` schemas in `forms.ts`, not custom elements.
+`ha-form` and the `ha-*` selectors are HA internals: hosting them in an element
+of ours needs a lazy-load workaround that has broken custom cards before, so
+don't. A field that `getConfigForm` cannot express is a reason to reshape the
+config, not to write an editor element. `forms.test.ts` holds that every config
+key has exactly one field. Features newer than the 2024.11 minimum degrade
+acceptably: select `mode: box` (2025.3) falls back to a plain select, and
+`visible` (2026.8) is ignored, so the speaker-picker field shows in compact too.
 
 The bundle defines two cards: `hass-broadcast-card` and
 `hass-broadcast-tile` (`tile.ts`, imported from `card.ts` so the one Lovelace
@@ -58,13 +80,14 @@ resource brings both). Both drive the microphone through `RecordingController`
 in what they do with a finished take. The tile is push-to-talk regardless of
 config, because its release is what sends.
 
-The record core (strip, mic, Discard, Send) is not a section and is not
-configurable: it is what guarantees no layout shift between states. Any
+The record core (strip, mic, Discard, Send) is not configurable: it is what
+guarantees no layout shift between states. Any
 state-dependent region must be a fixed-size `.slot`, with its states as
 stacked `layers()` (see `ui/strip.ts`), never conditionally rendered.
 
-`getStubConfig` lives as a static on `HassBroadcastCard` in `card.ts`, not on
-the editor — worth remembering, since it's the editor that consumes it.
+`getStubConfig(hass)` on each card is what a new card starts from: the card's
+lists every playback-capable speaker in `speakers` (the user removes the ones
+they don't want), the tile's picks the first one.
 
 ## The integration registers no Home Assistant service
 

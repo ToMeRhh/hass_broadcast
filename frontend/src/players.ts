@@ -20,41 +20,26 @@ export function discoverPlayers(hass: any): string[] {
 /**
  * The speakers the card should offer.
  *
- * A non-empty `show` list replaces discovery outright rather than filtering
- * it: an entity named there appears even if it is currently unavailable or
- * under-reports supported_features, which is the whole point of naming it.
- * `hide` is subtracted last, so it wins over `show`.
+ * A configured `speakers` list replaces discovery outright rather than
+ * filtering it: an entity named there appears even if it is currently
+ * unavailable or under-reports supported_features, which is the whole point of
+ * naming it. Absent means every discovered speaker; an empty list means none.
  */
-export function visiblePlayers(
-  discovered: string[],
-  show?: string[],
-  hide?: string[],
-): string[] {
-  const base = show?.length ? [...new Set(show)] : discovered;
-  if (!hide?.length) {
-    return base;
-  }
-  const hidden = new Set(hide);
-  return base.filter((entityId) => !hidden.has(entityId));
+export function visiblePlayers(discovered: string[], speakers?: string[]): string[] {
+  return speakers ? [...new Set(speakers)] : discovered;
 }
 
 /**
- * Trim a saved `targets` selection to what the filters still allow.
+ * Trim a selection to the speakers the card offers.
  *
- * A speaker preselected before it was hidden must not keep receiving
- * broadcasts invisibly. This looks only at the configured lists, never at
- * discovery, so an unloaded entity registry cannot silently empty the
- * selection.
+ * A speaker selected but not offered must not keep receiving broadcasts
+ * invisibly. This looks only at the configured list, never at discovery, so an
+ * unloaded entity registry cannot silently empty the selection.
  */
-export function allowedTargets(
-  selected: string[],
-  show?: string[],
-  hide?: string[],
-): string[] {
-  const shown = show?.length ? new Set(show) : undefined;
-  const hidden = new Set(hide ?? []);
-  return selected.filter(
-    (entityId) =>
-      (shown === undefined || shown.has(entityId)) && !hidden.has(entityId),
-  );
+export function allowedTargets(selected: string[], speakers?: string[]): string[] {
+  if (!speakers) {
+    return selected;
+  }
+  const offered = new Set(speakers);
+  return selected.filter((entityId) => offered.has(entityId));
 }

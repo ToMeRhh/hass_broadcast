@@ -50,17 +50,17 @@ describe("discoverPlayers", () => {
 describe("visiblePlayers", () => {
   const discovered = ["media_player.attic", "media_player.kitchen"];
 
-  it("shows everything discovered when neither list is configured", () => {
+  it("offers everything discovered when the card names no speakers", () => {
     expect(visiblePlayers(discovered)).toEqual(discovered);
   });
 
-  it("shows exactly the configured list, in its own order", () => {
+  it("offers exactly the configured list, in its own order", () => {
     expect(
       visiblePlayers(discovered, ["media_player.kitchen", "media_player.attic"]),
     ).toEqual(["media_player.kitchen", "media_player.attic"]);
   });
 
-  it("keeps a shown player that discovery missed", () => {
+  it("keeps a configured speaker that discovery missed", () => {
     // An entity that is unavailable, or that under-reports supported_features,
     // still belongs on the card if the user asked for it by name.
     expect(visiblePlayers(discovered, ["media_player.garage"])).toEqual([
@@ -68,49 +68,27 @@ describe("visiblePlayers", () => {
     ]);
   });
 
-  it("removes hidden players from discovery", () => {
-    expect(
-      visiblePlayers(discovered, undefined, ["media_player.attic"]),
-    ).toEqual(["media_player.kitchen"]);
+  it("offers nothing for an empty list", () => {
+    // Absent means every speaker; an emptied list is what the editor saves
+    // when the last speaker is removed, and must not mean every speaker.
+    expect(visiblePlayers(discovered, [])).toEqual([]);
   });
 
-  it("applies the hide list after the show list", () => {
-    expect(
-      visiblePlayers(discovered, discovered, ["media_player.attic"]),
-    ).toEqual(["media_player.kitchen"]);
-  });
-
-  it("falls back to discovery when the show list is empty", () => {
-    expect(visiblePlayers(discovered, [])).toEqual(discovered);
-  });
-
-  it("drops duplicates from the show list", () => {
+  it("drops duplicates from the list", () => {
     expect(
       visiblePlayers(discovered, ["media_player.attic", "media_player.attic"]),
     ).toEqual(["media_player.attic"]);
-  });
-
-  it("ignores a hidden player that is not on the card anyway", () => {
-    expect(
-      visiblePlayers(discovered, undefined, ["media_player.shed"]),
-    ).toEqual(discovered);
   });
 });
 
 describe("allowedTargets", () => {
   const selected = ["media_player.attic", "media_player.kitchen"];
 
-  it("keeps the whole selection when no filter is configured", () => {
+  it("keeps the whole selection when the card offers every speaker", () => {
     expect(allowedTargets(selected)).toEqual(selected);
   });
 
-  it("drops a preselected target that the hide list removed", () => {
-    expect(allowedTargets(selected, undefined, ["media_player.attic"])).toEqual(
-      ["media_player.kitchen"],
-    );
-  });
-
-  it("drops a preselected target that the show list leaves out", () => {
+  it("drops a selected speaker the card does not offer", () => {
     expect(allowedTargets(selected, ["media_player.kitchen"])).toEqual([
       "media_player.kitchen",
     ]);

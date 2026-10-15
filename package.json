@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node frontend/build.mjs",
     "dev": "node frontend/dev/serve.mjs",
+    "dev:editor": "node frontend/dev/editor/run.mjs",
     "test": "vitest run",
     "check:layout": "node frontend/dev/check-layout.mjs"
   },

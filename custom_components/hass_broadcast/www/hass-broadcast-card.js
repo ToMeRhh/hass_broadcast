@@ -1,225 +1,6 @@
-var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t,s)=>{for(var r=s>1?void 0:s?di(e,t):e,o=i.length-1,n;o>=0;o--)(n=i[o])&&(r=(s?n(e,t,r):n(r))||r);return s&&r&&ci(e,t,r),r};var te=globalThis,ie=te.ShadowRoot&&(te.ShadyCSS===void 0||te.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,De=Symbol(),et=new WeakMap,q=class{constructor(e,t,s){if(this._$cssResult$=!0,s!==De)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(ie&&e===void 0){let s=t!==void 0&&t.length===1;s&&(e=et.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),s&&et.set(t,e))}return e}toString(){return this.cssText}},tt=i=>new q(typeof i=="string"?i:i+"",void 0,De),x=(i,...e)=>{let t=i.length===1?i[0]:e.reduce((s,r,o)=>s+(n=>{if(n._$cssResult$===!0)return n.cssText;if(typeof n=="number")return n;throw Error("Value passed to 'css' function must be a 'css' function result: "+n+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(r)+i[o+1],i[0]);return new q(t,i,De)},it=(i,e)=>{if(ie)i.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let s=document.createElement("style"),r=te.litNonce;r!==void 0&&s.setAttribute("nonce",r),s.textContent=t.cssText,i.appendChild(s)}},Ie=ie?i=>i:i=>i instanceof CSSStyleSheet?(e=>{let t="";for(let s of e.cssRules)t+=s.cssText;return tt(t)})(i):i;var{is:pi,defineProperty:hi,getOwnPropertyDescriptor:ui,getOwnPropertyNames:mi,getOwnPropertySymbols:gi,getPrototypeOf:fi}=Object,se=globalThis,st=se.trustedTypes,vi=st?st.emptyScript:"",yi=se.reactiveElementPolyfillSupport,V=(i,e)=>i,F={toAttribute(i,e){switch(e){case Boolean:i=i?vi:null;break;case Object:case Array:i=i==null?i:JSON.stringify(i)}return i},fromAttribute(i,e){let t=i;switch(e){case Boolean:t=i!==null;break;case Number:t=i===null?null:Number(i);break;case Object:case Array:try{t=JSON.parse(i)}catch{t=null}}return t}},re=(i,e)=>!pi(i,e),rt={attribute:!0,type:String,converter:F,reflect:!1,useDefault:!1,hasChanged:re};Symbol.metadata??=Symbol("metadata"),se.litPropertyMetadata??=new WeakMap;var w=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=rt){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let s=Symbol(),r=this.getPropertyDescriptor(e,s,t);r!==void 0&&hi(this.prototype,e,r)}}static getPropertyDescriptor(e,t,s){let{get:r,set:o}=ui(this.prototype,e)??{get(){return this[t]},set(n){this[t]=n}};return{get:r,set(n){let l=r?.call(this);o?.call(this,n),this.requestUpdate(e,l,s)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??rt}static _$Ei(){if(this.hasOwnProperty(V("elementProperties")))return;let e=fi(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(V("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(V("properties"))){let t=this.properties,s=[...mi(t),...gi(t)];for(let r of s)this.createProperty(r,t[r])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[s,r]of t)this.elementProperties.set(s,r)}this._$Eh=new Map;for(let[t,s]of this.elementProperties){let r=this._$Eu(t,s);r!==void 0&&this._$Eh.set(r,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let s=new Set(e.flat(1/0).reverse());for(let r of s)t.unshift(Ie(r))}else e!==void 0&&t.push(Ie(e));return t}static _$Eu(e,t){let s=t.attribute;return s===!1?void 0:typeof s=="string"?s:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let s of t.keys())this.hasOwnProperty(s)&&(e.set(s,this[s]),delete this[s]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return it(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,s){this._$AK(e,s)}_$ET(e,t){let s=this.constructor.elementProperties.get(e),r=this.constructor._$Eu(e,s);if(r!==void 0&&s.reflect===!0){let o=(s.converter?.toAttribute!==void 0?s.converter:F).toAttribute(t,s.type);this._$Em=e,o==null?this.removeAttribute(r):this.setAttribute(r,o),this._$Em=null}}_$AK(e,t){let s=this.constructor,r=s._$Eh.get(e);if(r!==void 0&&this._$Em!==r){let o=s.getPropertyOptions(r),n=typeof o.converter=="function"?{fromAttribute:o.converter}:o.converter?.fromAttribute!==void 0?o.converter:F;this._$Em=r;let l=n.fromAttribute(t,o.type);this[r]=l??this._$Ej?.get(r)??l,this._$Em=null}}requestUpdate(e,t,s,r=!1,o){if(e!==void 0){let n=this.constructor;if(r===!1&&(o=this[e]),s??=n.getPropertyOptions(e),!((s.hasChanged??re)(o,t)||s.useDefault&&s.reflect&&o===this._$Ej?.get(e)&&!this.hasAttribute(n._$Eu(e,s))))return;this.C(e,t,s)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:s,reflect:r,wrapped:o},n){s&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,n??t??this[e]),o!==!0||n!==void 0)||(this._$AL.has(e)||(this.hasUpdated||s||(t=void 0),this._$AL.set(e,t)),r===!0&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[r,o]of this._$Ep)this[r]=o;this._$Ep=void 0}let s=this.constructor.elementProperties;if(s.size>0)for(let[r,o]of s){let{wrapped:n}=o,l=this[r];n!==!0||this._$AL.has(r)||l===void 0||this.C(r,void 0,o,l)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(s=>s.hostUpdate?.()),this.update(t)):this._$EM()}catch(s){throw e=!1,this._$EM(),s}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(e){}firstUpdated(e){}};w.elementStyles=[],w.shadowRootOptions={mode:"open"},w[V("elementProperties")]=new Map,w[V("finalized")]=new Map,yi?.({ReactiveElement:w}),(se.reactiveElementVersions??=[]).push("2.1.2");var ze=globalThis,ot=i=>i,oe=ze.trustedTypes,nt=oe?oe.createPolicy("lit-html",{createHTML:i=>i}):void 0,Ne="$lit$",_=`lit$${Math.random().toFixed(9).slice(2)}$`,He="?"+_,bi=`<${He}>`,M=document,Y=()=>M.createComment(""),K=i=>i===null||typeof i!="object"&&typeof i!="function",Be=Array.isArray,ht=i=>Be(i)||typeof i?.[Symbol.iterator]=="function",Ue=`[ 	
-\f\r]`,W=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,at=/-->/g,lt=/>/g,C=RegExp(`>|${Ue}(?:([^\\s"'>=/]+)(${Ue}*=${Ue}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`,"g"),ct=/'/g,dt=/"/g,ut=/^(?:script|style|textarea|title)$/i,je=i=>(e,...t)=>({_$litType$:i,strings:e,values:t}),a=je(1),mt=je(2),rs=je(3),P=Symbol.for("lit-noChange"),d=Symbol.for("lit-nothing"),pt=new WeakMap,E=M.createTreeWalker(M,129);function gt(i,e){if(!Be(i)||!i.hasOwnProperty("raw"))throw Error("invalid template strings array");return nt!==void 0?nt.createHTML(e):e}var ft=(i,e)=>{let t=i.length-1,s=[],r,o=e===2?"<svg>":e===3?"<math>":"",n=W;for(let l=0;l<t;l++){let c=i[l],h,m,p=-1,b=0;for(;b<c.length&&(n.lastIndex=b,m=n.exec(c),m!==null);)b=n.lastIndex,n===W?m[1]==="!--"?n=at:m[1]!==void 0?n=lt:m[2]!==void 0?(ut.test(m[2])&&(r=RegExp("</"+m[2],"g")),n=C):m[3]!==void 0&&(n=C):n===C?m[0]===">"?(n=r??W,p=-1):m[1]===void 0?p=-2:(p=n.lastIndex-m[2].length,h=m[1],n=m[3]===void 0?C:m[3]==='"'?dt:ct):n===dt||n===ct?n=C:n===at||n===lt?n=W:(n=C,r=void 0);let S=n===C&&i[l+1].startsWith("/>")?" ":"";o+=n===W?c+bi:p>=0?(s.push(h),c.slice(0,p)+Ne+c.slice(p)+_+S):c+_+(p===-2?l:S)}return[gt(i,o+(i[t]||"<?>")+(e===2?"</svg>":e===3?"</math>":"")),s]},G=class i{constructor({strings:e,_$litType$:t},s){let r;this.parts=[];let o=0,n=0,l=e.length-1,c=this.parts,[h,m]=ft(e,t);if(this.el=i.createElement(h,s),E.currentNode=this.el.content,t===2||t===3){let p=this.el.content.firstChild;p.replaceWith(...p.childNodes)}for(;(r=E.nextNode())!==null&&c.length<l;){if(r.nodeType===1){if(r.hasAttributes())for(let p of r.getAttributeNames())if(p.endsWith(Ne)){let b=m[n++],S=r.getAttribute(p).split(_),ee=/([.?@])?(.*)/.exec(b);c.push({type:1,index:o,name:ee[2],strings:S,ctor:ee[1]==="."?ae:ee[1]==="?"?le:ee[1]==="@"?ce:O}),r.removeAttribute(p)}else p.startsWith(_)&&(c.push({type:6,index:o}),r.removeAttribute(p));if(ut.test(r.tagName)){let p=r.textContent.split(_),b=p.length-1;if(b>0){r.textContent=oe?oe.emptyScript:"";for(let S=0;S<b;S++)r.append(p[S],Y()),E.nextNode(),c.push({type:2,index:++o});r.append(p[b],Y())}}}else if(r.nodeType===8)if(r.data===He)c.push({type:2,index:o});else{let p=-1;for(;(p=r.data.indexOf(_,p+1))!==-1;)c.push({type:7,index:o}),p+=_.length-1}o++}}static createElement(e,t){let s=M.createElement("template");return s.innerHTML=e,s}};function R(i,e,t=i,s){if(e===P)return e;let r=s!==void 0?t._$Co?.[s]:t._$Cl,o=K(e)?void 0:e._$litDirective$;return r?.constructor!==o&&(r?._$AO?.(!1),o===void 0?r=void 0:(r=new o(i),r._$AT(i,t,s)),s!==void 0?(t._$Co??=[])[s]=r:t._$Cl=r),r!==void 0&&(e=R(i,r._$AS(i,e.values),r,s)),e}var ne=class{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:t},parts:s}=this._$AD,r=(e?.creationScope??M).importNode(t,!0);E.currentNode=r;let o=E.nextNode(),n=0,l=0,c=s[0];for(;c!==void 0;){if(n===c.index){let h;c.type===2?h=new z(o,o.nextSibling,this,e):c.type===1?h=new c.ctor(o,c.name,c.strings,this,e):c.type===6&&(h=new de(o,this,e)),this._$AV.push(h),c=s[++l]}n!==c?.index&&(o=E.nextNode(),n++)}return E.currentNode=M,r}p(e){let t=0;for(let s of this._$AV)s!==void 0&&(s.strings!==void 0?(s._$AI(e,s,t),t+=s.strings.length-2):s._$AI(e[t])),t++}},z=class i{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,s,r){this.type=2,this._$AH=d,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=s,this.options=r,this._$Cv=r?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,t=this._$AM;return t!==void 0&&e?.nodeType===11&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=R(this,e,t),K(e)?e===d||e==null||e===""?(this._$AH!==d&&this._$AR(),this._$AH=d):e!==this._$AH&&e!==P&&this._(e):e._$litType$!==void 0?this.$(e):e.nodeType!==void 0?this.T(e):ht(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==d&&K(this._$AH)?this._$AA.nextSibling.data=e:this.T(M.createTextNode(e)),this._$AH=e}$(e){let{values:t,_$litType$:s}=e,r=typeof s=="number"?this._$AC(e):(s.el===void 0&&(s.el=G.createElement(gt(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===r)this._$AH.p(t);else{let o=new ne(r,this),n=o.u(this.options);o.p(t),this.T(n),this._$AH=o}}_$AC(e){let t=pt.get(e.strings);return t===void 0&&pt.set(e.strings,t=new G(e)),t}k(e){Be(this._$AH)||(this._$AH=[],this._$AR());let t=this._$AH,s,r=0;for(let o of e)r===t.length?t.push(s=new i(this.O(Y()),this.O(Y()),this,this.options)):s=t[r],s._$AI(o),r++;r<t.length&&(this._$AR(s&&s._$AB.nextSibling,r),t.length=r)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){let s=ot(e).nextSibling;ot(e).remove(),e=s}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},O=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,s,r,o){this.type=1,this._$AH=d,this._$AN=void 0,this.element=e,this.name=t,this._$AM=r,this.options=o,s.length>2||s[0]!==""||s[1]!==""?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=d}_$AI(e,t=this,s,r){let o=this.strings,n=!1;if(o===void 0)e=R(this,e,t,0),n=!K(e)||e!==this._$AH&&e!==P,n&&(this._$AH=e);else{let l=e,c,h;for(e=o[0],c=0;c<o.length-1;c++)h=R(this,l[s+c],t,c),h===P&&(h=this._$AH[c]),n||=!K(h)||h!==this._$AH[c],h===d?e=d:e!==d&&(e+=(h??"")+o[c+1]),this._$AH[c]=h}n&&!r&&this.j(e)}j(e){e===d?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}},ae=class extends O{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===d?void 0:e}},le=class extends O{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==d)}},ce=class extends O{constructor(e,t,s,r,o){super(e,t,s,r,o),this.type=5}_$AI(e,t=this){if((e=R(this,e,t,0)??d)===P)return;let s=this._$AH,r=e===d&&s!==d||e.capture!==s.capture||e.once!==s.once||e.passive!==s.passive,o=e!==d&&(s===d||r);r&&this.element.removeEventListener(this.name,this,s),o&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH=="function"?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},de=class{constructor(e,t,s){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=s}get _$AU(){return this._$AM._$AU}_$AI(e){R(this,e)}},vt={M:Ne,P:_,A:He,C:1,L:ft,R:ne,D:ht,V:R,I:z,H:O,N:le,U:ce,B:ae,F:de},xi=ze.litHtmlPolyfillSupport;xi?.(G,z),(ze.litHtmlVersions??=[]).push("3.3.3");var yt=(i,e,t)=>{let s=t?.renderBefore??e,r=s._$litPart$;if(r===void 0){let o=t?.renderBefore??null;s._$litPart$=r=new z(e.insertBefore(Y(),o),o,void 0,t??{})}return r._$AI(i),r};var qe=globalThis,v=class extends w{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=yt(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return P}};v._$litElement$=!0,v.finalized=!0,qe.litElementHydrateSupport?.({LitElement:v});var $i=qe.litElementPolyfillSupport;$i?.({LitElement:v});(qe.litElementVersions??=[]).push("4.2.2");var A=i=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(i,e)}):customElements.define(i,e)};var wi={attribute:!0,type:String,converter:F,reflect:!1,hasChanged:re},_i=(i=wi,e,t)=>{let{kind:s,metadata:r}=t,o=globalThis.litPropertyMetadata.get(r);if(o===void 0&&globalThis.litPropertyMetadata.set(r,o=new Map),s==="setter"&&((i=Object.create(i)).wrapped=!0),o.set(t.name,i),s==="accessor"){let{name:n}=t;return{set(l){let c=e.get.call(this);e.set.call(this,l),this.requestUpdate(n,c,i,!0,l)},init(l){return l!==void 0&&this.C(n,void 0,i,l),l}}}if(s==="setter"){let{name:n}=t;return function(l){let c=this[n];e.call(this,l),this.requestUpdate(n,c,i,!0,l)}}throw Error("Unsupported decorator location: "+s)};function $(i){return(e,t)=>typeof t=="object"?_i(i,e,t):((s,r,o)=>{let n=r.hasOwnProperty(o);return r.constructor.createProperty(o,s),n?Object.getOwnPropertyDescriptor(r,o):void 0})(i,e,t)}function g(i){return $({...i,state:!0,attribute:!1})}var bt=i=>(...e)=>({_$litDirective$:i,values:e}),he=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,t,s){this._$Ct=e,this._$AM=t,this._$Ci=s}_$AS(e,t){return this.update(e,t)}update(e,t){return this.render(...t)}};var{I:Ws}=vt;var ki={},xt=(i,e=ki)=>i._$AH=e;var $t=bt(class extends he{constructor(){super(...arguments),this.key=d}render(i,e){return this.key=i,e}update(i,[e,t]){return e!==this.key&&(xt(i),this.key=e),t}});async function wt(i,e,t){let s=new FormData;s.append("file",e,"recording.wav"),s.append("duration",String(t));let r=await fetch("/api/hass_broadcast/upload",{method:"POST",body:s,headers:{Authorization:`Bearer ${i.auth.data.access_token}`}});if(!r.ok)throw new Error(`Upload failed (${r.status})`);return(await r.json()).message_id}async function _t(i){return(await i.connection.sendMessagePromise({type:"hass_broadcast/list"})).messages}async function kt(i,e){return(await i.connection.sendMessagePromise({type:"hass_broadcast/delete",message_id:e})).deleted}async function St(i,e,t,s,r){return{failed:(await i.connection.sendMessagePromise({type:"hass_broadcast/send",message_id:e,targets:t,mode:s,...r!==void 0?{volume:r}:{}})).failed}}var ue="Recording needs a secure connection. Open Home Assistant over HTTPS (or localhost) \u2014 plain http:// to a LAN address cannot use the microphone.";function At(i){return i?.name==="NotAllowedError"?"Microphone permission was denied. Allow it for this site and try again.":`Could not start recording: ${i?.message??i?.name??"unknown error"}`}function N(i){return i?.states?Object.keys(i.states).filter(e=>e.startsWith("media_player.")).filter(e=>(i.states[e].attributes.supported_features&512)!==0).sort():[]}function Tt(i,e,t){let s=e?.length?[...new Set(e)]:i;if(!t?.length)return s;let r=new Set(t);return s.filter(o=>!r.has(o))}function Ct(i,e,t){let s=e?.length?new Set(e):void 0,r=new Set(t??[]);return i.filter(o=>(s===void 0||s.has(o))&&!r.has(o))}function me(i,e){let t=n=>i?.states?.[n]?.attributes?.friendly_name??n,s=N(i),r=new Set(s),o=[...new Set(e.flat())].filter(n=>!r.has(n)).sort();return[...s,...o].map(n=>({entityId:n,name:t(n),available:r.has(n)}))}function ge(i,e,t){let s=i??[];if(t)return s.includes(e)?s:[...s,e];let r=s.filter(o=>o!==e);return r.length?r:void 0}function k(i){if(i===""||i===null||i===void 0)return 60;let e=Number(i);return isNaN(e)?60:Math.min(300,Math.max(5,e))}function X(i,e,t){return a`
-    <div class="segmented">
-      ${e.map(([s,r])=>a`
-          <button
-            type="button"
-            data-on=${i===s}
-            aria-pressed=${i===s}
-            @click=${()=>t(s)}
-          >
-            ${r}
-          </button>
-        `)}
-    </div>
-  `}function fe(i,e,t){return a`
-    <div class="rows">
-      ${i.map(s=>a`
-          <label>
-            <input
-              type="checkbox"
-              .checked=${e.includes(s.entityId)}
-              @change=${r=>t(s.entityId,r.target.checked)}
-            />
-            <span class=${s.available?"":"missing"}>
-              ${s.name}${s.available?"":" (not available)"}
-            </span>
-          </label>
-        `)}
-    </div>
-  `}function ve(i,e){return a`
-    <div class="field">
-      <label for="mode">Playback mode</label>
-      <select
-        id="mode"
-        .value=${i??"plain"}
-        @change=${t=>e(t.target.value)}
-      >
-        <option value="plain">Plain — just play the message</option>
-        <option value="restore">Restore — put back volume afterwards</option>
-        <option value="chime">Chime — attention tone, then the message</option>
-      </select>
-      <div class="hint">
-        Restore uses a speaker's native announce support when it has any, which
-        ducks and resumes whatever was playing. Speakers without it — Google Cast
-        among them — get volume restored, but an interrupted Spotify or YouTube
-        session may not resume.
-      </div>
-    </div>
-  `}function ye(i,e){return a`
-    <div class="field">
-      <label for="max">Maximum recording length (seconds)</label>
-      <input
-        id="max"
-        type="number"
-        min="5"
-        max="300"
-        .value=${String(i??60)}
-        @change=${t=>e(k(t.target.value))}
-      />
-    </div>
-  `}function be(i,e){return a`
-    <div class="field">
-      <label class="check">
-        <input
-          type="checkbox"
-          .checked=${i===!0}
-          @change=${t=>e(t.target.checked||void 0)}
-        />
-        Noise suppression
-      </label>
-      <div class="hint">
-        Filters out background noise such as a TV, fan or kitchen. Leave it
-        off in a quiet room: it can make a voice sound slightly processed.
-      </div>
-    </div>
-  `}var xe=x`
-  label.check { display: flex; align-items: center; gap: 8px; }
-  .field { display: block; margin-bottom: 12px; }
-  label { display: block; margin-bottom: 4px; font-weight: 500; }
-  .hint { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 4px; }
-  input[type="text"], input[type="number"], select { width: 100%; box-sizing: border-box;
-    padding: 8px; border-radius: 4px; border: 1px solid var(--divider-color, #ddd);
-    background: var(--card-background-color, #fff); color: var(--primary-text-color);
-    font: inherit; }
-  .players { border: 1px solid var(--divider-color, #ddd); border-radius: 4px;
-    padding: 8px; }
-  summary { cursor: pointer; font-weight: 500; }
-  .rows { max-height: 220px; overflow-y: auto; margin-top: 8px;
-    border-top: 1px solid var(--divider-color, #ddd); padding-top: 4px; }
-  .rows label { display: flex; align-items: center; gap: 8px; font-weight: normal;
-    margin: 0; padding: 4px 0; }
-  .missing { color: var(--secondary-text-color); }
-  .segmented { display: flex; gap: 6px; }
-  .segmented button { flex: 1; padding: 8px; font: inherit; cursor: pointer;
-    border: 1px solid var(--divider-color, #ddd); border-radius: 6px;
-    background: none; color: var(--primary-text-color); }
-  .segmented button[data-on="true"] { background: var(--primary-color);
-    color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
-`;var Ve=["speakers","history","volume"],Fe={speakers:"pill",history:"list",volume:"icon"},We={speakers:["pill","chips","rows"],history:["list","icon"],volume:["icon"]};function L(i){return i.layout==="compact"?"compact":"full"}function Si(i){return Ve.includes(i)}function Ai(i,e){return We[i].includes(e)?e:Fe[i]}function Ti(i){let t=[{type:"speakers",style:i.player_list==="chips"?"chips":i.player_list==="dropdown"?"pill":"rows"}];return i.show_history!==!1&&t.push({type:"history",style:"list"}),t.push({type:"volume",style:"icon"}),t}function $e(i){let e;if(Array.isArray(i.sections)){let t=new Set;e=[];for(let s of i.sections){let r=s?.type;!Si(r)||t.has(r)||(t.add(r),e.push({type:r,style:Ai(r,s.style)}))}}else e=Ti(i);return e.some(t=>t.type==="speakers")||e.unshift({type:"speakers",style:"pill"}),L(i)==="compact"&&(e=e.map(t=>t.type==="speakers"?{type:"speakers",style:"pill"}:t)),e}function Et(i,e){return i.find(t=>t.type===e)}function Ci(i,e){return me(i,[e.show_players??[],e.hide_players??[]])}var Mt=3;function Ei(i,e,t){if(!i?.length)return t;let s=i.map(n=>e.find(l=>l.entityId===n)?.name??n),r=s.slice(0,Mt).join(", "),o=s.length-Mt;return o>0?`${r} +${o} more`:r}function Pt(i){let e=$e({...i,layout:"full"}).map(s=>({...s,visible:!0})),t=Ve.filter(s=>!e.some(r=>r.type===s)).map(s=>({type:s,style:Fe[s],visible:!1}));return[...e,...t]}function Rt(i){return i.filter(e=>e.visible).map(e=>({type:e.type,style:e.style}))}function Ot(i,e,t){let s=e+t;if(!i[e]?.visible||s<0||s>=i.length||!i[s].visible)return i;let r=[...i];return[r[e],r[s]]=[r[s],r[e]],r}function Mi(i,e){let t=i[e];if(!t||t.type==="speakers")return i;let s=i.filter((n,l)=>l!==e),r={...t,visible:!t.visible},o=s.filter(n=>n.visible).length;return r.visible?[...s.slice(0,o),r,...s.slice(o)]:[...s,r]}var J={speakers:"Speakers",history:"Recent messages",volume:"Volume"},Lt={pill:"Pill \u2014 one line",chips:"Chips",rows:"List \u2014 a row each",list:"List below",icon:"Icon in the header"},D=class extends v{constructor(){super(...arguments);this.config={type:""}}setConfig(t){this.config=t}emit(t){let s={...this.config,...t};s.layout=L(s),"sections"in t||(s.sections=Rt(Pt(s))),delete s.player_list,delete s.show_history;for(let r of Object.keys(s))s[r]===void 0&&delete s[r];this.config=s,this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this.config},bubbles:!0,composed:!0}))}get currentRecordMode(){return this.config.record_mode==="start_stop"?"start_stop":"push_to_talk"}setRecordMode(t){this.emit({record_mode:t})}setRows(t){this.emit({sections:Rt(t)})}playerSection(t,s,r,o){let n=this.config[t]??[];return a`
-      <details class="players">
-        <summary>
-          ${s} — ${Ei(n,o,r)}
-        </summary>
-        ${o.length===0?a`<div class="hint">No media players found.</div>`:fe(o,n,(l,c)=>this.emit({[t]:ge(this.config[t],l,c)}))}
-      </details>
-    `}sectionList(){let t=L(this.config)==="compact",s=Pt(this.config),r=s.filter(o=>o.visible).length;return a`
-      <div class="section-list">
-        ${s.map((o,n)=>{let l=We[o.type],c=l.length>1&&!t;return a`
-            <div class="section-row" data-visible=${o.visible}>
-              <span class="section-name">${J[o.type]}</span>
-              <button
-                class="mini"
-                title="Move up"
-                aria-label="Move ${J[o.type]} up"
-                ?disabled=${!o.visible||n===0}
-                @click=${()=>this.setRows(Ot(s,n,-1))}
-              >
-                ↑
-              </button>
-              <button
-                class="mini"
-                title="Move down"
-                aria-label="Move ${J[o.type]} down"
-                ?disabled=${!o.visible||n>=r-1}
-                @click=${()=>this.setRows(Ot(s,n,1))}
-              >
-                ↓
-              </button>
-              <button
-                class="mini"
-                title=${o.type==="speakers"?"The card needs a way to pick speakers":o.visible?"Hide":"Show"}
-                aria-label="${o.visible?"Hide":"Show"} ${J[o.type]}"
-                aria-pressed=${o.visible}
-                ?disabled=${o.type==="speakers"}
-                @click=${()=>this.setRows(Mi(s,n))}
-              >
-                ${o.visible?"\u25C9":"\u25CB"}
-              </button>
-              ${c&&o.visible?a`
-                    <!-- The chosen option is marked with ?selected rather than
-                         the select's .value: with mapped options, .value is
-                         set before the options exist and silently falls back
-                         to the first one. -->
-                    <select
-                      class="section-style"
-                      aria-label="${J[o.type]} style"
-                      @change=${h=>{let m=h.target.value;this.setRows(s.map((p,b)=>b===n?{...p,style:m}:p))}}
-                    >
-                      ${l.map(h=>a`<option value=${h} ?selected=${h===o.style}>
-                            ${Lt[h]}
-                          </option>`)}
-                    </select>
-                  `:o.visible&&!t?a`<span class="section-style section-fixed">${Lt[o.style]}</span>`:d}
-            </div>
-          `})}
-      </div>
-      <div class="hint">
-        ${t?"In Compact the speakers are a single pill, and the other sections are in the \u22EE menu, in this order.":"Icon sections sit in the header; the rest stack below the record button, in this order."}
-      </div>
-    `}render(){let t=Ci(this.hass,this.config);return a`
-      <div class="field">
-        <label for="title">Card name</label>
-        <input
-          id="title"
-          type="text"
-          placeholder="Voice Broadcast"
-          .value=${this.config.title??""}
-          @change=${s=>this.emit({title:s.target.value.trim()||void 0})}
-        />
-      </div>
-
-      <div class="field">
-        <label>Layout</label>
-        ${X(L(this.config),[["full","Full"],["compact","Compact"]],s=>this.emit({layout:s}))}
-      </div>
-
-      <div class="field">
-        <label>Card sections</label>
-        ${this.sectionList()}
-      </div>
-
-      <div class="field">
-        <label>Recording</label>
-        ${X(this.currentRecordMode,[["push_to_talk","Push to talk"],["start_stop","Tap to start and stop"]],s=>this.setRecordMode(s))}
-        <div class="hint">
-          Push to talk records only while the button is held.
-        </div>
-      </div>
-
-      ${ve(this.config.mode,s=>this.emit({mode:s}))}
-
-      <div class="field">
-        ${this.playerSection("show_players","Players to show","every player",t)}
-        <div class="hint">
-          With nothing selected, the card offers every media player that
-          supports playback.
-        </div>
-      </div>
-
-      <div class="field">
-        ${this.playerSection("hide_players","Players to hide","none",t)}
-        <div class="hint">Removed after the list above.</div>
-      </div>
-
-      ${ye(this.config.max_duration,s=>this.emit({max_duration:s}))}
-      ${be(this.config.noise_suppression,s=>this.emit({noise_suppression:s}))}
-    `}};D.styles=[xe,x`
-      .section-list { display: flex; flex-direction: column; gap: 6px; }
-      .section-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center;
-        gap: 2px 4px; padding: 4px 6px 6px 10px;
-        border: 1px solid var(--divider-color, #ddd); border-radius: 8px; }
-      .section-row[data-visible="false"] { opacity: 0.55; }
-      .section-name { min-width: 0; }
-      .section-style { grid-column: 1 / -1; }
-      .section-row select { padding: 6px; }
-      .section-fixed { font-size: 0.85em; color: var(--secondary-text-color); }
-      .mini { width: 30px; height: 30px; padding: 0; font: inherit; border: none;
-        border-radius: 6px; background: none; color: var(--primary-text-color); cursor: pointer; }
-      .mini:hover:not([disabled]) { background: var(--secondary-background-color, rgba(0,0,0,.06)); }
-      .mini[disabled] { opacity: 0.3; cursor: default; }
-    `],u([$({attribute:!1})],D.prototype,"hass",2),u([g()],D.prototype,"config",2),D=u([A("hass-broadcast-card-editor")],D);function I(i){let e=Number.isFinite(i)&&i>0?Math.floor(i):0;return`${Math.floor(e/60)}:${String(e%60).padStart(2,"0")}`}function Dt(i,e){return i.getFullYear()===e.getFullYear()&&i.getMonth()===e.getMonth()&&i.getDate()===e.getDate()}function Ye(i){return i.toLocaleTimeString(void 0,{hour:"2-digit",minute:"2-digit"})}function It(i,e=new Date){let t=new Date(i);if(Number.isNaN(t.getTime()))return"Unknown time";let s=(e.getTime()-t.getTime())/1e3;if(s<60)return"Just now";if(s<3600){let n=Math.round(s/60);return`${n} minute${n===1?"":"s"} ago`}if(Dt(t,e))return`Today ${Ye(t)}`;let r=new Date(e);return r.setDate(e.getDate()-1),Dt(t,r)?`Yesterday ${Ye(t)}`:`${t.toLocaleDateString(void 0,{month:"short",day:"numeric"})} ${Ye(t)}`}function Ut(i){return Number.isFinite(i)?Math.min(1,Math.max(0,i)):0}function _e(i){return new Array(Math.max(0,i)).fill(0)}function zt(i,e){if(e<=0)return[];if(i.length===0)return _e(e);let t=[];for(let s=0;s<e;s++){let r=Math.floor(s*i.length/e),o=Math.max(r+1,Math.floor((s+1)*i.length/e)),n=0;for(let l=r;l<o&&l<i.length;l++)n=Math.max(n,i[l]);t.push(n)}return t}function Ke(i){let e=i.reduce((t,s)=>Math.max(t,s),0);return e<=0?[...i]:i.map(t=>t/e)}var we=class{constructor(){this.peaks=[];this.pending=0}get length(){return this.peaks.length}push(e,t){if(this.windowStart===void 0)return this.windowStart=t,this.pending=Ut(e),!1;let s=!1;return t-this.windowStart>=50&&(this.peaks.push(this.pending),this.pending=0,this.windowStart=t,s=!0),this.pending=Math.max(this.pending,Ut(e)),s}reset(){this.peaks=[],this.pending=0,this.windowStart=void 0}all(){return[...this.peaks]}tail(e){let t=this.peaks.slice(-e);return[..._e(e-t.length),...t]}};function Nt(i,e){let t=i.length*2,s=new ArrayBuffer(44+t),r=new DataView(s),o=(n,l)=>{for(let c=0;c<l.length;c++)r.setUint8(n+c,l.charCodeAt(c))};return o(0,"RIFF"),r.setUint32(4,36+t,!0),o(8,"WAVE"),o(12,"fmt "),r.setUint32(16,16,!0),r.setUint16(20,1,!0),r.setUint16(22,1,!0),r.setUint32(24,e,!0),r.setUint32(28,e*2,!0),r.setUint16(32,2,!0),r.setUint16(34,16,!0),o(36,"data"),r.setUint32(40,t,!0),new Int16Array(s,44).set(i),new Blob([s],{type:"audio/wav"})}var ke=[48e3,32e3,24e3,16e3],Pi=10*1024*1024,Ri=44,Oi=1,Li=.89*32767,Di=10,Ii="/api/hass_broadcast/static/recorder-worklet.js",Ui={channelCount:1,echoCancellation:!1,noiseSuppression:!1,autoGainControl:!1},Q=class{constructor(){this.chunks=[];this.active=!1;this.options={}}static isSupported(){return typeof window<"u"&&window.isSecureContext===!0&&typeof navigator<"u"&&!!navigator.mediaDevices?.getUserMedia&&typeof AudioWorkletNode<"u"}onLevel(e){this.levelCallback=e}get trackSettings(){return this.stream?.getAudioTracks()[0]?.getSettings()}async start(e,t={}){this.chunks=[],this.options=t;try{this.stream=await navigator.mediaDevices.getUserMedia({audio:t.constraints??{...Ui,noiseSuppression:t.noiseSuppression??!1}}),this.context=new AudioContext({sampleRate:t.sampleRate??zi(e)}),await this.context.audioWorklet.addModule(Ii);let s=this.context.createMediaStreamSource(this.stream);this.node=new AudioWorkletNode(this.context,"recorder-worklet"),this.node.port.onmessage=r=>{this.chunks.push(r.data),this.levelCallback&&this.levelCallback(Hi(r.data))},s.connect(this.node),this.node.connect(this.context.destination),this.active=!0}catch(s){throw await this.release(),s}}async stop(){if(!this.active)throw new Error("Recorder.stop() called with no active recording session");let e=this.context?.sampleRate??ke[0],t=this.chunks,s=this.options.normalize??!0;await this.release();let r=t.reduce((l,c)=>l+c.length,0),o=new Int16Array(r),n=0;for(let l of t)o.set(l,n),n+=l.length;return s&&Ni(o),{blob:Nt(o,e),duration:r/e}}async release(){this.node?.port.close(),this.node?.disconnect(),this.stream?.getTracks().forEach(e=>e.stop());try{await this.context?.close()}catch{}finally{this.context=void 0,this.stream=void 0,this.node=void 0,this.chunks=[],this.active=!1}}};function zi(i){let e=s=>s*2,t=s=>Ri+e(s)*(i+Oi)<=Pi;return ke.find(t)??ke[ke.length-1]}function Ni(i){let e=0;for(let s of i)e=Math.max(e,Math.abs(s));if(e===0)return;let t=Math.min(Di,Li/e);if(!(t<=1))for(let s=0;s<i.length;s++)i[s]=Math.round(i[s]*t)}function Hi(i){let e=0;for(let t of i)e=Math.max(e,Math.abs(t));return e/32768}var Bi=.4,H=class{constructor(e,t){this.host=e;this.options=t;this.phase="idle";this.elapsed=0;this.level=0;this.recorder=new Q;this.envelope=new we;this.busy=!1;this.disconnected=!1;this.stopRequested=!1;e.addController(this)}get supported(){return Q.isSupported()}hostConnected(){this.disconnected=!1}hostDisconnected(){this.disconnected=!0,this.clearTimer(),this.phase==="recording"&&!this.busy&&(this.phase="idle",this.level=0,this.release())}setSending(e){this.phase=e?"sending":"idle",this.host.requestUpdate()}async onPressStart(e){if(!(this.phase==="sending"||!this.supported)){if(this.options.recordMode()==="start_stop"){await(this.phase==="recording"?this.stopRecording():this.startRecording());return}e.preventDefault(),!this.busy&&(this.stopRequested=!1,await this.startRecording(),this.stopRequested&&this.phase==="recording"&&await this.stopRecording())}}async onPressEnd(){if(this.options.recordMode()==="push_to_talk"){if(this.phase!=="recording"){this.stopRequested=!0;return}await this.stopRecording()}}async startRecording(){if(this.busy||this.phase!=="idle")return;this.busy=!0,this.options.onStart?.();try{this.recorder.onLevel(t=>{this.envelope.push(t,Date.now())&&(this.level=this.envelope.tail(1)[0],this.host.requestUpdate())}),this.envelope.reset(),await this.recorder.start(this.options.maxDuration(),{noiseSuppression:this.options.noiseSuppression?.()??!1})}catch(t){this.options.onError(At(t),t?.name==="NotAllowedError"),this.host.requestUpdate();return}finally{this.busy=!1}if(this.disconnected){this.release();return}this.phase="recording",this.elapsed=0,this.level=0,this.host.requestUpdate();let e=this.options.maxDuration();this.timer=window.setInterval(()=>{this.elapsed+=1,this.host.requestUpdate(),this.elapsed>=e&&this.stopRecording()},1e3)}async stopRecording(){if(this.busy||this.phase!=="recording")return;this.busy=!0,this.clearTimer();let e;try{let{blob:t,duration:s}=await this.recorder.stop();this.phase="idle",this.options.recordMode()==="push_to_talk"&&s<Bi?this.options.onError("Hold the button while you speak.",!1):e={blob:t,duration:s,peaks:this.envelope.all()}}catch(t){this.phase="idle",this.options.onError(`Could not finish recording: ${t?.message??t}`,!1)}finally{this.busy=!1,this.level=0,this.host.requestUpdate()}e&&await this.options.onTake(e)}clearTimer(){this.timer!==void 0&&(window.clearInterval(this.timer),this.timer=void 0)}release(){this.busy=!0,this.recorder.stop().catch(()=>{}).finally(()=>{this.busy=!1})}};function Ht(i,e,t){return{source:{kind:"fresh",blob:i},url:URL.createObjectURL(i),duration:e,peaks:Ke(zt(t,48))}}function Ae(i){return i.source.kind==="stored"?i.source.id:void 0}var ji=async(i,e)=>{let t=globalThis.AudioContext??globalThis.webkitAudioContext;if(!t)return[];let s=new t;try{let o=(await s.decodeAudioData(await i.arrayBuffer())).getChannelData(0),n=[];for(let l=0;l<e;l++){let c=Math.floor(l*o.length/e),h=Math.floor((l+1)*o.length/e),m=0;for(let p=c;p<h;p++)m=Math.max(m,Math.abs(o[p]));n.push(m)}return Ke(n)}finally{await s.close?.()}};async function Bt(i,e,t=ji){let s=await fetch(`/api/hass_broadcast/media/${e.id}.${e.extension}`,{headers:{Authorization:`Bearer ${i.auth.data.access_token}`}});if(!s.ok)throw new Error(`Could not load that recording (${s.status})`);let r=await s.blob(),o=[];try{o=await t(r,48)}catch{o=[]}return{source:{kind:"stored",id:e.id},url:URL.createObjectURL(r),duration:e.duration,peaks:o}}function Te(i){i&&URL.revokeObjectURL(i.url)}async function Ce(i){let{hass:e,clip:t,targets:s}=i,r=Ae(t);if(r===void 0){let n=t.source.blob;r=await wt(e,n,t.duration),i.onStored?.(r)}let{failed:o}=await St(e,r,s,i.mode,i.volume);return o.length===0?{kind:"sent",targets:s}:o.length>=s.length?{kind:"failed",failed:o}:{kind:"partial",failed:o}}function Z(i,e){return e.map(t=>i?.states?.[t]?.attributes?.friendly_name??t).join(", ")}function Ee(i,e){switch(e.kind){case"sent":return{kind:"info",text:`Sent to ${Z(i,e.targets)}`};case"partial":return{kind:"error",text:`Played, but not on ${Z(i,e.failed)}.`};case"failed":return{kind:"error",text:`Could not play on any speaker: ${Z(i,e.failed)}.`}}}var Ge=x`
+var er=Object.defineProperty;var tr=Object.getOwnPropertyDescriptor;var u=(t,e,r,i)=>{for(var s=i>1?void 0:i?tr(e,r):e,o=t.length-1,n;o>=0;o--)(n=t[o])&&(s=(i?n(e,r,s):n(s))||s);return i&&s&&er(e,r,s),s};var J=globalThis,Q=J.ShadowRoot&&(J.ShadyCSS===void 0||J.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,Se=Symbol(),Ve=new WeakMap,N=class{constructor(e,r,i){if(this._$cssResult$=!0,i!==Se)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=r}get styleSheet(){let e=this.o,r=this.t;if(Q&&e===void 0){let i=r!==void 0&&r.length===1;i&&(e=Ve.get(r)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),i&&Ve.set(r,e))}return e}toString(){return this.cssText}},We=t=>new N(typeof t=="string"?t:t+"",void 0,Se),_=(t,...e)=>{let r=t.length===1?t[0]:e.reduce((i,s,o)=>i+(n=>{if(n._$cssResult$===!0)return n.cssText;if(typeof n=="number")return n;throw Error("Value passed to 'css' function must be a 'css' function result: "+n+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1],t[0]);return new N(r,t,Se)},Fe=(t,e)=>{if(Q)t.adoptedStyleSheets=e.map(r=>r instanceof CSSStyleSheet?r:r.styleSheet);else for(let r of e){let i=document.createElement("style"),s=J.litNonce;s!==void 0&&i.setAttribute("nonce",s),i.textContent=r.cssText,t.appendChild(i)}},Ae=Q?t=>t:t=>t instanceof CSSStyleSheet?(e=>{let r="";for(let i of e.cssRules)r+=i.cssText;return We(r)})(t):t;var{is:rr,defineProperty:ir,getOwnPropertyDescriptor:sr,getOwnPropertyNames:or,getOwnPropertySymbols:nr,getPrototypeOf:ar}=Object,Z=globalThis,Ke=Z.trustedTypes,lr=Ke?Ke.emptyScript:"",cr=Z.reactiveElementPolyfillSupport,B=(t,e)=>t,H={toAttribute(t,e){switch(e){case Boolean:t=t?lr:null;break;case Object:case Array:t=t==null?t:JSON.stringify(t)}return t},fromAttribute(t,e){let r=t;switch(e){case Boolean:r=t!==null;break;case Number:r=t===null?null:Number(t);break;case Object:case Array:try{r=JSON.parse(t)}catch{r=null}}return r}},ee=(t,e)=>!rr(t,e),Ye={attribute:!0,type:String,converter:H,reflect:!1,useDefault:!1,hasChanged:ee};Symbol.metadata??=Symbol("metadata"),Z.litPropertyMetadata??=new WeakMap;var x=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,r=Ye){if(r.state&&(r.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((r=Object.create(r)).wrapped=!0),this.elementProperties.set(e,r),!r.noAccessor){let i=Symbol(),s=this.getPropertyDescriptor(e,i,r);s!==void 0&&ir(this.prototype,e,s)}}static getPropertyDescriptor(e,r,i){let{get:s,set:o}=sr(this.prototype,e)??{get(){return this[r]},set(n){this[r]=n}};return{get:s,set(n){let a=s?.call(this);o?.call(this,n),this.requestUpdate(e,a,i)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??Ye}static _$Ei(){if(this.hasOwnProperty(B("elementProperties")))return;let e=ar(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(B("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(B("properties"))){let r=this.properties,i=[...or(r),...nr(r)];for(let s of i)this.createProperty(s,r[s])}let e=this[Symbol.metadata];if(e!==null){let r=litPropertyMetadata.get(e);if(r!==void 0)for(let[i,s]of r)this.elementProperties.set(i,s)}this._$Eh=new Map;for(let[r,i]of this.elementProperties){let s=this._$Eu(r,i);s!==void 0&&this._$Eh.set(s,r)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let r=[];if(Array.isArray(e)){let i=new Set(e.flat(1/0).reverse());for(let s of i)r.unshift(Ae(s))}else e!==void 0&&r.push(Ae(e));return r}static _$Eu(e,r){let i=r.attribute;return i===!1?void 0:typeof i=="string"?i:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,r=this.constructor.elementProperties;for(let i of r.keys())this.hasOwnProperty(i)&&(e.set(i,this[i]),delete this[i]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return Fe(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,r,i){this._$AK(e,i)}_$ET(e,r){let i=this.constructor.elementProperties.get(e),s=this.constructor._$Eu(e,i);if(s!==void 0&&i.reflect===!0){let o=(i.converter?.toAttribute!==void 0?i.converter:H).toAttribute(r,i.type);this._$Em=e,o==null?this.removeAttribute(s):this.setAttribute(s,o),this._$Em=null}}_$AK(e,r){let i=this.constructor,s=i._$Eh.get(e);if(s!==void 0&&this._$Em!==s){let o=i.getPropertyOptions(s),n=typeof o.converter=="function"?{fromAttribute:o.converter}:o.converter?.fromAttribute!==void 0?o.converter:H;this._$Em=s;let a=n.fromAttribute(r,o.type);this[s]=a??this._$Ej?.get(s)??a,this._$Em=null}}requestUpdate(e,r,i,s=!1,o){if(e!==void 0){let n=this.constructor;if(s===!1&&(o=this[e]),i??=n.getPropertyOptions(e),!((i.hasChanged??ee)(o,r)||i.useDefault&&i.reflect&&o===this._$Ej?.get(e)&&!this.hasAttribute(n._$Eu(e,i))))return;this.C(e,r,i)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,r,{useDefault:i,reflect:s,wrapped:o},n){i&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,n??r??this[e]),o!==!0||n!==void 0)||(this._$AL.has(e)||(this.hasUpdated||i||(r=void 0),this._$AL.set(e,r)),s===!0&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(r){Promise.reject(r)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[s,o]of this._$Ep)this[s]=o;this._$Ep=void 0}let i=this.constructor.elementProperties;if(i.size>0)for(let[s,o]of i){let{wrapped:n}=o,a=this[s];n!==!0||this._$AL.has(s)||a===void 0||this.C(s,void 0,o,a)}}let e=!1,r=this._$AL;try{e=this.shouldUpdate(r),e?(this.willUpdate(r),this._$EO?.forEach(i=>i.hostUpdate?.()),this.update(r)):this._$EM()}catch(i){throw e=!1,this._$EM(),i}e&&this._$AE(r)}willUpdate(e){}_$AE(e){this._$EO?.forEach(r=>r.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(r=>this._$ET(r,this[r])),this._$EM()}updated(e){}firstUpdated(e){}};x.elementStyles=[],x.shadowRootOptions={mode:"open"},x[B("elementProperties")]=new Map,x[B("finalized")]=new Map,cr?.({ReactiveElement:x}),(Z.reactiveElementVersions??=[]).push("2.1.2");var Te=globalThis,Ge=t=>t,te=Te.trustedTypes,Xe=te?te.createPolicy("lit-html",{createHTML:t=>t}):void 0,Me="$lit$",w=`lit$${Math.random().toFixed(9).slice(2)}$`,Pe="?"+w,dr=`<${Pe}>`,C=document,q=()=>C.createComment(""),V=t=>t===null||typeof t!="object"&&typeof t!="function",Ee=Array.isArray,rt=t=>Ee(t)||typeof t?.[Symbol.iterator]=="function",Ce=`[ 	
+\f\r]`,j=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,Je=/-->/g,Qe=/>/g,S=RegExp(`>|${Ce}(?:([^\\s"'>=/]+)(${Ce}*=${Ce}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`,"g"),Ze=/'/g,et=/"/g,it=/^(?:script|style|textarea|title)$/i,Re=t=>(e,...r)=>({_$litType$:t,strings:e,values:r}),l=Re(1),st=Re(2),Fr=Re(3),T=Symbol.for("lit-noChange"),d=Symbol.for("lit-nothing"),tt=new WeakMap,A=C.createTreeWalker(C,129);function ot(t,e){if(!Ee(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return Xe!==void 0?Xe.createHTML(e):e}var nt=(t,e)=>{let r=t.length-1,i=[],s,o=e===2?"<svg>":e===3?"<math>":"",n=j;for(let a=0;a<r;a++){let c=t[a],p,m,h=-1,b=0;for(;b<c.length&&(n.lastIndex=b,m=n.exec(c),m!==null);)b=n.lastIndex,n===j?m[1]==="!--"?n=Je:m[1]!==void 0?n=Qe:m[2]!==void 0?(it.test(m[2])&&(s=RegExp("</"+m[2],"g")),n=S):m[3]!==void 0&&(n=S):n===S?m[0]===">"?(n=s??j,h=-1):m[1]===void 0?h=-2:(h=n.lastIndex-m[2].length,p=m[1],n=m[3]===void 0?S:m[3]==='"'?et:Ze):n===et||n===Ze?n=S:n===Je||n===Qe?n=j:(n=S,s=void 0);let $=n===S&&t[a+1].startsWith("/>")?" ":"";o+=n===j?c+dr:h>=0?(i.push(p),c.slice(0,h)+Me+c.slice(h)+w+$):c+w+(h===-2?a:$)}return[ot(t,o+(t[r]||"<?>")+(e===2?"</svg>":e===3?"</math>":"")),i]},W=class t{constructor({strings:e,_$litType$:r},i){let s;this.parts=[];let o=0,n=0,a=e.length-1,c=this.parts,[p,m]=nt(e,r);if(this.el=t.createElement(p,i),A.currentNode=this.el.content,r===2||r===3){let h=this.el.content.firstChild;h.replaceWith(...h.childNodes)}for(;(s=A.nextNode())!==null&&c.length<a;){if(s.nodeType===1){if(s.hasAttributes())for(let h of s.getAttributeNames())if(h.endsWith(Me)){let b=m[n++],$=s.getAttribute(h).split(w),X=/([.?@])?(.*)/.exec(b);c.push({type:1,index:o,name:X[2],strings:$,ctor:X[1]==="."?ie:X[1]==="?"?se:X[1]==="@"?oe:P}),s.removeAttribute(h)}else h.startsWith(w)&&(c.push({type:6,index:o}),s.removeAttribute(h));if(it.test(s.tagName)){let h=s.textContent.split(w),b=h.length-1;if(b>0){s.textContent=te?te.emptyScript:"";for(let $=0;$<b;$++)s.append(h[$],q()),A.nextNode(),c.push({type:2,index:++o});s.append(h[b],q())}}}else if(s.nodeType===8)if(s.data===Pe)c.push({type:2,index:o});else{let h=-1;for(;(h=s.data.indexOf(w,h+1))!==-1;)c.push({type:7,index:o}),h+=w.length-1}o++}}static createElement(e,r){let i=C.createElement("template");return i.innerHTML=e,i}};function M(t,e,r=t,i){if(e===T)return e;let s=i!==void 0?r._$Co?.[i]:r._$Cl,o=V(e)?void 0:e._$litDirective$;return s?.constructor!==o&&(s?._$AO?.(!1),o===void 0?s=void 0:(s=new o(t),s._$AT(t,r,i)),i!==void 0?(r._$Co??=[])[i]=s:r._$Cl=s),s!==void 0&&(e=M(t,s._$AS(t,e.values),s,i)),e}var re=class{constructor(e,r){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=r}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:r},parts:i}=this._$AD,s=(e?.creationScope??C).importNode(r,!0);A.currentNode=s;let o=A.nextNode(),n=0,a=0,c=i[0];for(;c!==void 0;){if(n===c.index){let p;c.type===2?p=new D(o,o.nextSibling,this,e):c.type===1?p=new c.ctor(o,c.name,c.strings,this,e):c.type===6&&(p=new ne(o,this,e)),this._$AV.push(p),c=i[++a]}n!==c?.index&&(o=A.nextNode(),n++)}return A.currentNode=C,s}p(e){let r=0;for(let i of this._$AV)i!==void 0&&(i.strings!==void 0?(i._$AI(e,i,r),r+=i.strings.length-2):i._$AI(e[r])),r++}},D=class t{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,r,i,s){this.type=2,this._$AH=d,this._$AN=void 0,this._$AA=e,this._$AB=r,this._$AM=i,this.options=s,this._$Cv=s?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,r=this._$AM;return r!==void 0&&e?.nodeType===11&&(e=r.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,r=this){e=M(this,e,r),V(e)?e===d||e==null||e===""?(this._$AH!==d&&this._$AR(),this._$AH=d):e!==this._$AH&&e!==T&&this._(e):e._$litType$!==void 0?this.$(e):e.nodeType!==void 0?this.T(e):rt(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==d&&V(this._$AH)?this._$AA.nextSibling.data=e:this.T(C.createTextNode(e)),this._$AH=e}$(e){let{values:r,_$litType$:i}=e,s=typeof i=="number"?this._$AC(e):(i.el===void 0&&(i.el=W.createElement(ot(i.h,i.h[0]),this.options)),i);if(this._$AH?._$AD===s)this._$AH.p(r);else{let o=new re(s,this),n=o.u(this.options);o.p(r),this.T(n),this._$AH=o}}_$AC(e){let r=tt.get(e.strings);return r===void 0&&tt.set(e.strings,r=new W(e)),r}k(e){Ee(this._$AH)||(this._$AH=[],this._$AR());let r=this._$AH,i,s=0;for(let o of e)s===r.length?r.push(i=new t(this.O(q()),this.O(q()),this,this.options)):i=r[s],i._$AI(o),s++;s<r.length&&(this._$AR(i&&i._$AB.nextSibling,s),r.length=s)}_$AR(e=this._$AA.nextSibling,r){for(this._$AP?.(!1,!0,r);e!==this._$AB;){let i=Ge(e).nextSibling;Ge(e).remove(),e=i}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},P=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,r,i,s,o){this.type=1,this._$AH=d,this._$AN=void 0,this.element=e,this.name=r,this._$AM=s,this.options=o,i.length>2||i[0]!==""||i[1]!==""?(this._$AH=Array(i.length-1).fill(new String),this.strings=i):this._$AH=d}_$AI(e,r=this,i,s){let o=this.strings,n=!1;if(o===void 0)e=M(this,e,r,0),n=!V(e)||e!==this._$AH&&e!==T,n&&(this._$AH=e);else{let a=e,c,p;for(e=o[0],c=0;c<o.length-1;c++)p=M(this,a[i+c],r,c),p===T&&(p=this._$AH[c]),n||=!V(p)||p!==this._$AH[c],p===d?e=d:e!==d&&(e+=(p??"")+o[c+1]),this._$AH[c]=p}n&&!s&&this.j(e)}j(e){e===d?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}},ie=class extends P{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===d?void 0:e}},se=class extends P{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==d)}},oe=class extends P{constructor(e,r,i,s,o){super(e,r,i,s,o),this.type=5}_$AI(e,r=this){if((e=M(this,e,r,0)??d)===T)return;let i=this._$AH,s=e===d&&i!==d||e.capture!==i.capture||e.once!==i.once||e.passive!==i.passive,o=e!==d&&(i===d||s);s&&this.element.removeEventListener(this.name,this,i),o&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH=="function"?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},ne=class{constructor(e,r,i){this.element=e,this.type=6,this._$AN=void 0,this._$AM=r,this.options=i}get _$AU(){return this._$AM._$AU}_$AI(e){M(this,e)}},at={M:Me,P:w,A:Pe,C:1,L:nt,R:re,D:rt,V:M,I:D,H:P,N:se,U:oe,B:ie,F:ne},pr=Te.litHtmlPolyfillSupport;pr?.(W,D),(Te.litHtmlVersions??=[]).push("3.3.3");var lt=(t,e,r)=>{let i=r?.renderBefore??e,s=i._$litPart$;if(s===void 0){let o=r?.renderBefore??null;i._$litPart$=s=new D(e.insertBefore(q(),o),o,void 0,r??{})}return s._$AI(t),s};var Oe=globalThis,y=class extends x{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=lt(r,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return T}};y._$litElement$=!0,y.finalized=!0,Oe.litElementHydrateSupport?.({LitElement:y});var hr=Oe.litElementPolyfillSupport;hr?.({LitElement:y});(Oe.litElementVersions??=[]).push("4.2.2");var ae=t=>(e,r)=>{r!==void 0?r.addInitializer(()=>{customElements.define(t,e)}):customElements.define(t,e)};var ur={attribute:!0,type:String,converter:H,reflect:!1,hasChanged:ee},mr=(t=ur,e,r)=>{let{kind:i,metadata:s}=r,o=globalThis.litPropertyMetadata.get(s);if(o===void 0&&globalThis.litPropertyMetadata.set(s,o=new Map),i==="setter"&&((t=Object.create(t)).wrapped=!0),o.set(r.name,t),i==="accessor"){let{name:n}=r;return{set(a){let c=e.get.call(this);e.set.call(this,a),this.requestUpdate(n,c,t,!0,a)},init(a){return a!==void 0&&this.C(n,void 0,t,a),a}}}if(i==="setter"){let{name:n}=r;return function(a){let c=this[n];e.call(this,a),this.requestUpdate(n,c,t,!0,a)}}throw Error("Unsupported decorator location: "+i)};function L(t){return(e,r)=>typeof r=="object"?mr(t,e,r):((i,s,o)=>{let n=s.hasOwnProperty(o);return s.constructor.createProperty(o,i),n?Object.getOwnPropertyDescriptor(s,o):void 0})(t,e,r)}function f(t){return L({...t,state:!0,attribute:!1})}var ct=t=>(...e)=>({_$litDirective$:t,values:e}),ce=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,r,i){this._$Ct=e,this._$AM=r,this._$Ci=i}_$AS(e,r){return this.update(e,r)}update(e,r){return this.render(...r)}};var{I:Di}=at;var gr={},dt=(t,e=gr)=>t._$AH=e;var pt=ct(class extends ce{constructor(){super(...arguments),this.key=d}render(t,e){return this.key=t,e}update(t,[e,r]){return e!==this.key&&(dt(t),this.key=e),r}});async function ht(t,e,r){let i=new FormData;i.append("file",e,"recording.wav"),i.append("duration",String(r));let s=await fetch("/api/hass_broadcast/upload",{method:"POST",body:i,headers:{Authorization:`Bearer ${t.auth.data.access_token}`}});if(!s.ok)throw new Error(`Upload failed (${s.status})`);return(await s.json()).message_id}async function ut(t){return(await t.connection.sendMessagePromise({type:"hass_broadcast/list"})).messages}async function mt(t,e){return(await t.connection.sendMessagePromise({type:"hass_broadcast/delete",message_id:e})).deleted}async function gt(t,e,r,i,s){return{failed:(await t.connection.sendMessagePromise({type:"hass_broadcast/send",message_id:e,targets:r,mode:i,...s!==void 0?{volume:s}:{}})).failed}}var de="Recording needs a secure connection. Open Home Assistant over HTTPS (or localhost) \u2014 plain http:// to a LAN address cannot use the microphone.";function ft(t){return t?.name==="NotAllowedError"?"Microphone permission was denied. Allow it for this site and try again.":`Could not start recording: ${t?.message??t?.name??"unknown error"}`}function F(t){return t?.states?Object.keys(t.states).filter(e=>e.startsWith("media_player.")).filter(e=>(t.states[e].attributes.supported_features&512)!==0).sort():[]}function vt(t,e){return e?[...new Set(e)]:t}function yt(t,e){if(!e)return t;let r=new Set(e);return t.filter(i=>r.has(i))}var fr="Voice Broadcast";function K(t,e){return e.includes(t)?t:e[0]}function pe(t){if(t===""||t===null||t===void 0)return 60;let e=Number(t);return isNaN(e)?60:Math.min(300,Math.max(5,e))}var vr=["plain","chime","restore"];function De(t){return K(t,vr)}function Le(t){let e=K(t.layout,["full","compact"]),r=Array.isArray(t.speakers)?[...new Set(t.speakers)]:void 0,i=r?new Set(r):void 0,s=(Array.isArray(t.selected)?t.selected:[]).filter(o=>!i||i.has(o));return{title:t.title?.trim()||fr,layout:e,speakerPicker:e==="compact"?"dropdown":K(t.speaker_picker,["dropdown","chips","list"]),recentMessages:K(t.recent_messages,["button","off","list"]),volumeControl:t.volume_control!==!1,speakers:r,selected:s,recordMode:K(t.record_mode,["push_to_talk","start_stop"]),maxDuration:pe(t.max_duration),noiseSuppression:t.noise_suppression===!0,mode:De(t.mode)}}function E(t){let e=r=>{let i=r?{bg:"#2b2b2b",g:"#5f6368",r:"#e2574c",b:"#4fa3e0"}:{bg:"#eef0f3",g:"#c4cbd4",r:"#db4437",b:"#039be5"},s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 64" width="120" height="64"><rect width="120" height="64" rx="6" fill="${i.bg}"/>`+t.replace(/\$g/g,i.g).replace(/\$r/g,i.r).replace(/\$b/g,i.b)+"</svg>";return`data:image/svg+xml,${encodeURIComponent(s)}`};return{src:e(!1),src_dark:e(!0)}}var R={full:E('<rect x="14" y="9" width="40" height="5" rx="2.5" fill="$g"/><circle cx="96" cy="11.5" r="3" fill="$g"/><circle cx="105" cy="11.5" r="3" fill="$g"/><circle cx="60" cy="32" r="11" fill="$r"/><circle cx="84" cy="32" r="5" fill="$g"/><rect x="42" y="50" width="36" height="7" rx="3.5" fill="$g"/>'),compact:E('<circle cx="26" cy="32" r="12" fill="$r"/><rect x="46" y="20" width="40" height="5" rx="2.5" fill="$g"/><rect x="104" y="18" width="3" height="9" rx="1.5" fill="$g"/><rect x="46" y="36" width="42" height="9" rx="4.5" fill="$g"/><rect x="92" y="36" width="18" height="9" rx="4.5" fill="$b"/>'),dropdown:E('<rect x="28" y="24" width="64" height="16" rx="8" fill="none" stroke="$g" stroke-width="2"/><rect x="36" y="30" width="34" height="4" rx="2" fill="$g"/><path d="M78 30l4 4 4-4" stroke="$g" stroke-width="2" fill="none"/>'),chips:E('<rect x="14" y="25" width="30" height="14" rx="7" fill="$b"/><rect x="48" y="25" width="26" height="14" rx="7" fill="$g"/><rect x="78" y="25" width="28" height="14" rx="7" fill="$b"/>'),list:E('<rect x="22" y="14" width="66" height="5" rx="2.5" fill="$g"/><rect x="94" y="13" width="7" height="7" rx="1.5" fill="$b"/><rect x="22" y="29" width="66" height="5" rx="2.5" fill="$g"/><rect x="94" y="28" width="7" height="7" rx="1.5" fill="$g"/><rect x="22" y="44" width="66" height="5" rx="2.5" fill="$g"/><rect x="94" y="43" width="7" height="7" rx="1.5" fill="$b"/>'),square:E('<rect x="38" y="6" width="44" height="52" rx="6" fill="none" stroke="$g" stroke-width="2"/><circle cx="60" cy="26" r="10" fill="$r"/><rect x="47" y="43" width="26" height="5" rx="2.5" fill="$g"/>'),horizontal:E('<rect x="12" y="18" width="96" height="28" rx="6" fill="none" stroke="$g" stroke-width="2"/><circle cx="30" cy="32" r="9" fill="$r"/><rect x="46" y="26" width="36" height="5" rx="2.5" fill="$g"/><rect x="46" y="35" width="24" height="4" rx="2" fill="$g"/>')},Ue=t=>({name:t,selector:{entity:{multiple:!0,filter:{domain:"media_player"}}}}),bt={name:"max_duration",selector:{number:{min:5,max:300,step:5,mode:"slider",unit_of_measurement:"s"}}},xt={name:"noise_suppression",selector:{boolean:{}}},yr={title:"Leave empty for \u201CVoice Broadcast\u201D",name:"Leave empty for \u201CIntercom\u201D",noise_suppression:"Filters out background noise such as a TV or fan. Leave it off in a quiet room: it can make a voice sound slightly processed."},wt=t=>yr[t.name],$t={type:"expandable",name:"",flatten:!0,title:"Playback",icon:"mdi:volume-high",schema:[{name:"mode",selector:{select:{mode:"box",box_max_columns:1,options:[{value:"plain",label:"Just play it",description:"Interrupts whatever is playing"},{value:"chime",label:"Chime first",description:"A short tone, then the message"},{value:"restore",label:"Pause, then resume",description:"Puts back what was playing and its volume"}]}}}]},br={title:"Name",name:"Name",layout:"Layout",speaker_picker:"Speaker picker",recent_messages:"Recent messages",volume_control:"Volume control",speakers:"Speakers on the card",selected:"Selected when the card opens",record_mode:"Recording",max_duration:"Time limit",noise_suppression:"Noise suppression",mode:"When it plays",shape:"Shape"},kt=t=>br[t.name],_t={schema:[{name:"title",selector:{text:{}}},{type:"expandable",name:"",flatten:!0,title:"Appearance",icon:"mdi:palette-outline",expanded:!0,schema:[{name:"layout",selector:{select:{mode:"box",options:[{value:"full",label:"Full",image:R.full},{value:"compact",label:"Compact",image:R.compact}]}}},{name:"speaker_picker",visible:{field:"layout",value:"full"},selector:{select:{mode:"box",options:[{value:"dropdown",label:"Dropdown",image:R.dropdown},{value:"chips",label:"Chips",image:R.chips},{value:"list",label:"List",image:R.list}]}}},{name:"recent_messages",selector:{select:{mode:"dropdown",options:[{value:"off",label:"Off"},{value:"button",label:"Button in the header"},{value:"list",label:"List below the card"}]}}},{name:"volume_control",selector:{boolean:{}}}]},{type:"expandable",name:"",flatten:!0,title:"Speakers",icon:"mdi:speaker",expanded:!0,schema:[Ue("speakers"),Ue("selected")]},{type:"expandable",name:"",flatten:!0,title:"Recording",icon:"mdi:microphone",schema:[{name:"record_mode",selector:{select:{mode:"box",options:[{value:"push_to_talk",label:"Hold to talk",description:"Records while the button is held"},{value:"start_stop",label:"Tap to start and stop",description:"Tap once to start, again to stop"}]}}},bt,xt]},$t],computeLabel:kt,computeHelper:wt},St={schema:[{name:"name",selector:{text:{}}},{type:"expandable",name:"",flatten:!0,title:"Speakers",icon:"mdi:speaker",expanded:!0,schema:[Ue("speakers")]},{type:"expandable",name:"",flatten:!0,title:"Appearance",icon:"mdi:palette-outline",expanded:!0,schema:[{name:"shape",selector:{select:{mode:"box",options:[{value:"square",label:"Square",image:R.square},{value:"horizontal",label:"Horizontal",image:R.horizontal}]}}}]},{type:"expandable",name:"",flatten:!0,title:"Recording",icon:"mdi:microphone",schema:[bt,xt]},$t],computeLabel:t=>t.name==="speakers"?"Sends to":kt(t),computeHelper:wt};function O(t){let e=Number.isFinite(t)&&t>0?Math.floor(t):0;return`${Math.floor(e/60)}:${String(e%60).padStart(2,"0")}`}function At(t,e){return t.getFullYear()===e.getFullYear()&&t.getMonth()===e.getMonth()&&t.getDate()===e.getDate()}function ze(t){return t.toLocaleTimeString(void 0,{hour:"2-digit",minute:"2-digit"})}function Ct(t,e=new Date){let r=new Date(t);if(Number.isNaN(r.getTime()))return"Unknown time";let i=(e.getTime()-r.getTime())/1e3;if(i<60)return"Just now";if(i<3600){let n=Math.round(i/60);return`${n} minute${n===1?"":"s"} ago`}if(At(r,e))return`Today ${ze(r)}`;let s=new Date(e);return s.setDate(e.getDate()-1),At(r,s)?`Yesterday ${ze(r)}`:`${r.toLocaleDateString(void 0,{month:"short",day:"numeric"})} ${ze(r)}`}function Tt(t){return Number.isFinite(t)?Math.min(1,Math.max(0,t)):0}function ue(t){return new Array(Math.max(0,t)).fill(0)}function Mt(t,e){if(e<=0)return[];if(t.length===0)return ue(e);let r=[];for(let i=0;i<e;i++){let s=Math.floor(i*t.length/e),o=Math.max(s+1,Math.floor((i+1)*t.length/e)),n=0;for(let a=s;a<o&&a<t.length;a++)n=Math.max(n,t[a]);r.push(n)}return r}function Ie(t){let e=t.reduce((r,i)=>Math.max(r,i),0);return e<=0?[...t]:t.map(r=>r/e)}var he=class{constructor(){this.peaks=[];this.pending=0}get length(){return this.peaks.length}push(e,r){if(this.windowStart===void 0)return this.windowStart=r,this.pending=Tt(e),!1;let i=!1;return r-this.windowStart>=50&&(this.peaks.push(this.pending),this.pending=0,this.windowStart=r,i=!0),this.pending=Math.max(this.pending,Tt(e)),i}reset(){this.peaks=[],this.pending=0,this.windowStart=void 0}all(){return[...this.peaks]}tail(e){let r=this.peaks.slice(-e);return[...ue(e-r.length),...r]}};function Pt(t,e){let r=t.length*2,i=new ArrayBuffer(44+r),s=new DataView(i),o=(n,a)=>{for(let c=0;c<a.length;c++)s.setUint8(n+c,a.charCodeAt(c))};return o(0,"RIFF"),s.setUint32(4,36+r,!0),o(8,"WAVE"),o(12,"fmt "),s.setUint32(16,16,!0),s.setUint16(20,1,!0),s.setUint16(22,1,!0),s.setUint32(24,e,!0),s.setUint32(28,e*2,!0),s.setUint16(32,2,!0),s.setUint16(34,16,!0),o(36,"data"),s.setUint32(40,r,!0),new Int16Array(i,44).set(t),new Blob([i],{type:"audio/wav"})}var me=[48e3,32e3,24e3,16e3],xr=10*1024*1024,wr=44,$r=1,kr=.89*32767,_r=10,Sr="/api/hass_broadcast/static/recorder-worklet.js",Ar={channelCount:1,echoCancellation:!1,noiseSuppression:!1,autoGainControl:!1},Y=class{constructor(){this.chunks=[];this.active=!1;this.options={}}static isSupported(){return typeof window<"u"&&window.isSecureContext===!0&&typeof navigator<"u"&&!!navigator.mediaDevices?.getUserMedia&&typeof AudioWorkletNode<"u"}onLevel(e){this.levelCallback=e}get trackSettings(){return this.stream?.getAudioTracks()[0]?.getSettings()}async start(e,r={}){this.chunks=[],this.options=r;try{this.stream=await navigator.mediaDevices.getUserMedia({audio:r.constraints??{...Ar,noiseSuppression:r.noiseSuppression??!1}}),this.context=new AudioContext({sampleRate:r.sampleRate??Cr(e)}),await this.context.audioWorklet.addModule(Sr);let i=this.context.createMediaStreamSource(this.stream);this.node=new AudioWorkletNode(this.context,"recorder-worklet"),this.node.port.onmessage=s=>{this.chunks.push(s.data),this.levelCallback&&this.levelCallback(Mr(s.data))},i.connect(this.node),this.node.connect(this.context.destination),this.active=!0}catch(i){throw await this.release(),i}}async stop(){if(!this.active)throw new Error("Recorder.stop() called with no active recording session");let e=this.context?.sampleRate??me[0],r=this.chunks,i=this.options.normalize??!0;await this.release();let s=r.reduce((a,c)=>a+c.length,0),o=new Int16Array(s),n=0;for(let a of r)o.set(a,n),n+=a.length;return i&&Tr(o),{blob:Pt(o,e),duration:s/e}}async release(){this.node?.port.close(),this.node?.disconnect(),this.stream?.getTracks().forEach(e=>e.stop());try{await this.context?.close()}catch{}finally{this.context=void 0,this.stream=void 0,this.node=void 0,this.chunks=[],this.active=!1}}};function Cr(t){let e=i=>i*2,r=i=>wr+e(i)*(t+$r)<=xr;return me.find(r)??me[me.length-1]}function Tr(t){let e=0;for(let i of t)e=Math.max(e,Math.abs(i));if(e===0)return;let r=Math.min(_r,kr/e);if(!(r<=1))for(let i=0;i<t.length;i++)t[i]=Math.round(t[i]*r)}function Mr(t){let e=0;for(let r of t)e=Math.max(e,Math.abs(r));return e/32768}var Pr=.4,U=class{constructor(e,r){this.host=e;this.options=r;this.phase="idle";this.elapsed=0;this.level=0;this.recorder=new Y;this.envelope=new he;this.busy=!1;this.disconnected=!1;this.stopRequested=!1;e.addController(this)}get supported(){return Y.isSupported()}hostConnected(){this.disconnected=!1}hostDisconnected(){this.disconnected=!0,this.clearTimer(),this.phase==="recording"&&!this.busy&&(this.phase="idle",this.level=0,this.release())}setSending(e){this.phase=e?"sending":"idle",this.host.requestUpdate()}async onPressStart(e){if(!(this.phase==="sending"||!this.supported)){if(this.options.recordMode()==="start_stop"){await(this.phase==="recording"?this.stopRecording():this.startRecording());return}e.preventDefault(),!this.busy&&(this.stopRequested=!1,await this.startRecording(),this.stopRequested&&this.phase==="recording"&&await this.stopRecording())}}async onPressEnd(){if(this.options.recordMode()==="push_to_talk"){if(this.phase!=="recording"){this.stopRequested=!0;return}await this.stopRecording()}}async startRecording(){if(this.busy||this.phase!=="idle")return;this.busy=!0,this.options.onStart?.();try{this.recorder.onLevel(r=>{this.envelope.push(r,Date.now())&&(this.level=this.envelope.tail(1)[0],this.host.requestUpdate())}),this.envelope.reset(),await this.recorder.start(this.options.maxDuration(),{noiseSuppression:this.options.noiseSuppression?.()??!1})}catch(r){this.options.onError(ft(r),r?.name==="NotAllowedError"),this.host.requestUpdate();return}finally{this.busy=!1}if(this.disconnected){this.release();return}this.phase="recording",this.elapsed=0,this.level=0,this.host.requestUpdate();let e=this.options.maxDuration();this.timer=window.setInterval(()=>{this.elapsed+=1,this.host.requestUpdate(),this.elapsed>=e&&this.stopRecording()},1e3)}async stopRecording(){if(this.busy||this.phase!=="recording")return;this.busy=!0,this.clearTimer();let e;try{let{blob:r,duration:i}=await this.recorder.stop();this.phase="idle",this.options.recordMode()==="push_to_talk"&&i<Pr?this.options.onError("Hold the button while you speak.",!1):e={blob:r,duration:i,peaks:this.envelope.all()}}catch(r){this.phase="idle",this.options.onError(`Could not finish recording: ${r?.message??r}`,!1)}finally{this.busy=!1,this.level=0,this.host.requestUpdate()}e&&await this.options.onTake(e)}clearTimer(){this.timer!==void 0&&(window.clearInterval(this.timer),this.timer=void 0)}release(){this.busy=!0,this.recorder.stop().catch(()=>{}).finally(()=>{this.busy=!1})}};function Et(t,e,r){return{source:{kind:"fresh",blob:t},url:URL.createObjectURL(t),duration:e,peaks:Ie(Mt(r,48))}}function fe(t){return t.source.kind==="stored"?t.source.id:void 0}var Er=async(t,e)=>{let r=globalThis.AudioContext??globalThis.webkitAudioContext;if(!r)return[];let i=new r;try{let o=(await i.decodeAudioData(await t.arrayBuffer())).getChannelData(0),n=[];for(let a=0;a<e;a++){let c=Math.floor(a*o.length/e),p=Math.floor((a+1)*o.length/e),m=0;for(let h=c;h<p;h++)m=Math.max(m,Math.abs(o[h]));n.push(m)}return Ie(n)}finally{await i.close?.()}};async function Rt(t,e,r=Er){let i=await fetch(`/api/hass_broadcast/media/${e.id}.${e.extension}`,{headers:{Authorization:`Bearer ${t.auth.data.access_token}`}});if(!i.ok)throw new Error(`Could not load that recording (${i.status})`);let s=await i.blob(),o=[];try{o=await r(s,48)}catch{o=[]}return{source:{kind:"stored",id:e.id},url:URL.createObjectURL(s),duration:e.duration,peaks:o}}function ve(t){t&&URL.revokeObjectURL(t.url)}async function ye(t){let{hass:e,clip:r,targets:i}=t,s=fe(r);if(s===void 0){let n=r.source.blob;s=await ht(e,n,r.duration),t.onStored?.(s)}let{failed:o}=await gt(e,s,i,t.mode,t.volume);return o.length===0?{kind:"sent",targets:i}:o.length>=i.length?{kind:"failed",failed:o}:{kind:"partial",failed:o}}function G(t,e){return e.map(r=>t?.states?.[r]?.attributes?.friendly_name??r).join(", ")}function be(t,e){switch(e.kind){case"sent":return{kind:"info",text:`Sent to ${G(t,e.targets)}`};case"partial":return{kind:"error",text:`Played, but not on ${G(t,e.failed)}.`};case"failed":return{kind:"error",text:`Could not play on any speaker: ${G(t,e.failed)}.`}}}var Ne=_`
   .mic-wrap {
     --mic-color: var(--error-color, #db4437);
     position: relative;
@@ -408,7 +189,7 @@ var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t
     }
     /* The countdown keeps running: it carries information, not decoration. */
   }
-`,Xe=x`
+`,Be=_`
   .icon {
     display: inline-flex;
     align-items: center;
@@ -455,7 +236,7 @@ var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t
     outline: 1.5px dashed #d946ef;
     outline-offset: 1px;
   }
-`,jt=[Ge,Xe,x`
+`,Ot=[Ne,Be,_`
     ha-card {
       padding: 16px;
     }
@@ -722,7 +503,7 @@ var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t
     .section {
       margin-top: 8px;
     }
-    .section-speakers[data-style="pill"] {
+    .section-speakers[data-style="dropdown"] {
       display: flex;
       justify-content: center;
     }
@@ -1110,41 +891,12 @@ var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t
         animation: none;
       }
     }
-  `];var U=class extends v{constructor(){super(...arguments);this.config={type:""}}setConfig(t){this.config=t}emit(t){let s={...this.config,...t};for(let r of Object.keys(s))s[r]===void 0&&delete s[r];this.config=s,this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this.config},bubbles:!0,composed:!0}))}render(){let t=this.config.targets??[],s=me(this.hass,[t]);return a`
-      <div class="field">
-        <label for="name">Name</label>
-        <input
-          id="name"
-          type="text"
-          placeholder="Intercom"
-          .value=${this.config.name??""}
-          @change=${r=>this.emit({name:r.target.value.trim()||void 0})}
-        />
-      </div>
-
-      <div class="field">
-        <label>Speakers</label>
-        ${s.length===0?a`<div class="hint">No media players found.</div>`:fe(s,t,(r,o)=>this.emit({targets:ge(t,r,o)??[]}))}
-        <div class="hint">
-          Every message from this tile goes to all of these, as soon as you
-          let go of the button.
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Shape</label>
-        ${X(this.config.shape==="horizontal"?"horizontal":"square",[["square","Square"],["horizontal","Horizontal"]],r=>this.emit({shape:r}))}
-      </div>
-
-      ${ve(this.config.mode,r=>this.emit({mode:r}))}
-      ${ye(this.config.max_duration,r=>this.emit({max_duration:r}))}
-      ${be(this.config.noise_suppression,r=>this.emit({noise_suppression:r}))}
-    `}};U.styles=xe,u([$({attribute:!1})],U.prototype,"hass",2),u([g()],U.prototype,"config",2),U=u([A("hass-broadcast-tile-editor")],U);var y=i=>mt`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d=${i} /></svg>`,qt=y("M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"),Vt=y("M7 7h10v10H7z"),Ft=y("M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"),Wt=y("M8 5v14l11-7z"),Yt=y("M6 5h4v14H6zm8 0h4v14h-4z"),Me=y("M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"),Pe=y("M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.95 8.95 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"),Re=y("M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"),Kt=y("M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"),Je=y("M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 2c1.1 0 2 .9 2 2s-.9 2-2 2a2 2 0 0 1 0-4zm0 16c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"),Gt=y("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"),Xt=y("M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"),Jt=y("M7 10l5 5 5-5z");var qi=.35;function Oe(i){let e=Math.min(1,Math.max(0,i.level||0));return a`
+  `];var v=t=>st`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d=${t} /></svg>`,Dt=v("M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"),Lt=v("M7 7h10v10H7z"),Ut=v("M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"),zt=v("M8 5v14l11-7z"),It=v("M6 5h4v14H6zm8 0h4v14h-4z"),xe=v("M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"),we=v("M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.95 8.95 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"),$e=v("M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"),Nt=v("M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"),He=v("M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 2c1.1 0 2 .9 2 2s-.9 2-2 2a2 2 0 0 1 0-4zm0 16c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"),Bt=v("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"),Ht=v("M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"),jt=v("M7 10l5 5 5-5z");var Rr=.35;function ke(t){let e=Math.min(1,Math.max(0,t.level||0));return l`
     <div
       class="mic-wrap"
-      data-recording=${i.recording}
-      data-mode=${i.recordMode}
-      style="--mic:${i.size}px;--grow:${(1+e*qi).toFixed(3)};--limit:${i.maxDuration}s"
+      data-recording=${t.recording}
+      data-mode=${t.recordMode}
+      style="--mic:${t.size}px;--grow:${(1+e*Rr).toFixed(3)};--limit:${t.maxDuration}s"
     >
       <div class="mic-level" aria-hidden="true">
         <span class="blob blob-outer"></span>
@@ -1152,52 +904,52 @@ var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t
       </div>
       <button
         class="mic"
-        ?disabled=${i.disabled}
-        @pointerdown=${i.onPressStart}
-        @pointerup=${i.onPressEnd}
-        @pointercancel=${i.onPressEnd}
-        @pointerleave=${i.onPressEnd}
-        @contextmenu=${t=>t.preventDefault()}
-        @keydown=${t=>{!t.repeat&&(t.key===" "||t.key==="Enter")&&i.onPressStart(t)}}
-        @keyup=${t=>{(t.key===" "||t.key==="Enter")&&i.onPressEnd()}}
-        title=${i.label}
-        aria-label=${i.label}
+        ?disabled=${t.disabled}
+        @pointerdown=${t.onPressStart}
+        @pointerup=${t.onPressEnd}
+        @pointercancel=${t.onPressEnd}
+        @pointerleave=${t.onPressEnd}
+        @contextmenu=${r=>r.preventDefault()}
+        @keydown=${r=>{!r.repeat&&(r.key===" "||r.key==="Enter")&&t.onPressStart(r)}}
+        @keyup=${r=>{(r.key===" "||r.key==="Enter")&&t.onPressEnd()}}
+        title=${t.label}
+        aria-label=${t.label}
       >
-        <span class="mic-glyph mic-glyph-mic">${qt}</span>
-        <span class="mic-glyph mic-glyph-stop">${Vt}</span>
+        <span class="mic-glyph mic-glyph-mic">${Dt}</span>
+        <span class="mic-glyph mic-glyph-stop">${Lt}</span>
       </button>
       <svg class="mic-arc" viewBox="0 0 100 100" aria-hidden="true">
         <circle class="mic-arc-track" cx="50" cy="50" r="46" pathLength="100" />
         <circle class="mic-arc-fill" cx="50" cy="50" r="46" pathLength="100" />
       </svg>
     </div>
-  `}function Le(i){return i?a`<span class="status ${i.kind}" title=${i.text}>${i.text}</span>`:d}function B(i,e){return a`<span class="timer" data-warning=${e}>${i}</span>`}function j(i,e,t){return a`
-    <div class="layers slot ${i}" data-active=${e}>
-      ${Object.keys(t).map(s=>a`
+  `}function _e(t){return t?l`<span class="status ${t.kind}" title=${t.text}>${t.text}</span>`:d}function z(t,e){return l`<span class="timer" data-warning=${e}>${t}</span>`}function I(t,e,r){return l`
+    <div class="layers slot ${t}" data-active=${e}>
+      ${Object.keys(r).map(i=>l`
           <div
-            class="layer layer-${s}"
-            data-on=${s===e}
-            ?inert=${s!==e}
-            aria-hidden=${s!==e}
+            class="layer layer-${i}"
+            data-on=${i===e}
+            ?inert=${i!==e}
+            aria-hidden=${i!==e}
           >
-            ${t[s]}
+            ${r[i]}
           </div>
         `)}
     </div>
-  `}var Vi=2500,T=class extends v{constructor(){super(...arguments);this.config={type:""};this.rec=new H(this,{recordMode:()=>"push_to_talk",maxDuration:()=>k(this.config.max_duration),noiseSuppression:()=>this.config.noise_suppression===!0,onStart:()=>this.showResult(void 0),onError:t=>this.showResult({kind:"failed",text:Fi(t),detail:t}),onTake:t=>this.send(t)})}setConfig(t){this.config=t}get shape(){return this.config.shape==="horizontal"?"horizontal":"square"}get targets(){return this.config.targets??[]}getCardSize(){return this.shape==="square"?3:1}getGridOptions(){return this.shape==="square"?{rows:2,columns:3,min_rows:2,min_columns:3}:{rows:1,columns:6,min_rows:1,max_rows:1,min_columns:4}}static getConfigElement(){return document.createElement("hass-broadcast-tile-editor")}static getStubConfig(t){let s=N(t)[0];return{type:"custom:hass-broadcast-tile",name:"Intercom",targets:s?[s]:[],shape:"square",mode:"plain"}}disconnectedCallback(){super.disconnectedCallback(),this.clearResultTimer(),this.result=void 0}clearResultTimer(){this.resultTimer!==void 0&&(window.clearTimeout(this.resultTimer),this.resultTimer=void 0)}showResult(t){this.clearResultTimer(),this.result=t,t&&(this.resultTimer=window.setTimeout(()=>{this.resultTimer=void 0,this.result=void 0},Vi))}async send(t){if(this.targets.length===0){this.showResult({kind:"failed",text:"No speakers set",detail:"Pick speakers in the card editor."});return}this.rec.setSending(!0);try{let s=await Ce({hass:this.hass,clip:{source:{kind:"fresh",blob:t.blob},url:"",duration:t.duration,peaks:[]},targets:this.targets,mode:this.config.mode??"plain"});this.showResult(this.describe(s))}catch(s){let r=`Could not send: ${s?.message??s}`;this.showResult({kind:"failed",text:"Not sent",detail:r})}finally{this.rec.setSending(!1)}}describe(t){let s=Ee(this.hass,t).text;switch(t.kind){case"sent":return{kind:"sent",text:"Sent",detail:s};case"partial":return{kind:"partial",text:`Not on ${Z(this.hass,t.failed)}`,detail:s};case"failed":return{kind:"failed",text:"Not sent",detail:s}}}get name(){return this.config.name?.trim()||"Intercom"}get idleText(){return this.rec.supported?this.targets.length?"Hold to talk":"Pick speakers in the card editor":"Needs HTTPS"}render(){let t=this.rec.phase==="recording",s=this.rec.phase==="sending",r=k(this.config.max_duration),o=t&&r-this.rec.elapsed<=Math.min(10,r*.25),n=t?"recording":s?"sending":this.result?.kind??"idle",l=h=>a`${h}<span title=${this.result?.detail??""}>${this.result?.text??""}</span>`,c=t?"Recording \u2014 release to send":`Hold to talk to ${this.name}`;return a`
+  `}var Or=2500,k=class extends y{constructor(){super(...arguments);this.config={type:""};this.rec=new U(this,{recordMode:()=>"push_to_talk",maxDuration:()=>pe(this.config.max_duration),noiseSuppression:()=>this.config.noise_suppression===!0,onStart:()=>this.showResult(void 0),onError:r=>this.showResult({kind:"failed",text:Dr(r),detail:r}),onTake:r=>this.send(r)})}setConfig(r){this.config=r}get shape(){return this.config.shape==="horizontal"?"horizontal":"square"}get targets(){return Array.isArray(this.config.speakers)?this.config.speakers:[]}getCardSize(){return this.shape==="square"?3:1}getGridOptions(){return this.shape==="square"?{rows:2,columns:3,min_rows:2,min_columns:3}:{rows:1,columns:6,min_rows:1,max_rows:1,min_columns:4}}static getConfigForm(){return St}static getStubConfig(r){let i=F(r)[0];return{type:"custom:hass-broadcast-tile",name:"Intercom",speakers:i?[i]:[],shape:"square",mode:"plain"}}disconnectedCallback(){super.disconnectedCallback(),this.clearResultTimer(),this.result=void 0}clearResultTimer(){this.resultTimer!==void 0&&(window.clearTimeout(this.resultTimer),this.resultTimer=void 0)}showResult(r){this.clearResultTimer(),this.result=r,r&&(this.resultTimer=window.setTimeout(()=>{this.resultTimer=void 0,this.result=void 0},Or))}async send(r){if(this.targets.length===0){this.showResult({kind:"failed",text:"No speakers set",detail:"Pick speakers in the card editor."});return}this.rec.setSending(!0);try{let i=await ye({hass:this.hass,clip:{source:{kind:"fresh",blob:r.blob},url:"",duration:r.duration,peaks:[]},targets:this.targets,mode:De(this.config.mode)});this.showResult(this.describe(i))}catch(i){let s=`Could not send: ${i?.message??i}`;this.showResult({kind:"failed",text:"Not sent",detail:s})}finally{this.rec.setSending(!1)}}describe(r){let i=be(this.hass,r).text;switch(r.kind){case"sent":return{kind:"sent",text:"Sent",detail:i};case"partial":return{kind:"partial",text:`Not on ${G(this.hass,r.failed)}`,detail:i};case"failed":return{kind:"failed",text:"Not sent",detail:i}}}get name(){return this.config.name?.trim()||"Intercom"}get idleText(){return this.rec.supported?this.targets.length?"Hold to talk":"Pick speakers in the card editor":"Needs HTTPS"}render(){let r=this.rec.phase==="recording",i=this.rec.phase==="sending",s=pe(this.config.max_duration),o=r&&s-this.rec.elapsed<=Math.min(10,s*.25),n=r?"recording":i?"sending":this.result?.kind??"idle",a=p=>l`${p}<span title=${this.result?.detail??""}>${this.result?.text??""}</span>`,c=r?"Recording \u2014 release to send":`Hold to talk to ${this.name}`;return l`
       <ha-card>
-        <div class="tile ${this.shape}" title=${this.rec.supported?"":ue}>
+        <div class="tile ${this.shape}" title=${this.rec.supported?"":de}>
           <div class="slot">
-            ${Oe({size:this.shape==="square"?52:40,recording:t,disabled:!this.rec.supported||s||this.targets.length===0,recordMode:"push_to_talk",level:this.rec.level,maxDuration:r,label:c,onPressStart:h=>void this.rec.onPressStart(h),onPressEnd:()=>void this.rec.onPressEnd()})}
+            ${ke({size:this.shape==="square"?52:40,recording:r,disabled:!this.rec.supported||i||this.targets.length===0,recordMode:"push_to_talk",level:this.rec.level,maxDuration:s,label:c,onPressStart:p=>void this.rec.onPressStart(p),onPressEnd:()=>void this.rec.onPressEnd()})}
           </div>
           <div class="text">
             <span class="name">${this.name}</span>
-            ${j("tile-status",n,{idle:a`<span>${this.idleText}</span>`,recording:B(I(this.rec.elapsed),o),sending:a`<span>Sending…</span>`,sent:l(Gt),partial:l(Xt),failed:l(Me)})}
+            ${I("tile-status",n,{idle:l`<span>${this.idleText}</span>`,recording:z(O(this.rec.elapsed),o),sending:l`<span>Sending…</span>`,sent:a(Bt),partial:a(Ht),failed:a(xe)})}
           </div>
         </div>
         <div class="sr-only" aria-live="polite">${this.result?.detail??""}</div>
       </ha-card>
-    `}};T.styles=[Ge,Xe,x`
+    `}};k.styles=[Ne,Be,_`
       ha-card {
         height: 100%;
         box-sizing: border-box;
@@ -1287,304 +1039,301 @@ var ci=Object.defineProperty;var di=Object.getOwnPropertyDescriptor;var u=(i,e,t
           transition: none;
         }
       }
-    `],u([$({attribute:!1})],T.prototype,"hass",2),u([g()],T.prototype,"config",2),u([g()],T.prototype,"result",2),T=u([A("hass-broadcast-tile")],T);function Fi(i){return i.split(/(?<=\.) /)[0]}window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-tile",name:"Voice Broadcast Tile",description:"Hold to talk, let go to send to the speakers you chose.",preview:!1});function Qt(i){let e=i.sections.find(s=>s.type==="speakers"),t=i.sections.filter(s=>s.type!=="speakers");return a`
+    `],u([L({attribute:!1})],k.prototype,"hass",2),u([f()],k.prototype,"config",2),u([f()],k.prototype,"result",2),k=u([ae("hass-broadcast-tile")],k);function Dr(t){return t.split(/(?<=\.) /)[0]}window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-tile",name:"Voice Broadcast Tile",description:"Hold to talk, let go to send to the speakers you chose.",preview:!1});function qt(t){let e=t.recentMessages!=="off"||t.volumeControl;return l`
     <div class="card compact">
-      <div class="compact-mic slot">${i.mic(72)}</div>
+      <div class="compact-mic slot">${t.mic(72)}</div>
       <div class="compact-body">
         <div class="compact-row">
-          ${j("compact-status",i.view,{idle:a`
-              <span class="title">${i.title}</span>
-              <span class="hint">${i.hint}</span>
-            `,recording:B(i.timer,i.timerWarning),review:a`
-              ${i.play()} ${i.waveform("wave-mini")} ${i.discard()}
-            `,status:Le(i.status)})}
-          ${t.length?a`
+          ${I("compact-status",t.view,{idle:l`
+              <span class="title">${t.title}</span>
+              <span class="hint">${t.hint}</span>
+            `,recording:z(t.timer,t.timerWarning),review:l`
+              ${t.play()} ${t.waveform("wave-mini")} ${t.discard()}
+            `,status:_e(t.status)})}
+          ${e?l`
                 <div class="popover-wrap slot">
                   <button
                     class="icon"
                     title="More"
                     aria-label="More"
-                    aria-expanded=${i.menuOpen}
-                    @click=${()=>i.onMenuOpenChange(!i.menuOpen)}
+                    aria-expanded=${t.menuOpen}
+                    @click=${()=>t.onMenuOpenChange(!t.menuOpen)}
                   >
-                    ${Kt}
+                    ${Nt}
                   </button>
-                  ${i.menuOpen?Wi(i,t):d}
+                  ${t.menuOpen?Lr(t):d}
                 </div>
               `:d}
         </div>
         <div class="compact-row">
-          <div class="compact-speakers slot">
-            ${e?.type==="speakers"?i.speakers(e):d}
-          </div>
-          <div class="slot">${i.send("pill")}</div>
+          <div class="compact-speakers slot">${t.speakers()}</div>
+          <div class="slot">${t.send("pill")}</div>
         </div>
       </div>
-      ${i.historyDialog()}
+      ${t.historyDialog()}
     </div>
-  `}function Wi(i,e){return a`
+  `}function Lr(t){return l`
     <div class="popover menu" role="menu">
-      ${e.map(t=>t.type==="history"?a`
-              <button
-                class="menu-item"
-                role="menuitem"
-                @click=${()=>{i.onMenuOpenChange(!1),i.onOpenHistory()}}
-              >
-                ${Pe}<span>Recent messages</span>
-              </button>
-            `:t.type==="volume"?a`
-                <div class="menu-item menu-volume">
-                  ${Re}${i.volumePanel()}
-                </div>
-              `:d)}
+      ${t.recentMessages!=="off"?l`
+            <button
+              class="menu-item"
+              role="menuitem"
+              @click=${()=>{t.onMenuOpenChange(!1),t.onOpenHistory()}}
+            >
+              ${we}<span>Recent messages</span>
+            </button>
+          `:d}
+      ${t.volumeControl?l`<div class="menu-item menu-volume">${$e}${t.volumePanel()}</div>`:d}
     </div>
-  `}function Zt(i){let e=i.sections.filter(s=>s.style==="icon"),t=i.sections.filter(s=>s.style!=="icon");return a`
+  `}function Vt(t){return l`
     <div class="card full">
       <div class="head slot">
-        <span class="title">${i.title}</span>
+        <span class="title">${t.title}</span>
         <span class="head-actions">
-          ${e.map(s=>s.type==="history"?i.historyButton():s.type==="volume"?i.volumeButton():"")}
+          ${t.recentMessages==="button"?t.historyButton():d}
+          ${t.volumeControl?t.volumeButton():d}
         </span>
       </div>
 
-      ${j("strip",i.view,{idle:a`<span class="hint">${i.hint}</span>`,recording:B(i.timer,i.timerWarning),review:a`
-          ${i.play()} ${i.waveform("wave-strip")}
-          <span class="clip-length">${i.clipLength}</span>
-        `,status:Le(i.status)})}
+      ${I("strip",t.view,{idle:l`<span class="hint">${t.hint}</span>`,recording:z(t.timer,t.timerWarning),review:l`
+          ${t.play()} ${t.waveform("wave-strip")}
+          <span class="clip-length">${t.clipLength}</span>
+        `,status:_e(t.status)})}
 
       <div class="core">
         <div class="core-side slot">
-          <div class="pop" data-on=${i.reviewing} ?inert=${!i.reviewing}>
-            ${i.discard()}
+          <div class="pop" data-on=${t.reviewing} ?inert=${!t.reviewing}>
+            ${t.discard()}
             <span class="caption">Discard</span>
           </div>
         </div>
-        <div class="core-mic slot">${i.mic(96)}</div>
-        <div class="core-side slot">${i.send("round")}</div>
+        <div class="core-mic slot">${t.mic(96)}</div>
+        <div class="core-side slot">${t.send("round")}</div>
       </div>
 
-      ${t.map(s=>s.type==="speakers"?a`<div class="section section-speakers slot" data-style=${s.style}>
-              ${i.speakers(s)}
-            </div>`:s.type==="history"?a`<div class="section slot">${i.historyList()}</div>`:"")}
-      ${i.historyDialog()}
+      <div class="section section-speakers slot" data-style=${t.speakerPicker}>
+        ${t.speakers()}
+      </div>
+      ${t.recentMessages==="list"?l`<div class="section slot">${t.historyList()}</div>`:d}
+      ${t.historyDialog()}
     </div>
-  `}var ei=3;function ti(i,e,t){return a`
+  `}var Wt=3;function Ft(t,e,r){return l`
     <div
       class="history-row"
-      data-loaded="${e.loadedId===i.id}"
-      data-loading="${e.loadingId===i.id}"
+      data-loaded="${e.loadedId===t.id}"
+      data-loading="${e.loadingId===t.id}"
     >
-      <button class="history-load" @click=${()=>e.onLoad(i)}>
-        <span class="history-when">${It(i.created,t)}</span>
-        <span class="history-length">${I(i.duration)}</span>
+      <button class="history-load" @click=${()=>e.onLoad(t)}>
+        <span class="history-when">${Ct(t.created,r)}</span>
+        <span class="history-length">${O(t.duration)}</span>
       </button>
-      ${i.can_delete?a`
+      ${t.can_delete?l`
             <button
               class="icon"
               title="Delete"
               aria-label="Delete"
-              @click=${()=>e.onDelete(i.id)}
+              @click=${()=>e.onDelete(t.id)}
             >
               ✕
             </button>
           `:d}
     </div>
-  `}function Qe(i,e=i.now??new Date){let t=()=>i.onDialogOpenChange?.(!1);return a`
-    <dialog class="history-dialog" @close=${t} @cancel=${t}>
+  `}function je(t,e=t.now??new Date){let r=()=>t.onDialogOpenChange?.(!1);return l`
+    <dialog class="history-dialog" @close=${r} @cancel=${r}>
       <div class="dialog-head">
         <span>Recent messages</span>
-        <button class="icon" title="Close" aria-label="Close" @click=${t}>✕</button>
+        <button class="icon" title="Close" aria-label="Close" @click=${r}>✕</button>
       </div>
       <div class="dialog-list">
-        ${i.messages.length===0?a`<div class="empty">Nothing recorded yet</div>`:i.messages.map(s=>ti(s,i,e))}
+        ${t.messages.length===0?l`<div class="empty">Nothing recorded yet</div>`:t.messages.map(i=>Ft(i,t,e))}
       </div>
     </dialog>
-  `}function ii(i){let e=i.now??new Date,t=i.messages.length===0,s=i.messages.slice(0,ei);return a`
+  `}function Kt(t){let e=t.now??new Date,r=t.messages.length===0,i=t.messages.slice(0,Wt);return l`
     <div class="history">
       <div class="section-head">
         <span>Recent messages</span>
         <button
           class="history-all"
-          data-disabled="${t}"
-          ?disabled=${t}
-          @click=${()=>i.onDialogOpenChange?.(!0)}
+          data-disabled="${r}"
+          ?disabled=${r}
+          @click=${()=>t.onDialogOpenChange?.(!0)}
         >
-          ${t?"Show all":`Show all \xB7 ${i.messages.length}`}
+          ${r?"Show all":`Show all \xB7 ${t.messages.length}`}
         </button>
       </div>
       <div class="history-slots">
-        ${Array.from({length:ei},(r,o)=>a`
+        ${Array.from({length:Wt},(s,o)=>l`
             <div class="history-slot">
-              ${s[o]?ti(s[o],i,e):o===0&&t?a`<div class="empty">Nothing recorded yet</div>`:d}
+              ${i[o]?Ft(i[o],t,e):o===0&&r?l`<div class="empty">Nothing recorded yet</div>`:d}
             </div>
           `)}
       </div>
-      ${i.dialogOpen?Qe(i,e):d}
+      ${t.dialogOpen?je(t,e):d}
     </div>
-  `}var si=2;function ri(i,e){if(e.length===0)return"No speakers selected";let t=e.map(o=>i.find(n=>n.entityId===o)?.name??o),s=t.slice(0,si).join(", "),r=t.length-si;return r>0?`${s} +${r}`:s}function oi(i,e){let t=i.selected.includes(e.entityId);return a`
+  `}var Yt=2;function Gt(t,e){if(e.length===0)return"No speakers selected";let r=e.map(o=>t.find(n=>n.entityId===o)?.name??o),i=r.slice(0,Yt).join(", "),s=r.length-Yt;return s>0?`${i} +${s}`:i}function Xt(t,e){let r=t.selected.includes(e.entityId);return l`
     <button
       class="target-row"
       role="checkbox"
-      aria-checked=${t}
-      data-on=${t}
-      @click=${()=>i.onToggle(e.entityId)}
+      aria-checked=${r}
+      data-on=${r}
+      @click=${()=>t.onToggle(e.entityId)}
     >
       <span class="target-name">${e.name}</span>
-      ${e.available?d:a`<span class="target-note">unavailable</span>`}
-      <span class="target-check" aria-hidden="true">${t?"\u2713":""}</span>
+      ${e.available?d:l`<span class="target-note">unavailable</span>`}
+      <span class="target-check" aria-hidden="true">${r?"\u2713":""}</span>
     </button>
-  `}function Yi(i,e){let t=i.selected.includes(e.entityId);return a`
+  `}function Ur(t,e){let r=t.selected.includes(e.entityId);return l`
     <button
       class="chip"
       role="checkbox"
-      aria-checked=${t}
-      data-on=${t}
-      @click=${()=>i.onToggle(e.entityId)}
+      aria-checked=${r}
+      data-on=${r}
+      @click=${()=>t.onToggle(e.entityId)}
     >
       ${e.name}${e.available?"":" (unavailable)"}
     </button>
-  `}function ni(i){let e=a`
+  `}function Jt(t){let e=l`
     <div class="section-head">
       <span>Speakers</span>
-      <span class="count">${i.selected.length} of ${i.players.length}</span>
+      <span class="count">${t.selected.length} of ${t.players.length}</span>
     </div>
-  `;return i.players.length===0?i.style==="pill"?a`<div class="pill-wrap">
+  `;return t.players.length===0?t.style==="dropdown"?l`<div class="pill-wrap">
           <button class="pill" disabled>
-            <span class="pill-icon">${Je}</span>
+            <span class="pill-icon">${He}</span>
             <span class="pill-text">No speakers found</span>
           </button>
-        </div>`:a`${e}<div class="empty">No speakers found</div>`:i.style==="chips"?a`
+        </div>`:l`${e}<div class="empty">No speakers found</div>`:t.style==="chips"?l`
       ${e}
-      <div class="chips">${i.players.map(t=>Yi(i,t))}</div>
-    `:i.style==="pill"?a`
+      <div class="chips">${t.players.map(r=>Ur(t,r))}</div>
+    `:t.style==="dropdown"?l`
       <div class="pill-wrap">
         <button
           class="pill"
-          aria-expanded=${i.open}
+          aria-expanded=${t.open}
           aria-haspopup="true"
-          title=${ri(i.players,i.selected)}
-          @click=${()=>i.onOpenChange(!i.open)}
+          title=${Gt(t.players,t.selected)}
+          @click=${()=>t.onOpenChange(!t.open)}
         >
-          <span class="pill-icon">${Je}</span>
-          <span class="pill-text">${ri(i.players,i.selected)}</span>
-          <span class="pill-chevron">${Jt}</span>
+          <span class="pill-icon">${He}</span>
+          <span class="pill-text">${Gt(t.players,t.selected)}</span>
+          <span class="pill-chevron">${jt}</span>
         </button>
-        ${i.open?a`
+        ${t.open?l`
               <!-- Absolutely positioned: an inline panel would push
                    everything below it down the card. -->
               <div class="pill-panel">
                 ${e}
-                ${i.players.map(t=>oi(i,t))}
+                ${t.players.map(r=>Xt(t,r))}
               </div>
             `:d}
       </div>
-    `:a`
+    `:l`
     ${e}
-    <div class="target-rows">${i.players.map(t=>oi(i,t))}</div>
-  `}function Ki(i){let t=i.currentTarget.getBoundingClientRect();return t.width===0?0:Math.min(1,Math.max(0,(i.clientX-t.left)/t.width))}function ai(i){let e=s=>i.progress!==void 0&&s/i.bars.length<i.progress,t=s=>{i.seekable&&i.onSeek(Ki(s))};return a`
+    <div class="target-rows">${t.players.map(r=>Xt(t,r))}</div>
+  `}function zr(t){let r=t.currentTarget.getBoundingClientRect();return r.width===0?0:Math.min(1,Math.max(0,(t.clientX-r.left)/r.width))}function Qt(t){let e=i=>t.progress!==void 0&&i/t.bars.length<t.progress,r=i=>{t.seekable&&t.onSeek(zr(i))};return l`
     <div
-      class="wave ${i.seekable?"seekable":""} ${i.className??""}"
-      @pointerdown=${s=>{i.seekable&&(s.currentTarget.setPointerCapture(s.pointerId),t(s))}}
-      @pointermove=${s=>{i.seekable&&s.buttons>0&&t(s)}}
-      @pointerup=${s=>{i.seekable&&s.currentTarget.releasePointerCapture(s.pointerId)}}
-      @pointercancel=${s=>{i.seekable&&s.currentTarget.releasePointerCapture(s.pointerId)}}
+      class="wave ${t.seekable?"seekable":""} ${t.className??""}"
+      @pointerdown=${i=>{t.seekable&&(i.currentTarget.setPointerCapture(i.pointerId),r(i))}}
+      @pointermove=${i=>{t.seekable&&i.buttons>0&&r(i)}}
+      @pointerup=${i=>{t.seekable&&i.currentTarget.releasePointerCapture(i.pointerId)}}
+      @pointercancel=${i=>{t.seekable&&i.currentTarget.releasePointerCapture(i.pointerId)}}
     >
-      ${i.bars.map((s,r)=>a`
+      ${t.bars.map((i,s)=>l`
           <div
-            class="bar ${e(r)?"played":i.recording?"live":""}"
-            style="height:${Math.max(2,Math.round(s*100))}%;--i:${r}"
+            class="bar ${e(s)?"played":t.recording?"live":""}"
+            style="height:${Math.max(2,Math.round(i*100))}%;--i:${s}"
           ></div>
         `)}
     </div>
-  `}function Ze(i){return a`
+  `}function qe(t){return l`
     <div class="volume-row">
       <button
         class="volume-toggle"
         role="checkbox"
-        aria-checked=${i.enabled}
-        data-on=${i.enabled}
-        @click=${()=>i.onToggle()}
+        aria-checked=${t.enabled}
+        data-on=${t.enabled}
+        @click=${()=>t.onToggle()}
       >
         Set volume
       </button>
-      ${i.enabled?a`
+      ${t.enabled?l`
             <input
               type="range"
               class="volume-slider"
               min="0"
               max="1"
               step="0.01"
-              .value=${String(i.value)}
+              .value=${String(t.value)}
               aria-label="Broadcast volume"
-              @input=${e=>i.onChange(Number(e.target.value))}
+              @input=${e=>t.onChange(Number(e.target.value))}
             />
-            <span class="volume-value">${Math.round(i.value*100)}%</span>
+            <span class="volume-value">${Math.round(t.value*100)}%</span>
           `:d}
     </div>
-  `}function li(i){return a`
+  `}function Zt(t){return l`
     <div class="popover-wrap">
       <button
         class="icon"
-        data-active=${i.enabled}
-        aria-expanded=${i.open}
+        data-active=${t.enabled}
+        aria-expanded=${t.open}
         title="Broadcast volume"
         aria-label="Broadcast volume"
-        @click=${()=>i.onOpenChange(!i.open)}
+        @click=${()=>t.onOpenChange(!t.open)}
       >
-        ${Re}
+        ${$e}
       </button>
-      ${i.open?a`<div class="popover">${Ze(i)}</div>`:d}
+      ${t.open?l`<div class="popover">${qe(t)}</div>`:d}
     </div>
-  `}var Gi="Voice Broadcast",Xi=4e3,Ji=10,Qi=.25,f=class extends v{constructor(){super(...arguments);this.config={type:""};this.selected=[];this.history=[];this.position=0;this.playing=!1;this.pickerOpen=!1;this.historyOpen=!1;this.volumeOpen=!1;this.menuOpen=!1;this.volumeOverride=!1;this.volume=1;this.rec=new H(this,{recordMode:()=>this.recordMode,maxDuration:()=>k(this.config.max_duration),noiseSuppression:()=>this.config.noise_suppression===!0,onStart:()=>this.setStatus(void 0),onError:(t,s)=>this.fail(t,s),onTake:t=>{this.setClip(Ht(t.blob,t.duration,t.peaks))}})}setConfig(t){this.config=t,this.selected=t.targets?[...t.targets]:[]}get cardLayout(){return L(this.config)}get sections(){return $e(this.config)}getCardSize(){if(this.cardLayout==="compact")return 2;let t=5;for(let s of this.sections)s.type==="speakers"?t+=s.style==="rows"?4:s.style==="chips"?1:0:s.type==="history"&&s.style==="list"&&(t+=3);return t}getGridOptions(){return{columns:12,min_columns:6}}static getConfigElement(){return document.createElement("hass-broadcast-card-editor")}static getStubConfig(){return{type:"custom:hass-broadcast-card",targets:[],mode:"plain",record_mode:"push_to_talk",layout:"full",sections:[{type:"speakers",style:"pill"},{type:"history",style:"icon"},{type:"volume",style:"icon"}]}}connectedCallback(){super.connectedCallback(),this.rec.supported||(this.status={kind:"error",text:ue,sticky:!0}),this.refreshHistory()}updated(){let t=this.renderRoot?.querySelector?.("dialog");t&&!t.open&&t.showModal?.()}disconnectedCallback(){super.disconnectedCallback(),this.stopPlayback(),this.clearStatusTimer(),Te(this.clip),this.clip=void 0,this.historyOpen=!1,this.menuOpen=!1,this.volumeOpen=!1}async refreshHistory(){if(!(!this.hass||!Et(this.sections,"history")))try{this.history=await _t(this.hass)}catch{this.history=[]}}get players(){return Tt(N(this.hass),this.config.show_players,this.config.hide_players)}get targets(){return Ct(this.selected,this.config.show_players,this.config.hide_players)}get recordMode(){return this.config.record_mode==="start_stop"?"start_stop":"push_to_talk"}clearStatusTimer(){this.statusTimer!==void 0&&(window.clearTimeout(this.statusTimer),this.statusTimer=void 0)}setStatus(t){this.clearStatusTimer(),this.status=t,t&&!t.sticky&&(this.statusTimer=window.setTimeout(()=>{this.statusTimer=void 0,this.status===t&&(this.status=void 0)},Xi))}fail(t,s=!1){this.setStatus({kind:"error",text:t,sticky:s})}setClip(t){this.stopPlayback(),this.clip&&this.clip!==t&&Te(this.clip),this.clip=t}clearClip(){this.stopPlayback(),Te(this.clip),this.clip=void 0}seek(t){if(!this.clip)return;this.position=t*this.clip.duration;let s=this.ensureAudio();s&&s.src===this.clip.url&&(s.currentTime=this.position)}ensureAudio(){if(!(typeof Audio>"u"))return this.audio||(this.audio=new Audio,this.audio.addEventListener("timeupdate",()=>{this.position=this.audio?.currentTime??0}),this.audio.addEventListener("ended",()=>{this.playing=!1,this.position=0})),this.audio}togglePlay(){let t=this.ensureAudio();if(!(!t||!this.clip)){if(this.playing){t.pause(),this.playing=!1;return}t.src!==this.clip.url&&(t.src=this.clip.url,t.currentTime=this.position),t.play().then(()=>{this.playing=!0},s=>{this.fail(`Could not play that here: ${s?.message??s}`)})}}stopPlayback(){this.audio?.pause(),this.playing=!1,this.position=0}toggleTarget(t){this.selected=this.selected.includes(t)?this.selected.filter(s=>s!==t):[...this.selected,t]}get canBroadcast(){return this.clip!==void 0&&this.targets.length>0&&this.rec.phase==="idle"}async broadcast(){if(this.rec.phase!=="idle")return;let t=this.clip;if(!t){this.fail("Record a message or pick one from below first.");return}let s=this.targets;if(s.length===0){this.fail("Pick at least one speaker first.");return}this.rec.setSending(!0),this.setStatus(void 0);try{let r=await Ce({hass:this.hass,clip:t,targets:s,mode:this.config.mode??"plain",volume:this.volumeOverride?this.volume:void 0,onStored:o=>{this.clip===t&&(this.clip={...t,source:{kind:"stored",id:o}})}});this.rec.setSending(!1),this.setStatus(Ee(this.hass,r)),await this.refreshHistory()}catch(r){this.rec.setSending(!1),this.fail(`Could not send: ${r?.message??r}`)}}async loadMessage(t){this.loadingId=t.id,this.historyOpen=!1,this.setStatus(void 0);try{this.setClip(await Bt(this.hass,t))}catch(s){this.fail(s?.message??String(s))}finally{this.loadingId=void 0}}async deleteRecording(t){try{await kt(this.hass,t)&&await this.refreshHistory()}catch(s){s?.code==="not_authorized"?this.fail("You do not have permission to delete this recording."):this.fail(`Could not delete: ${s?.message??s}`)}}get hint(){return this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}get recordLabel(){return this.rec.phase==="sending"?"Broadcasting":this.rec.phase==="recording"?this.recordMode==="push_to_talk"?"Recording \u2014 release to stop":"Recording \u2014 tap to stop":this.hint}get view(){return this.rec.phase==="recording"?"recording":this.status?"status":this.clip?"review":"idle"}get timerWarning(){let t=k(this.config.max_duration),s=Math.min(Ji,t*Qi);return this.rec.phase==="recording"&&t-this.rec.elapsed<=s}historyProps(){return{messages:this.history,loadedId:this.clip?Ae(this.clip):void 0,loadingId:this.loadingId,onLoad:t=>void this.loadMessage(t),onDelete:t=>void this.deleteRecording(t),onDialogOpenChange:t=>{this.historyOpen=t}}}get parts(){let t=this.rec.phase==="recording",s=this.rec.phase==="sending",r=this.clip!==void 0&&!t,o={enabled:this.volumeOverride,value:this.volume,onToggle:()=>{this.volumeOverride=!this.volumeOverride},onChange:n=>{this.volume=n}};return{title:this.config.title?.trim()||Gi,view:this.view,sections:this.sections,hint:this.hint,timer:I(this.rec.elapsed),timerWarning:this.timerWarning,status:this.status,reviewing:r,mic:n=>Oe({size:n,recording:t,disabled:!this.rec.supported||s,recordMode:this.recordMode,level:this.rec.level,maxDuration:k(this.config.max_duration),label:this.recordLabel,onPressStart:l=>void this.rec.onPressStart(l),onPressEnd:()=>void this.rec.onPressEnd()}),play:()=>a`
+  `}var Ir=4e3,Nr=10,Br=.25,g=class extends y{constructor(){super(...arguments);this.config={type:""};this.selected=[];this.history=[];this.position=0;this.playing=!1;this.pickerOpen=!1;this.historyOpen=!1;this.volumeOpen=!1;this.menuOpen=!1;this.volumeOverride=!1;this.volume=1;this.rec=new U(this,{recordMode:()=>this.recordMode,maxDuration:()=>this.resolved.maxDuration,noiseSuppression:()=>this.resolved.noiseSuppression,onStart:()=>this.setStatus(void 0),onError:(r,i)=>this.fail(r,i),onTake:r=>{this.setClip(Et(r.blob,r.duration,r.peaks))}})}setConfig(r){this.config=r,this.selected=[...Le(r).selected]}get resolved(){return Le(this.config)}getCardSize(){let r=this.resolved;if(r.layout==="compact")return 2;let i=5;return i+=r.speakerPicker==="list"?4:r.speakerPicker==="chips"?1:0,r.recentMessages==="list"&&(i+=3),i}getGridOptions(){return{columns:12,min_columns:6}}static getConfigForm(){return _t}static getStubConfig(r){return{type:"custom:hass-broadcast-card",layout:"full",speaker_picker:"dropdown",recent_messages:"button",volume_control:!0,speakers:F(r),selected:[],record_mode:"push_to_talk",max_duration:60,mode:"plain"}}connectedCallback(){super.connectedCallback(),this.rec.supported||(this.status={kind:"error",text:de,sticky:!0}),this.refreshHistory()}updated(){let r=this.renderRoot?.querySelector?.("dialog");r&&!r.open&&r.showModal?.()}disconnectedCallback(){super.disconnectedCallback(),this.stopPlayback(),this.clearStatusTimer(),ve(this.clip),this.clip=void 0,this.historyOpen=!1,this.menuOpen=!1,this.volumeOpen=!1}async refreshHistory(){if(!(!this.hass||this.resolved.recentMessages==="off"))try{this.history=await ut(this.hass)}catch{this.history=[]}}get players(){return vt(F(this.hass),this.resolved.speakers)}get targets(){return yt(this.selected,this.resolved.speakers)}get recordMode(){return this.resolved.recordMode}clearStatusTimer(){this.statusTimer!==void 0&&(window.clearTimeout(this.statusTimer),this.statusTimer=void 0)}setStatus(r){this.clearStatusTimer(),this.status=r,r&&!r.sticky&&(this.statusTimer=window.setTimeout(()=>{this.statusTimer=void 0,this.status===r&&(this.status=void 0)},Ir))}fail(r,i=!1){this.setStatus({kind:"error",text:r,sticky:i})}setClip(r){this.stopPlayback(),this.clip&&this.clip!==r&&ve(this.clip),this.clip=r}clearClip(){this.stopPlayback(),ve(this.clip),this.clip=void 0}seek(r){if(!this.clip)return;this.position=r*this.clip.duration;let i=this.ensureAudio();i&&i.src===this.clip.url&&(i.currentTime=this.position)}ensureAudio(){if(!(typeof Audio>"u"))return this.audio||(this.audio=new Audio,this.audio.addEventListener("timeupdate",()=>{this.position=this.audio?.currentTime??0}),this.audio.addEventListener("ended",()=>{this.playing=!1,this.position=0})),this.audio}togglePlay(){let r=this.ensureAudio();if(!(!r||!this.clip)){if(this.playing){r.pause(),this.playing=!1;return}r.src!==this.clip.url&&(r.src=this.clip.url,r.currentTime=this.position),r.play().then(()=>{this.playing=!0},i=>{this.fail(`Could not play that here: ${i?.message??i}`)})}}stopPlayback(){this.audio?.pause(),this.playing=!1,this.position=0}toggleTarget(r){this.selected=this.selected.includes(r)?this.selected.filter(i=>i!==r):[...this.selected,r]}get canBroadcast(){return this.clip!==void 0&&this.targets.length>0&&this.rec.phase==="idle"}async broadcast(){if(this.rec.phase!=="idle")return;let r=this.clip;if(!r){this.fail("Record a message or pick one from below first.");return}let i=this.targets;if(i.length===0){this.fail("Pick at least one speaker first.");return}this.rec.setSending(!0),this.setStatus(void 0);try{let s=await ye({hass:this.hass,clip:r,targets:i,mode:this.resolved.mode,volume:this.volumeOverride?this.volume:void 0,onStored:o=>{this.clip===r&&(this.clip={...r,source:{kind:"stored",id:o}})}});this.rec.setSending(!1),this.setStatus(be(this.hass,s)),await this.refreshHistory()}catch(s){this.rec.setSending(!1),this.fail(`Could not send: ${s?.message??s}`)}}async loadMessage(r){this.loadingId=r.id,this.historyOpen=!1,this.setStatus(void 0);try{this.setClip(await Rt(this.hass,r))}catch(i){this.fail(i?.message??String(i))}finally{this.loadingId=void 0}}async deleteRecording(r){try{await mt(this.hass,r)&&await this.refreshHistory()}catch(i){i?.code==="not_authorized"?this.fail("You do not have permission to delete this recording."):this.fail(`Could not delete: ${i?.message??i}`)}}get hint(){return this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}get recordLabel(){return this.rec.phase==="sending"?"Broadcasting":this.rec.phase==="recording"?this.recordMode==="push_to_talk"?"Recording \u2014 release to stop":"Recording \u2014 tap to stop":this.hint}get view(){return this.rec.phase==="recording"?"recording":this.status?"status":this.clip?"review":"idle"}get timerWarning(){let r=this.resolved.maxDuration,i=Math.min(Nr,r*Br);return this.rec.phase==="recording"&&r-this.rec.elapsed<=i}historyProps(){return{messages:this.history,loadedId:this.clip?fe(this.clip):void 0,loadingId:this.loadingId,onLoad:r=>void this.loadMessage(r),onDelete:r=>void this.deleteRecording(r),onDialogOpenChange:r=>{this.historyOpen=r}}}get parts(){let r=this.rec.phase==="recording",i=this.rec.phase==="sending",s=this.clip!==void 0&&!r,o={enabled:this.volumeOverride,value:this.volume,onToggle:()=>{this.volumeOverride=!this.volumeOverride},onChange:a=>{this.volume=a}},n=this.resolved;return{title:n.title,view:this.view,speakerPicker:n.speakerPicker,recentMessages:n.recentMessages,volumeControl:n.volumeControl,hint:this.hint,timer:O(this.rec.elapsed),timerWarning:this.timerWarning,status:this.status,reviewing:s,mic:a=>ke({size:a,recording:r,disabled:!this.rec.supported||i,recordMode:this.recordMode,level:this.rec.level,maxDuration:this.resolved.maxDuration,label:this.recordLabel,onPressStart:c=>void this.rec.onPressStart(c),onPressEnd:()=>void this.rec.onPressEnd()}),play:()=>l`
         <button
           class="icon play"
-          ?disabled=${!r||s}
+          ?disabled=${!s||i}
           title=${this.playing?"Pause":"Play"}
           aria-label=${this.playing?"Pause":"Play"}
           @click=${()=>this.togglePlay()}
         >
-          ${this.playing?Yt:Wt}
+          ${this.playing?It:zt}
         </button>
-      `,waveform:n=>a`${$t(this.clip?.url??"none",ai({bars:this.clip?.peaks.length?this.clip.peaks:_e(48),progress:this.clip?this.position/(this.clip.duration||1):void 0,seekable:r&&!s,recording:!1,onSeek:l=>this.seek(l),className:`${n} reveal`}))}`,clipLength:I(this.clip?.duration??0),discard:()=>a`
+      `,waveform:a=>l`${pt(this.clip?.url??"none",Qt({bars:this.clip?.peaks.length?this.clip.peaks:ue(48),progress:this.clip?this.position/(this.clip.duration||1):void 0,seekable:s&&!i,recording:!1,onSeek:c=>this.seek(c),className:`${a} reveal`}))}`,clipLength:O(this.clip?.duration??0),discard:()=>l`
         <button
           class="icon discard"
-          ?disabled=${!r||s}
+          ?disabled=${!s||i}
           title="Discard"
           aria-label="Discard"
           @click=${()=>this.clearClip()}
         >
-          ${Me}
+          ${xe}
         </button>
-      `,send:n=>{let l=this.targets.length,c=l>1?`Send to ${l}`:"Send";return a`
-          <div class="send-wrap send-wrap-${n}">
+      `,send:a=>{let c=this.targets.length,p=c>1?`Send to ${c}`:"Send";return l`
+          <div class="send-wrap send-wrap-${a}">
             <button
-              class="send send-${n}"
+              class="send send-${a}"
               ?disabled=${!this.canBroadcast}
-              data-sending=${s}
-              title=${c}
-              aria-label=${s?"Broadcasting":c}
+              data-sending=${i}
+              title=${p}
+              aria-label=${i?"Broadcasting":p}
               @click=${()=>void this.broadcast()}
             >
-              ${s?a`<span class="spinner" aria-hidden="true"></span>`:Ft}
-              ${n==="pill"?a`<span>Send</span>`:d}
+              ${i?l`<span class="spinner" aria-hidden="true"></span>`:Ut}
+              ${a==="pill"?l`<span>Send</span>`:d}
             </button>
-            ${n==="round"?a`<span class="caption">${c}</span>`:d}
+            ${a==="round"?l`<span class="caption">${p}</span>`:d}
           </div>
-        `},speakers:n=>ni({players:this.players.map(l=>({entityId:l,name:this.hass?.states?.[l]?.attributes?.friendly_name??l,available:this.hass?.states?.[l]?.state!=="unavailable"})),selected:this.selected,style:n.style,open:this.pickerOpen,onToggle:l=>this.toggleTarget(l),onOpenChange:l=>{this.pickerOpen=l}}),historyList:()=>ii({...this.historyProps(),dialogOpen:!1}),historyButton:()=>a`
+        `},speakers:()=>Jt({players:this.players.map(a=>({entityId:a,name:this.hass?.states?.[a]?.attributes?.friendly_name??a,available:this.hass?.states?.[a]?.state!=="unavailable"})),selected:this.selected,style:n.speakerPicker,open:this.pickerOpen,onToggle:a=>this.toggleTarget(a),onOpenChange:a=>{this.pickerOpen=a}}),historyList:()=>Kt({...this.historyProps(),dialogOpen:!1}),historyButton:()=>l`
         <button
           class="icon"
           title="Recent messages"
           aria-label="Recent messages"
           @click=${()=>{this.historyOpen=!0}}
         >
-          ${Pe}
+          ${we}
         </button>
-      `,volumeButton:()=>li({...o,open:this.volumeOpen,onOpenChange:n=>{this.volumeOpen=n}}),volumePanel:()=>Ze(o),historyDialog:()=>this.historyOpen?Qe(this.historyProps()):d,menuOpen:this.menuOpen,onMenuOpenChange:n=>{this.menuOpen=n},onOpenHistory:()=>{this.historyOpen=!0}}}render(){let t=this.parts;return a`
+      `,volumeButton:()=>Zt({...o,open:this.volumeOpen,onOpenChange:a=>{this.volumeOpen=a}}),volumePanel:()=>qe(o),historyDialog:()=>this.historyOpen?je(this.historyProps()):d,menuOpen:this.menuOpen,onMenuOpenChange:a=>{this.menuOpen=a},onOpenHistory:()=>{this.historyOpen=!0}}}render(){let r=this.parts;return l`
       <ha-card>
-        ${this.cardLayout==="compact"?Qt(t):Zt(t)}
+        ${this.resolved.layout==="compact"?qt(r):Vt(r)}
         <div class="sr-only" aria-live="polite">${this.status?.text??""}</div>
       </ha-card>
-    `}};f.styles=jt,u([$({attribute:!1})],f.prototype,"hass",2),u([g()],f.prototype,"config",2),u([g()],f.prototype,"status",2),u([g()],f.prototype,"selected",2),u([g()],f.prototype,"history",2),u([g()],f.prototype,"clip",2),u([g()],f.prototype,"loadingId",2),u([g()],f.prototype,"position",2),u([g()],f.prototype,"playing",2),u([g()],f.prototype,"pickerOpen",2),u([g()],f.prototype,"historyOpen",2),u([g()],f.prototype,"volumeOpen",2),u([g()],f.prototype,"menuOpen",2),u([g()],f.prototype,"volumeOverride",2),u([g()],f.prototype,"volume",2),f=u([A("hass-broadcast-card")],f);window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-card",name:"Voice Broadcast",description:"Record a voice message and play it on your speakers.",preview:!1});export{f as HassBroadcastCard,Xi as STATUS_MS};
+    `}};g.styles=Ot,u([L({attribute:!1})],g.prototype,"hass",2),u([f()],g.prototype,"config",2),u([f()],g.prototype,"status",2),u([f()],g.prototype,"selected",2),u([f()],g.prototype,"history",2),u([f()],g.prototype,"clip",2),u([f()],g.prototype,"loadingId",2),u([f()],g.prototype,"position",2),u([f()],g.prototype,"playing",2),u([f()],g.prototype,"pickerOpen",2),u([f()],g.prototype,"historyOpen",2),u([f()],g.prototype,"volumeOpen",2),u([f()],g.prototype,"menuOpen",2),u([f()],g.prototype,"volumeOverride",2),u([f()],g.prototype,"volume",2),g=u([ae("hass-broadcast-card")],g);window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-card",name:"Voice Broadcast",description:"Record a voice message and play it on your speakers.",preview:!1});export{g as HassBroadcastCard,Ir as STATUS_MS};
 /*! Bundled license information:
 
 @lit/reactive-element/css-tag.js:

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { captureRate, normalize, Recorder } from "../src/recorder";
-import { clampMaxDuration } from "../src/editor-fields";
+import { clampMaxDuration } from "../src/config";
 
 // The default vitest environment is plain Node — there is no real
 // AudioWorklet/getUserMedia to run against. These are minimal hand-rolled

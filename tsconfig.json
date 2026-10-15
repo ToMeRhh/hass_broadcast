@@ -10,5 +10,7 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["frontend/src", "frontend/test", "frontend/dev"]
+  "include": ["frontend/src", "frontend/test", "frontend/dev"],
+  // Compiled inside a home-assistant/frontend checkout, against its sources.
+  "exclude": ["frontend/dev/editor"]
 }

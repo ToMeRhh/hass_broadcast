@@ -68,7 +68,7 @@ Add the **Voice Broadcast** card to any dashboard. Then:
 
 1. Hold the round record button and speak, then let go to stop. (The button
    defaults to this hold-to-talk behaviour; switch it to tap-to-start,
-   tap-to-stop instead from the card editor's **Recording** field.) While you
+   tap-to-stop instead in the card editor's **Recording** section.) While you
    speak, the button pulses with your voice and a ring on its rim counts down
    to the length limit.
 2. Optionally press play to hear the recording before sending it, or
@@ -82,29 +82,43 @@ Add the **Voice Broadcast** card to any dashboard. Then:
 Nothing on the card moves while you do this: recording, reviewing and sending
 change what the card shows, never where its buttons are.
 
-### Layouts and sections
+### Setting it up
 
-The card comes in two layouts, picked from the editor's **Layout** field:
+The card's editor is Home Assistant's own form, in four sections:
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/editor-dark.png">
+    <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/editor-light.png?raw=true" alt="The card editor: a Name field, then Appearance with picture choices for the layout and the speaker picker, a Recent messages menu and a Volume control switch, then Speakers with the speakers on the card and the ones selected when it opens" width="420">
+  </picture>
+</p>
+
+- **Appearance** — the layout, how speakers are picked, where recent messages
+  go, and whether there is a volume control.
+- **Speakers** — the speakers the card offers, and which of them are ticked
+  when it opens. A new card starts with every speaker that can play audio;
+  remove the ones you do not want.
+- **Recording** — hold to talk, or tap to start and stop; the time limit; and
+  noise suppression, for a noisy room.
+- **Playback** — what happens on the speakers: just play the message, play a
+  chime first, or pause what was playing and resume it afterwards.
+
+The card comes in two layouts:
 
 - **Full** — a large record button with Discard and Send beside it, a strip
   above it for the timer and the recorded waveform, and the speaker picker
-  below.
+  below: a dropdown, chips, or a list.
 - **Compact** — two rows: the record button on the left, and beside it the
-  status line, the speaker picker and Send. Recent messages and volume move
+  status line, a speaker dropdown and Send. Recent messages and volume move
   into a ⋮ menu.
 
 <p align="center">
   <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-compact-light.png?raw=true" alt="The compact layout: the record button beside a recorded waveform, a speaker picker and Send" width="360">
 </p>
 
-Everything around the record button is a **section** you can reorder,
-restyle or hide from the editor's **Card sections** list:
-
-| Section | Styles | Notes |
-| --- | --- | --- |
-| Speakers | `pill` (one line that opens a list), `chips`, `rows` | Cannot be hidden. Always a pill in Compact |
-| Recent messages | `list` (three rows below the card) or `icon` (a header button) | Either way, opens the full list in a dialog |
-| Volume | `icon` | A header button that opens the volume control |
+Recent messages can be a button in the header that opens them in a dialog, a
+list of the last three below the card, or off. The volume control is a header
+button.
 
 For a one-tap intercom button that sends straight to fixed speakers, see the
 [broadcast tile](#broadcast-tile).
@@ -119,7 +133,7 @@ played it, and names any that did not.
 ```yaml
 type: custom:hass-broadcast-tile
 name: Kids' rooms
-targets:
+speakers:
   - media_player.kids_room
   - media_player.bedroom
 shape: square        # square (3×2 in a sections view) or horizontal (6×1)
@@ -130,10 +144,11 @@ max_duration: 30
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `name` | `Intercom` | The tile's label |
-| `targets` | first speaker found | Every message goes to all of these. A tile with none is disabled |
+| `speakers` | first speaker found | Every message goes to all of these. A tile with none is disabled |
 | `shape` | `square` | `square` or `horizontal` |
 | `mode` | `plain` | As for the card |
 | `max_duration` | `60` | As for the card |
+| `noise_suppression` | `false` | As for the card |
 
 The tile is always hold-to-talk: release is what sends, so a tap-to-start
 tile would send the moment you tapped to stop. Its recordings appear in the
@@ -156,43 +171,38 @@ concurrently — they all start together rather than one after another.
 
 ### Card options
 
-Everything below can be set from the card editor. In YAML:
+Everything below is set from the card editor, one field per option. In YAML:
 
 ```yaml
 type: custom:hass-broadcast-card
 title: Intercom
-mode: restore
-targets:
-  - media_player.kitchen
-hide_players:
-  - media_player.tv
-record_mode: start_stop
 layout: full
-sections:
-  - type: speakers
-    style: chips
-  - type: history
-    style: icon
-  - type: volume
+speaker_picker: chips
+recent_messages: button
+volume_control: true
+speakers:
+  - media_player.kitchen
+  - media_player.living_room
+selected:
+  - media_player.kitchen
+record_mode: start_stop
+max_duration: 60
+mode: restore
 ```
-
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `title` | `Voice Broadcast` | Card heading. Editable from the card editor's **Card name** field; blank restores the default |
-| `targets` | `[]` | Speakers selected when the card loads |
-| `show_players` | `[]` | Only these speakers appear on the card, in the order listed. Empty means every media player that supports playback. A speaker named here appears even while it is unavailable |
-| `hide_players` | `[]` | Speakers to leave off the card. Applied after `show_players`, so it wins over it. A speaker removed by either list is never broadcast to, even if `targets` still names it |
-| `mode` | `plain` | `plain`, `restore`, or `chime` — see [Behavioural restrictions](#behavioural-restrictions) below |
-| `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to the range **5–300**; values outside that range are pulled back to the nearest bound, and invalid values fall back to 60. |
-| `record_mode` | `push_to_talk` | How the record button behaves: `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop). Editable from the card editor's **Recording** field |
-| `layout` | `full` | `full` or `compact` — see [Layouts and sections](#layouts-and-sections) |
-| `sections` | see below | The sections around the record button, in display order, each `{type, style}`. A section left out is hidden, except `speakers` |
-
-Cards written before `layout` and `sections` existed keep working: `player_list`
-(`rows`, `chips`, or `dropdown`, now the pill) sets the speaker style, recent
-messages show as a list unless `show_history: false`, and volume is an icon.
-The editor replaces those two keys with `sections` the first time it saves.
+| `title` | `Voice Broadcast` | Card heading. Blank restores the default |
+| `layout` | `full` | `full` or `compact` — see [Setting it up](#setting-it-up) |
+| `speaker_picker` | `dropdown` | `dropdown`, `chips` or `list`. Compact always uses the dropdown |
+| `recent_messages` | `button` | `button` (a header button that opens them in a dialog), `list` (the last three below the card) or `off`. In Compact, anything but `off` puts them in the ⋮ menu |
+| `volume_control` | `true` | Whether the card offers the broadcast volume control |
+| `speakers` | every speaker | The speakers the card offers, in the order listed. Left out, the card offers every media player that supports playback; an empty list offers none. A speaker named here appears even while it is unavailable |
+| `selected` | `[]` | Speakers ticked when the card opens. One that is not in `speakers` is ignored, and never broadcast to |
+| `record_mode` | `push_to_talk` | `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop) |
+| `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to **5–300**; invalid values fall back to 60 |
+| `noise_suppression` | `false` | The browser's noise suppression on the microphone: filters out a TV, fan or kitchen in the background. Leave it off in a quiet room — it can make a voice sound slightly processed |
+| `mode` | `plain` | `plain`, `chime` or `restore` — see [Behavioural restrictions](#behavioural-restrictions) below |
 
 ## Requirements and restrictions
 
@@ -350,12 +360,16 @@ npm ci
 npm test                        # card tests (vitest)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness on http://localhost:8099
+npm run dev:editor              # the editors, drawn by Home Assistant's own frontend, on :8100
 npm run check:layout            # headless check that nothing moves between card states
 ```
 
-`npm run dev` renders the real card and editor against a mocked Home Assistant,
+`npm run dev` renders the real card and tile against a mocked Home Assistant,
 with live reload and switches for hard-to-reach states (microphone denied, a
-partly failed broadcast, empty history, latency). See
+partly failed broadcast, empty history, latency). The editors are Home
+Assistant's own forms, so `npm run dev:editor` runs Home Assistant's design
+gallery locally to show them; `npm run dev:editor -- --screenshots` regenerates
+the editor images in this README. See
 [`frontend/dev/README.md`](frontend/dev/README.md).
 
 `custom_components/hass_broadcast/www/hass-broadcast-card.js` is a **build output that is

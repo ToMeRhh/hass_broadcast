@@ -1,7 +1,7 @@
 import { TemplateResult, nothing } from "lit";
 
 import { Status } from "../sending";
-import { Section } from "../sections";
+import { RecentMessages, SpeakerPicker } from "../config";
 
 /** Which layer the state-dependent slots show. */
 export type View = "idle" | "recording" | "review" | "status";
@@ -16,7 +16,10 @@ export type View = "idle" | "recording" | "review" | "status";
 export interface CardParts {
   title: string;
   view: View;
-  sections: Section[];
+  /** Full only; compact always draws the dropdown. */
+  speakerPicker: SpeakerPicker;
+  recentMessages: RecentMessages;
+  volumeControl: boolean;
   /** "Hold to talk" / "Tap to record". */
   hint: string;
   /** Elapsed time while recording, e.g. "0:07". */
@@ -37,7 +40,7 @@ export interface CardParts {
   discard: () => TemplateResult;
   send: (variant: "round" | "pill") => TemplateResult;
 
-  speakers: (section: Extract<Section, { type: "speakers" }>) => TemplateResult;
+  speakers: () => TemplateResult;
   historyList: () => TemplateResult;
   historyButton: () => TemplateResult;
   volumeButton: () => TemplateResult;

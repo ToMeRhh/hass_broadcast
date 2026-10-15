@@ -10,3 +10,4 @@ custom_components/hass_broadcast/www/*.js
 .claude/
 .superpowers/
 .venv/
+.cache/

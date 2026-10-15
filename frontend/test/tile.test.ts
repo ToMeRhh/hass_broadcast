@@ -7,7 +7,6 @@ import { LOVELACE_ASSIGNS, renderedText } from "./helpers";
 (globalThis as any).window = globalThis;
 
 const { HassBroadcastTile, RESULT_MS } = await import("../src/tile");
-const { HassBroadcastTileEditor } = await import("../src/tile-editor");
 
 class FakeRecorder {
   started = 0;
@@ -43,7 +42,7 @@ function makeTile(config: any = {}, failed: string[] = []) {
   tile.setConfig({
     type: "custom:hass-broadcast-tile",
     name: "Kids",
-    targets: ["media_player.kids", "media_player.garage"],
+    speakers: ["media_player.kids", "media_player.garage"],
     ...config,
   });
   const calls: any[] = [];
@@ -134,7 +133,7 @@ describe("broadcast tile", () => {
   });
 
   it("is disabled, and says why, with no speakers chosen", async () => {
-    const { tile, calls } = makeTile({ targets: [] });
+    const { tile, calls } = makeTile({ speakers: [] });
 
     const text = renderedText(tile.render());
     expect(text).toContain("Pick speakers in the card editor");
@@ -174,55 +173,14 @@ describe("broadcast tile", () => {
         "media_player.a": { attributes: { supported_features: 512 } },
       },
     });
-    expect(stub.targets).toEqual(["media_player.a"]);
-    expect(HassBroadcastTile.getStubConfig(undefined).targets).toEqual([]);
+    expect(stub.speakers).toEqual(["media_player.a"]);
+    expect(HassBroadcastTile.getStubConfig(undefined).speakers).toEqual([]);
   });
 });
 
 describe("broadcast tile editor", () => {
-  function newEditor(config: any) {
-    const editor: any = new HassBroadcastTileEditor();
-    editor.createRenderRoot = () => editor;
-    editor.performUpdate = () => {};
-    editor.setConfig(config);
-    const configs: any[] = [];
-    editor.dispatchEvent = (event: any) => configs.push(event.detail.config);
-    editor.hass = {
-      states: {
-        "media_player.attic": {
-          attributes: { supported_features: 512, friendly_name: "Attic" },
-        },
-      },
-    };
-    return { editor, configs };
-  }
-
-  it("offers every speaker, including a configured one that has gone", () => {
-    const { editor } = newEditor({
-      type: "custom:hass-broadcast-tile",
-      targets: ["media_player.gone"],
-    });
-
-    const text = renderedText(editor.render());
-    expect(text).toContain("Attic");
-    expect(text).toMatch(/not available/);
-  });
-
-  it("offers noise suppression", () => {
-    const { editor } = newEditor({ type: "custom:hass-broadcast-tile" });
-    expect(renderedText(editor.render())).toContain("Noise suppression");
-  });
-
-  it("writes the shape and drops a blank name", () => {
-    const { editor, configs } = newEditor({
-      type: "custom:hass-broadcast-tile",
-      name: "Old",
-    });
-
-    editor.emit({ shape: "horizontal" });
-    editor.emit({ name: undefined });
-
-    expect(configs[0].shape).toBe("horizontal");
-    expect(configs[1]).not.toHaveProperty("name");
+  it("is Home Assistant's own form, not an element of ours", () => {
+    expect(HassBroadcastTile.getConfigForm().schema.length).toBeGreaterThan(0);
+    expect((HassBroadcastTile as any).getConfigElement).toBeUndefined();
   });
 });

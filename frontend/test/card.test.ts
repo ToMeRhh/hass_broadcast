@@ -4,8 +4,7 @@ import { LOVELACE_ASSIGNS, renderedText } from "./helpers";
 
 // The default vitest environment is plain Node, and that is enough: Lit ships
 // @lit-labs/ssr-dom-shim, so a @customElement-decorated component constructs
-// and runs its lifecycle callbacks without a DOM (editor.test.ts already
-// relies on this). The only things card.ts touches that Node lacks are the
+// and runs its lifecycle callbacks without a DOM. The only things card.ts touches that Node lacks are the
 // module-scope `window` (the customCards registration) and the object-URL
 // helpers, so stub those the same hand-rolled way recorder.test.ts stubs Web
 // Audio, then import the module. No jsdom, no config changes.
@@ -207,7 +206,7 @@ describe("card broadcasting", () => {
     const calls: any[] = [];
     const counter = { uploads: 0 };
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card", show_history: false });
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off" });
     card.clip = {
       source: { kind: "fresh", blob: new Blob(["x"]) },
       url: "blob:preview",
@@ -272,7 +271,7 @@ describe("card broadcasting", () => {
         }),
     );
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card", targets: ["media_player.kitchen"] });
+    card.setConfig({ type: "custom:hass-broadcast-card", selected: ["media_player.kitchen"] });
     card.hass = {
       auth: { data: { access_token: "tok" } },
       connection: { sendMessagePromise: async () => ({ failed: [] }) },
@@ -451,7 +450,7 @@ describe("card render reflects phase, not just the clip", () => {
   // position, and an enabled Play/✕ over a clip that was no longer current.
   function cardWithLoadedClip(): any {
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card", show_history: false });
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off" });
     card.clip = {
       source: { kind: "stored", id: "x" },
       url: "blob:x",
@@ -536,7 +535,7 @@ describe("card speaker filtering", () => {
     return card;
   }
 
-  it("offers every playable speaker when neither list is configured", () => {
+  it("offers every playable speaker when the card names none", () => {
     const card = cardWithSpeakers({});
 
     expect(card.players).toEqual([
@@ -545,23 +544,23 @@ describe("card speaker filtering", () => {
     ]);
   });
 
-  it("offers only the speakers on the show list", () => {
-    const card = cardWithSpeakers({ show_players: ["media_player.kitchen"] });
+  it("offers only the speakers the card names", () => {
+    const card = cardWithSpeakers({ speakers: ["media_player.kitchen"] });
 
     expect(card.players).toEqual(["media_player.kitchen"]);
   });
 
-  it("leaves out the speakers on the hide list", () => {
-    const card = cardWithSpeakers({ hide_players: ["media_player.kitchen"] });
+  it("offers nothing when the list was emptied", () => {
+    const card = cardWithSpeakers({ speakers: [] });
 
-    expect(card.players).toEqual(["media_player.attic"]);
+    expect(card.players).toEqual([]);
   });
 
-  it("does not broadcast to a preselected speaker that is now hidden", async () => {
+  it("does not broadcast to a selected speaker the card does not offer", async () => {
     const calls: any[] = [];
     const card = cardWithSpeakers({
-      targets: ["media_player.attic", "media_player.kitchen"],
-      hide_players: ["media_player.attic"],
+      speakers: ["media_player.kitchen"],
+      selected: ["media_player.attic", "media_player.kitchen"],
     });
     card.hass.auth = { data: { access_token: "tok" } };
     card.hass.connection = {
@@ -587,10 +586,10 @@ describe("card speaker filtering", () => {
     vi.unstubAllGlobals();
   });
 
-  it("refuses to send when every preselected speaker is hidden", async () => {
+  it("refuses to send when no selected speaker is offered", async () => {
     const card = cardWithSpeakers({
-      targets: ["media_player.attic"],
-      hide_players: ["media_player.attic"],
+      speakers: ["media_player.kitchen"],
+      selected: ["media_player.attic"],
     });
     card.clip = {
       source: { kind: "fresh", blob: new Blob(["x"]) },
@@ -640,7 +639,7 @@ describe("card history rendering and deletion", () => {
 
   it("offers a delete control only when the server says can_delete", () => {
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card" });
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "list" });
 
     card.history = [message(true)];
     expect(renderedText(card.render())).toContain("Delete");
@@ -654,7 +653,7 @@ describe("card history rendering and deletion", () => {
 
   it("keeps the body at three rows and the rest behind the dialog", () => {
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card" });
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "list" });
     card.history = [0, 1, 2, 3, 4].map((index) => ({
       ...message(false),
       id: `id-${index}`,
@@ -904,33 +903,43 @@ describe("card status messages", () => {
   });
 });
 
-describe("card layouts and sections", () => {
+describe("card layouts", () => {
   const configured = (config: any) => {
     const card = newCard();
     card.setConfig({ type: "custom:hass-broadcast-card", ...config });
     return card;
   };
 
-  it("puts icon sections in the header and list sections below", () => {
-    const card = configured({
-      sections: [
-        { type: "speakers", style: "chips" },
-        { type: "history", style: "icon" },
-        { type: "volume" },
-      ],
-    });
+  it("puts the recent-messages button and volume in the header", () => {
+    const card = configured({ speaker_picker: "chips", recent_messages: "button" });
 
     const text = renderedText(card.render());
     expect(text).toContain("Recent messages");
     expect(text).toContain("Broadcast volume");
-    // Icon style: no inline list, so none of its "Show all" control.
+    // Button style: no inline list, so none of its "Show all" control.
     expect(text).not.toContain("Show all");
   });
 
-  it("draws compact with the speaker pill and the rest behind ⋮", () => {
+  it("lists recent messages below the card when asked to", () => {
+    const text = renderedText(configured({ recent_messages: "list" }).render());
+
+    expect(text).toContain("Show all");
+  });
+
+  it("leaves out what is switched off", () => {
+    const text = renderedText(
+      configured({ recent_messages: "off", volume_control: false }).render(),
+    );
+
+    expect(text).not.toContain("Recent messages");
+    expect(text).not.toContain("Broadcast volume");
+  });
+
+  it("draws compact with the speaker dropdown and the rest behind ⋮", () => {
     const card = configured({
       layout: "compact",
-      sections: [{ type: "speakers", style: "rows" }, { type: "history" }],
+      speaker_picker: "list",
+      recent_messages: "list",
     });
 
     const text = renderedText(card.render());
@@ -941,13 +950,17 @@ describe("card layouts and sections", () => {
   });
 
   it("leaves out ⋮ in compact when there is nothing to put in it", () => {
-    const card = configured({ layout: "compact", sections: [{ type: "speakers" }] });
+    const card = configured({
+      layout: "compact",
+      recent_messages: "off",
+      volume_control: false,
+    });
 
     expect(renderedText(card.render())).not.toContain("More");
   });
 
-  it("opens the history dialog from the header icon", () => {
-    const card = configured({ sections: [{ type: "history", style: "icon" }] });
+  it("opens the history dialog from the header button", () => {
+    const card = configured({ recent_messages: "button" });
     card.history = [
       { id: "a", created: "2026-08-21T10:00:00Z", duration: 7, can_delete: false, extension: "wav" },
     ];
@@ -959,11 +972,11 @@ describe("card layouts and sections", () => {
     expect(text).toContain("0:07");
   });
 
-  it("sizes itself from its layout and sections", () => {
+  it("sizes itself from its layout, speaker picker and recent messages", () => {
     expect(configured({ layout: "compact" }).getCardSize()).toBe(2);
-    expect(configured({ sections: [{ type: "speakers", style: "pill" }] }).getCardSize()).toBe(5);
-    // A legacy card: rows (+4) and the history list (+3).
-    expect(configured({}).getCardSize()).toBe(12);
+    expect(configured({}).getCardSize()).toBe(5);
+    expect(configured({ speaker_picker: "chips" }).getCardSize()).toBe(6);
+    expect(configured({ speaker_picker: "list", recent_messages: "list" }).getCardSize()).toBe(12);
     expect(configured({}).getGridOptions()).not.toHaveProperty("rows");
   });
 
@@ -977,12 +990,33 @@ describe("card layouts and sections", () => {
   });
 
   it("does not fetch history it will not show", async () => {
-    const card = configured({ sections: [{ type: "speakers" }] });
+    const card = configured({ recent_messages: "off" });
     const send = vi.fn(async () => ({ messages: [] }));
     card.hass = { connection: { sendMessagePromise: send } };
 
     await card.refreshHistory();
 
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe("card editor", () => {
+  it("is Home Assistant's own form, not an element of ours", () => {
+    expect(HassBroadcastCard.getConfigForm().schema.length).toBeGreaterThan(0);
+    expect((HassBroadcastCard as any).getConfigElement).toBeUndefined();
+  });
+
+  it("starts a new card with every playable speaker on it, none selected", () => {
+    const stub = HassBroadcastCard.getStubConfig({
+      states: {
+        "media_player.b": { attributes: { supported_features: 512 } },
+        "media_player.a": { attributes: { supported_features: 512 } },
+        "media_player.tv": { attributes: { supported_features: 4 } },
+      },
+    });
+
+    expect(stub.speakers).toEqual(["media_player.a", "media_player.b"]);
+    expect(stub.selected).toEqual([]);
+    expect(HassBroadcastCard.getStubConfig(undefined).speakers).toEqual([]);
   });
 });

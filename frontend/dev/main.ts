@@ -1,13 +1,15 @@
 /**
- * Dev harness entry point: mounts the real card and the real card editor
- * against a mocked Home Assistant, next to controls for the states that are
- * tedious to reproduce on a live install.
+ * Dev harness entry point: mounts the real card and tile against a mocked
+ * Home Assistant, next to controls for their config and for the states that
+ * are tedious to reproduce on a live install.
+ *
+ * The editors are Home Assistant's own forms (`getConfigForm()`), which only
+ * Home Assistant can draw; `npm run dev:editor` shows those.
  */
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import "../src/card";
-import "../src/editor";
 import { installMicMock, installRecorderMock } from "./fake-recorder";
 import { applyTheme } from "./ha-stubs";
 import { LOVELACE_ASSIGNS } from "../test/helpers";
@@ -49,32 +51,31 @@ export class DevApp extends LitElement {
   @state() private scenario: Scenario = scenario;
   @state() private config: any = {
     type: "custom:hass-broadcast-card",
-    targets: ["media_player.kitchen"],
-    mode: "plain",
-    max_duration: 60,
     layout: "full",
-    sections: [
-      { type: "speakers", style: "pill" },
-      { type: "history", style: "icon" },
-      { type: "volume", style: "icon" },
-    ],
+    speaker_picker: "dropdown",
+    recent_messages: "button",
+    volume_control: true,
+    selected: ["media_player.kitchen"],
+    record_mode: "push_to_talk",
+    max_duration: 60,
+    mode: "plain",
   };
+  /** The JSON box's text while it does not parse, so typing is not lost. */
+  @state() private draft?: string;
   @state() private generation = 0;
   /** Outline every fixed slot, to eyeball that nothing moves between states. */
   @state() private showSlots = false;
 
   private card?: HTMLElement & { setConfig(config: any): void; hass: any };
-  private editor?: HTMLElement & { setConfig(config: any): void; hass: any };
   @state() private tileConfig: any = {
     type: "custom:hass-broadcast-tile",
     name: "Kids' rooms",
-    targets: ["media_player.kids_room", "media_player.bedroom"],
+    speakers: ["media_player.kids_room", "media_player.bedroom"],
     shape: "square",
     mode: "plain",
     max_duration: 30,
   };
   private tile?: HTMLElement & { setConfig(config: any): void; hass: any };
-  private tileEditor?: HTMLElement & { setConfig(config: any): void; hass: any };
 
   static styles = css`
     :host {
@@ -129,11 +130,13 @@ export class DevApp extends LitElement {
       width: 100%; margin-top: 8px; background: #2b3242; color: #e6e6e6;
       border: 1px solid #3c465c; border-radius: 6px; padding: 8px; font: inherit; cursor: pointer;
     }
-    .editor-host {
-      background: var(--card-background-color, #fff);
-      color: var(--primary-text-color, #212121);
-      border-radius: 8px; padding: 12px; margin-top: 8px;
+    .panel textarea {
+      width: 100%; box-sizing: border-box; min-height: 180px; margin-top: 8px;
+      background: #2b3242; color: #e6e6e6; border: 1px solid #3c465c;
+      border-radius: 6px; padding: 8px; font: 12px/1.4 ui-monospace, monospace;
     }
+    .panel textarea[data-invalid="true"] { border-color: #e5534b; }
+    .seg + .seg { margin-top: 6px; }
     .note { color: #8f9bb3; line-height: 1.5; margin-top: 8px; }
     code { background: #2b3242; padding: 1px 4px; border-radius: 3px; }
   `;
@@ -146,7 +149,6 @@ export class DevApp extends LitElement {
   /** Rebuilds the card element, so connectedCallback and its history fetch rerun. */
   private remount(): void {
     this.card = undefined;
-    this.editor = undefined;
     this.tile = undefined;
     this.generation += 1;
   }
@@ -173,18 +175,37 @@ export class DevApp extends LitElement {
     return this.tile!;
   }
 
-  private get tileEditorElement(): HTMLElement {
-    if (!this.tileEditor) {
-      const element = document.createElement("hass-broadcast-tile-editor") as any;
-      element.hass = hass;
-      element.setConfig(this.tileConfig);
-      element.addEventListener("config-changed", (event: any) => {
-        this.tileConfig = event.detail.config;
-        (this.tileElement as any).setConfig(this.tileConfig);
-      });
-      this.tileEditor = element;
-    }
-    return this.tileEditor!;
+  /** Apply a card config, as Lovelace does when its editor saves. */
+  private setCardConfig(config: any): void {
+    this.config = config;
+    this.draft = undefined;
+    const card = this.cardElement as any;
+    card.setConfig(config);
+    card.requestUpdate();
+  }
+
+  private setTileConfig(config: any): void {
+    this.tileConfig = config;
+    const tile = this.tileElement as any;
+    tile.setConfig(config);
+    tile.requestUpdate();
+  }
+
+  /** A row of buttons that writes one config key. */
+  private choice(
+    current: unknown,
+    options: [value: unknown, label: string][],
+    pick: (value: any) => void,
+  ) {
+    return html`
+      <div class="seg">
+        ${options.map(
+          ([value, label]) => html`
+            <button data-on=${current === value} @click=${() => pick(value)}>${label}</button>
+          `,
+        )}
+      </div>
+    `;
   }
 
   private get cardElement(): HTMLElement {
@@ -196,22 +217,6 @@ export class DevApp extends LitElement {
       this.card = element;
     }
     return this.card!;
-  }
-
-  private get editorElement(): HTMLElement {
-    if (!this.editor) {
-      const element = document.createElement("hass-broadcast-card-editor") as any;
-      element.hass = hass;
-      element.setConfig(this.config);
-      element.addEventListener("config-changed", (event: any) => {
-        this.config = event.detail.config;
-        const card = this.cardElement as any;
-        card.setConfig(this.config);
-        card.requestUpdate();
-      });
-      this.editor = element;
-    }
-    return this.editor!;
   }
 
   private toggle(key: keyof Scenario, label: string) {
@@ -355,14 +360,58 @@ export class DevApp extends LitElement {
         <button class="wide" @click=${() => this.remount()}>Remount card</button>
 
         <h2>Card config</h2>
-        <div class="editor-host">${this.editorElement}</div>
+        <div id="card-config">
+          ${this.choice(this.config.layout ?? "full", [["full", "Full"], ["compact", "Compact"]], (layout) =>
+            this.setCardConfig({ ...this.config, layout }),
+          )}
+          ${this.choice(
+            this.config.speaker_picker ?? "dropdown",
+            [["dropdown", "Dropdown"], ["chips", "Chips"], ["list", "List"]],
+            (speaker_picker) => this.setCardConfig({ ...this.config, speaker_picker }),
+          )}
+          ${this.choice(
+            this.config.recent_messages ?? "button",
+            [["off", "No history"], ["button", "Button"], ["list", "History list"]],
+            (recent_messages) => this.setCardConfig({ ...this.config, recent_messages }),
+          )}
+          ${this.choice(
+            this.config.volume_control !== false,
+            [[true, "Volume"], [false, "No volume"]],
+            (volume_control) => this.setCardConfig({ ...this.config, volume_control }),
+          )}
+          ${this.choice(
+            this.config.record_mode ?? "push_to_talk",
+            [["push_to_talk", "Hold to talk"], ["start_stop", "Tap start/stop"]],
+            (record_mode) => this.setCardConfig({ ...this.config, record_mode }),
+          )}
+        </div>
+        <textarea
+          aria-label="Card config (JSON)"
+          spellcheck="false"
+          data-invalid=${this.draft !== undefined}
+          .value=${this.draft ?? JSON.stringify(this.config, null, 2)}
+          @change=${(e: Event) => {
+            const text = (e.target as HTMLTextAreaElement).value;
+            try {
+              this.setCardConfig(JSON.parse(text));
+            } catch {
+              this.draft = text;
+            }
+          }}
+        ></textarea>
 
         <h2>Tile config</h2>
-        <div class="editor-host">${this.tileEditorElement}</div>
+        <div id="tile-config">
+          ${this.choice(
+            this.tileConfig.shape ?? "square",
+            [["square", "Square"], ["horizontal", "Horizontal"]],
+            (shape) => this.setTileConfig({ ...this.tileConfig, shape }),
+          )}
+        </div>
 
         <div class="note">
-          This is the real editor element. Changes apply to the card on the left
-          immediately.
+          The editors are Home Assistant's own forms; see them with
+          <code>npm run dev:editor</code>.
         </div>
       </div>
     `;

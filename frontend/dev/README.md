@@ -5,9 +5,13 @@ npm run dev                                        # → http://localhost:8099
 npm run dev -- --host 127.0.0.1 --port 9000        # or HOST=... PORT=... npm run dev
 ```
 
-Renders the real `hass-broadcast-card` and the real `hass-broadcast-card-editor`
-against a mocked `hass`, so the UI can be iterated on without deploying to Home
+Renders the real `hass-broadcast-card` and `hass-broadcast-tile` against a
+mocked `hass`, so the UI can be iterated on without deploying to Home
 Assistant. Saving anything under `frontend/src/` rebuilds and reloads the page.
+
+The editors are not here: they are Home Assistant's own forms, drawn from each
+card's `getConfigForm()`, and only Home Assistant's frontend can draw them. See
+[The editors](#the-editors-npm-run-deveditor) below.
 
 The default binds every interface and prints each URL it can be reached on, so
 another device on the network can open it without a flag. Pass `--host` to
@@ -18,7 +22,7 @@ Nothing here ships. It is a separate esbuild entry point; the committed bundle i
 
 ## What is real and what is faked
 
-**Real:** the card, the editor, the level meter, the WAV encoder, the upload
+**Real:** the card and the tile, the level meter, the WAV encoder, the upload
 round-trip, and — on `localhost` — microphone capture and the AudioWorklet.
 `serve.mjs` serves `/api/hass_broadcast/static/*` out of
 `custom_components/hass_broadcast/www/`, which is the exact path `Recorder`
@@ -71,14 +75,53 @@ there too.
 with it on: no outline should move or change size. `npm run check:layout`
 checks the same thing automatically, in headless Chromium.
 
-Layout, sections, and push-to-talk versus tap-to-start live in the real editor
-at the bottom of the panel, not in these controls, because they are card
-configuration rather than simulated conditions.
+**Card config** at the bottom of the panel has a button row per appearance
+option (layout, speaker picker, recent messages, volume control, recording
+mode) and a JSON box holding the whole config, applied when it loses focus —
+edit `speakers`, `selected`, `mode` and the rest there. `check:layout` drives
+the button rows.
 
 Below the card is a **broadcast tile**, in a box the size of its
-sections-view grid cell, with the real tile editor under the card's in the
-panel. Its sends go through the same mocked backend, so the broadcast-result
-and latency switches apply to it too.
+sections-view grid cell, with its shape under **Tile config**. Its sends go
+through the same mocked backend, so the broadcast-result and latency switches
+apply to it too.
+
+## The editors: `npm run dev:editor`
+
+```bash
+npm run dev:editor                    # → http://localhost:8100/#misc/hass-broadcast
+npm run dev:editor -- --screenshots   # regenerate docs/images/editor-{light,dark}.png
+```
+
+Both cards' editors are `getConfigForm()` schemas (`frontend/src/forms.ts`),
+which Home Assistant renders with its own form and selectors. To see them, this
+runs Home Assistant's design gallery — the site behind design.home-assistant.io
+— locally, with one extra page, [`editor/hass-broadcast.ts`](editor/hass-broadcast.ts).
+That page wraps each card in `hui-card-element-editor`, the element the Edit
+card dialog uses, against the gallery's fake `hass` with six speakers, and puts
+the live card under each editor, in light and dark. The cards come from our
+real bundle, built unminified by the script; editing `frontend/src/` rebuilds
+it, and a page reload picks it up.
+
+[`editor/run.mjs`](editor/run.mjs) does the setup, all of it inside
+`.cache/hass-broadcast-editor/` (gitignored):
+
+- fetches home-assistant/frontend at a pinned `dev` commit (`FRONTEND_COMMIT`;
+  a release tag's lockfile did not build the gallery);
+- downloads the Node release that checkout's `.nvmrc` asks for, used for the
+  gallery only and never put on your PATH;
+- installs its dependencies with `corepack pnpm` whenever the lockfile changes;
+- skips the gallery's nightly-translations download, which would otherwise stop
+  to ask for a GitHub login.
+
+The first run takes a few minutes; later ones start once the gallery has
+compiled. It is not in CI, for the same reason as `check:layout`. The cache
+cannot live under `node_modules`: Node refuses to strip types from `.ts` files
+there, and the gallery's build scripts are TypeScript.
+
+Picture options choose their `src_dark` image from one page-wide UI context,
+so in the interactive page the dark column shows the light pictures; the
+screenshot step switches that context before its dark shot.
 
 ## Sound lab — `/lab`
 

@@ -69,17 +69,23 @@ function diff(a, b) {
 let failures = 0;
 const browser = await chromium.launch();
 try {
-  for (const layout of ["full", "compact"]) {
+  // Each config is the harness's card-config buttons to press, in order.
+  const configs = {
+    full: ["Full"],
+    "full-lists": ["Full", "List", "History list"],
+    compact: ["Compact"],
+  };
+  for (const [layout, presses] of Object.entries(configs)) {
     for (const width of ["Phone", "Desktop"]) {
       const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
       await page.goto(URL);
       const app = page.locator("dev-app");
       await app.locator("label", { hasText: "Simulated recording" }).locator("input").check();
       await app.locator("button", { hasText: width }).click();
-      await page
-        .locator("hass-broadcast-card-editor")
-        .locator("button", { hasText: layout === "full" ? "Full" : "Compact" })
-        .click();
+      for (const label of presses) {
+        // Exact: "List" would otherwise also match "History list".
+        await app.locator("#card-config button", { hasText: new RegExp(`^\\s*${label}\\s*$`) }).click();
+      }
       await page.waitForTimeout(300);
 
       const card = page.locator("hass-broadcast-card");
@@ -125,10 +131,7 @@ try {
     await page.goto(URL);
     const app = page.locator("dev-app");
     await app.locator("label", { hasText: "Simulated recording" }).locator("input").check();
-    await page
-      .locator("hass-broadcast-tile-editor")
-      .locator("button", { hasText: shape })
-      .click();
+    await app.locator("#tile-config button", { hasText: shape }).click();
     await page.waitForTimeout(300);
     const tile = page.locator("hass-broadcast-tile");
     await tile.scrollIntoViewIfNeeded();

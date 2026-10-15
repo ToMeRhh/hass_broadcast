@@ -19,7 +19,7 @@ const base = {
 
 describe("targetList", () => {
   it("names every player and counts the selection in all three styles", () => {
-    for (const style of ["rows", "chips", "pill"] as const) {
+    for (const style of ["list", "chips", "dropdown"] as const) {
       const html = renderedText(targetList({ ...base, style, open: true }));
       expect(html).toContain("Kitchen");
       expect(html).toContain("Attic");
@@ -28,14 +28,14 @@ describe("targetList", () => {
   });
 
   it("marks an unavailable speaker rather than hiding it", () => {
-    const html = renderedText(targetList({ ...base, style: "rows" }));
+    const html = renderedText(targetList({ ...base, style: "list" }));
     expect(html).toContain("Bathroom");
     expect(html).toContain("unavailable");
   });
 
   it("keeps a closed pill's rows out of the markup", () => {
-    const closed = renderedText(targetList({ ...base, style: "pill" }));
-    const open = renderedText(targetList({ ...base, style: "pill", open: true }));
+    const closed = renderedText(targetList({ ...base, style: "dropdown" }));
+    const open = renderedText(targetList({ ...base, style: "dropdown", open: true }));
 
     expect(closed).not.toContain("Attic");
     expect(open).toContain("Attic");
@@ -43,7 +43,7 @@ describe("targetList", () => {
 
   it("says so when no speaker was found at all", () => {
     const html = renderedText(
-      targetList({ ...base, players: [], selected: [], style: "rows" }),
+      targetList({ ...base, players: [], selected: [], style: "list" }),
     );
     expect(html).toContain("No speakers found");
   });

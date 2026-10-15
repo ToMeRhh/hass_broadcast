@@ -78,9 +78,8 @@ jobs:
           print(f"version={version}")
           PY
 
-      - name: Commit, tag and publish
+      - name: Commit and tag
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.bump.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
@@ -93,4 +92,32 @@ jobs:
           git tag -a "v${VERSION}" -m "v${VERSION}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
           git push origin "refs/tags/v${VERSION}"
-          gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+
+      # hacs.json sets zip_release, so HACS installs this asset rather than the
+      # repository tree -- which is also what makes GitHub count downloads. HACS
+      # extracts it into custom_components/<domain>/, so the integration's
+      # files go at the zip root, not under a directory. Built after the commit
+      # so it carries the bumped manifest, and without the __pycache__ that the
+      # test run above left behind.
+      - name: Build the HACS zip
+        id: zip
+        run: |
+          domain=$(python -c 'import json; print(json.load(open("custom_components/hass_broadcast/manifest.json"))["domain"])')
+          zip_path="${RUNNER_TEMP}/${domain}.zip"
+          (cd "custom_components/${domain}" && zip -r "$zip_path" . -x '*__pycache__*' '*.pyc')
+          unzip -l "$zip_path"
+          echo "path=${zip_path}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+          ZIP: ${{ steps.zip.outputs.path }}
+        run: |
+          # Re-attach rather than fail if the release already exists, so a
+          # rerun of this step still leaves the release with its zip.
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" "$ZIP" --clobber
+          else
+            gh release create "v${VERSION}" "$ZIP" --title "v${VERSION}" --generate-notes
+          fi

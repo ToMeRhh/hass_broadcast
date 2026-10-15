@@ -22,6 +22,8 @@ export interface RecordingOptions {
   recordMode: () => RecordMode;
   /** Seconds after which a take stops on its own. */
   maxDuration: () => number;
+  /** Whether the browser should suppress background noise; off when omitted. */
+  noiseSuppression?: () => boolean;
   /** A take finished and is long enough to keep. */
   onTake: (take: Take) => void | Promise<void>;
   /** Something went wrong. `sticky` errors stay until the next attempt. */
@@ -168,7 +170,9 @@ export class RecordingController implements ReactiveController {
         }
       });
       this.envelope.reset();
-      await this.recorder.start(this.options.maxDuration());
+      await this.recorder.start(this.options.maxDuration(), {
+        noiseSuppression: this.options.noiseSuppression?.() ?? false,
+      });
     } catch (err: any) {
       // A denied permission stays denied until the user changes it, so it
       // stays on screen rather than timing out under them.

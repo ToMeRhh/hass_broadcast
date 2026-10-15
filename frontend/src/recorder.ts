@@ -20,12 +20,12 @@ const MAX_GAIN = 10;
 
 const WORKLET_URL = "/api/hass_broadcast/static/recorder-worklet.js";
 
-/**
- * Overrides of the shipped capture settings. The card never passes any; they
- * exist so the dev harness's sound lab (frontend/dev/lab.ts) can compare
- * alternatives through this same recorder rather than a copy of it.
- */
+/** How to capture a take. Everything but `noiseSuppression` is for the sound lab. */
 export interface CaptureOptions {
+  /** The card's `noise_suppression` setting: the browser's, on an otherwise raw mic. */
+  noiseSuppression?: boolean;
+  // Overrides that exist so the dev harness's sound lab (frontend/dev/lab.ts)
+  // can compare alternatives through this same recorder, not a copy of it.
   sampleRate?: number;
   constraints?: MediaTrackConstraints;
   normalize?: boolean;
@@ -86,7 +86,10 @@ export class Recorder {
     this.options = options;
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: options.constraints ?? RAW_MIC,
+        audio: options.constraints ?? {
+          ...RAW_MIC,
+          noiseSuppression: options.noiseSuppression ?? false,
+        },
       });
       this.context = new AudioContext({
         sampleRate: options.sampleRate ?? captureRate(maxSeconds),

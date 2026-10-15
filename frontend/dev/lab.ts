@@ -51,16 +51,9 @@ const PRESETS: Preset[] = [
     bitrate: "128k",
   },
   {
-    name: "48 kHz + noise suppression only",
-    note: "For a noisy room: removes the background, keeps gain and the mic mode raw.",
-    capture: {
-      constraints: {
-        channelCount: 1,
-        echoCancellation: false,
-        noiseSuppression: true,
-        autoGainControl: false,
-      },
-    },
+    name: "Shipped + noise suppression",
+    note: "The card's noise_suppression setting: removes the background, rest of the mic raw.",
+    capture: { noiseSuppression: true },
     bitrate: "128k",
   },
   {
@@ -298,7 +291,10 @@ export class SoundLab extends LitElement {
 
 /** Processing the preset asked for that the browser's granted settings contradict. */
 function denied(preset: Preset, settings?: MediaTrackSettings): string[] {
-  const wanted = preset.capture.constraints ?? RAW_MIC;
+  const wanted = preset.capture.constraints ?? {
+    ...RAW_MIC,
+    noiseSuppression: preset.capture.noiseSuppression ?? false,
+  };
   return PROCESSING.filter(
     (key) => typeof wanted[key] === "boolean" && settings?.[key] !== undefined && settings[key] !== wanted[key]
   ).map((key) => `${key} ${wanted[key] ? "on" : "off"}`);

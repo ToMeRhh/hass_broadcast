@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RecordingController, Take } from "../src/recording";
+import { RecordingController, RecordingOptions, Take } from "../src/recording";
 
 /** Stand-in for Recorder; the level callback is driven by hand. */
 class FakeRecorder {
@@ -15,8 +15,10 @@ class FakeRecorder {
   onLevel(callback: (level: number) => void): void {
     this.levelCallback = callback;
   }
-  async start(): Promise<void> {
+  startArgs: unknown[] = [];
+  async start(...args: unknown[]): Promise<void> {
     this.started += 1;
+    this.startArgs = args;
     return this.startImpl();
   }
   async stop(): Promise<{ blob: Blob; duration: number }> {
@@ -25,7 +27,10 @@ class FakeRecorder {
   }
 }
 
-function makeController(mode: "push_to_talk" | "start_stop" = "push_to_talk") {
+function makeController(
+  mode: "push_to_talk" | "start_stop" = "push_to_talk",
+  extra: Partial<RecordingOptions> = {},
+) {
   const host = { updates: 0, addController() {}, requestUpdate() { host.updates += 1; } };
   const takes: Take[] = [];
   const errors: { text: string; sticky: boolean }[] = [];
@@ -40,6 +45,7 @@ function makeController(mode: "push_to_talk" | "start_stop" = "push_to_talk") {
     onStart: () => {
       started += 1;
     },
+    ...extra,
   });
   const recorder = new FakeRecorder();
   controller.recorder = recorder as any;
@@ -77,6 +83,16 @@ describe("RecordingController", () => {
     expect(takes[0].duration).toBe(2);
     expect(takes[0].peaks.length).toBeGreaterThan(0);
     expect(controller.phase).toBe("idle");
+  });
+
+  it("hands the recorder the length limit and the noise suppression setting", async () => {
+    const { controller, recorder } = makeController("push_to_talk", {
+      noiseSuppression: () => true,
+    });
+
+    await controller.onPressStart(press);
+
+    expect(recorder.startArgs).toEqual([60, { noiseSuppression: true }]);
   });
 
   it("follows the live level while recording and rests at zero after", async () => {

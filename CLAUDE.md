@@ -47,6 +47,11 @@ written by the editor. An absent `record_mode` means push-to-talk and an
 absent `layout` means full — cards predating those keys changed on upgrade,
 deliberately, so there is one default rather than one per card age.
 
+`noise_suppression` (both cards) turns on the browser's noise suppression and
+nothing else; absent means off, and the editor drops the key rather than
+writing `false`. The rest of the browser's call processing stays off — see
+`RAW_MIC` in `recorder.ts` for why.
+
 `sections` replaced `player_list` and `show_history`. Both are still *read*,
 only when `sections` is absent (`resolveSections` in `sections.ts`), and the
 editor drops them on its first save. All config normalisation lives in

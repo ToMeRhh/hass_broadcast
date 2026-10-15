@@ -4,6 +4,7 @@ import {
   HassBroadcastCardEditor,
   clampMaxDuration,
   moveRow,
+  noiseSuppressionField,
   playerOptions,
   sectionRows,
   sectionsConfig,
@@ -283,6 +284,36 @@ describe("editor record mode and list style", () => {
 
     // The option actually marked selected, not just the field's label.
     expect(renderedText(editor.render())).toMatch(/value=rows\s*\?selected=true/);
+  });
+});
+
+describe("noise suppression setting", () => {
+  /** The change handler bound into a field's template. */
+  function changeHandler(template: any): (e: Event) => void {
+    return template.values.find((value: unknown) => typeof value === "function");
+  }
+  const tick = (checked: boolean) => ({ target: { checked } }) as unknown as Event;
+
+  it("shows it off when the key is absent", () => {
+    const template: any = noiseSuppressionField(undefined, () => {});
+    expect(template.values).toContain(false);
+  });
+
+  it("writes true when ticked and drops the key when unticked", () => {
+    const written: unknown[] = [];
+    const handler = changeHandler(noiseSuppressionField(undefined, (v) => written.push(v)));
+
+    handler(tick(true));
+    handler(tick(false));
+
+    // Absent and false mean the same thing, so only one of them is ever saved.
+    expect(written).toEqual([true, undefined]);
+  });
+
+  it("is offered in the card editor", () => {
+    const editor: any = new HassBroadcastCardEditor();
+    editor.setConfig({ type: "custom:hass-broadcast-card" });
+    expect(renderedText(editor.render())).toContain("Noise suppression");
   });
 });
 

@@ -197,6 +197,19 @@ describe("Recorder capture quality", () => {
     });
   });
 
+  it("turns on noise suppression alone when asked, leaving the rest raw", async () => {
+    // The setting is for a noisy room. Gain control and echo cancellation
+    // stay off: they pump and narrow the mic whether or not the room is quiet.
+    const { getConstraints } = installFakes();
+    await new Recorder().start(60, { noiseSuppression: true });
+
+    expect(getConstraints()?.audio).toMatchObject({
+      echoCancellation: false,
+      noiseSuppression: true,
+      autoGainControl: false,
+    });
+  });
+
   it("records at 48 kHz for the default 60-second limit", async () => {
     const { getContext } = installFakes();
     await new Recorder().start(60);

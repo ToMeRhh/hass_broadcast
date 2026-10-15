@@ -7,6 +7,7 @@ import {
   editorStyles,
   maxDurationField,
   modeField,
+  noiseSuppressionField,
   playerChecklist,
   segmented,
   speakerOptions,
@@ -22,7 +23,7 @@ import {
   resolveSections,
 } from "./sections";
 
-export { clampMaxDuration, toggleInList };
+export { clampMaxDuration, noiseSuppressionField, toggleInList };
 export type { PlayerOption };
 
 interface CardConfig {
@@ -33,6 +34,8 @@ interface CardConfig {
   hide_players?: string[];
   mode?: string;
   max_duration?: number;
+  /** The browser's noise suppression on the mic. Absent means off. */
+  noise_suppression?: boolean;
   /** How the record button behaves. Absent means push-to-talk. */
   record_mode?: "push_to_talk" | "start_stop";
   layout?: Layout;
@@ -418,6 +421,9 @@ export class HassBroadcastCardEditor extends LitElement {
 
       ${maxDurationField(this.config.max_duration, (max_duration) =>
         this.emit({ max_duration }),
+      )}
+      ${noiseSuppressionField(this.config.noise_suppression, (noise_suppression) =>
+        this.emit({ noise_suppression }),
       )}
     `;
   }

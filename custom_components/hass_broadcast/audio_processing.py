@@ -10,12 +10,17 @@ from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
-# MPEG-1 Layer III defines 32/44.1/48 kHz only. Capture is 16 kHz, so without
+# MPEG-1 Layer III defines 32/44.1/48 kHz only. Capture can be as low as
+# 16 kHz (the card trades rate for length on long takes), so without
 # an explicit rate ffmpeg emits MPEG-2 Layer III -- still "an MP3", but the
 # low-sample-rate variant that embedded hardware decoders are least reliable
 # at. Resampling costs a few KB on a voice message and is what makes the
 # output the format every player actually handles.
 SAMPLE_RATE = "44100"
+# Capture is up to 48 kHz. At 64k LAME low-passes a mono stream to roughly
+# 11 kHz and smears consonants; 128k keeps the full band for a voice message
+# that is still only ~1 MB a minute.
+BITRATE = "128k"
 
 
 async def async_transcode_to_mp3(hass: HomeAssistant, wav_data: bytes) -> bytes | None:
@@ -48,7 +53,7 @@ async def async_transcode_to_mp3(hass: HomeAssistant, wav_data: bytes) -> bytes 
             "-i", "pipe:0",
             "-codec:a", "libmp3lame",
             "-ar", SAMPLE_RATE,
-            "-b:a", "64k",
+            "-b:a", BITRATE,
             "-f", "mp3",
             "pipe:1",
             stdin=asyncio.subprocess.PIPE,

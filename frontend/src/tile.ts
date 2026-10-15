@@ -25,6 +25,7 @@ export interface TileConfig {
   shape?: "square" | "horizontal";
   mode?: BroadcastMode;
   max_duration?: number;
+  noise_suppression?: boolean;
 }
 
 /** What the tile's second line says once something has happened. */
@@ -58,6 +59,7 @@ export class HassBroadcastTile extends LitElement {
     // the moment a second tap stopped it, with no way to take it back.
     recordMode: () => "push_to_talk",
     maxDuration: () => clampMaxDuration(this.config.max_duration),
+    noiseSuppression: () => this.config.noise_suppression === true,
     onStart: () => this.showResult(undefined),
     onError: (text) => this.showResult({ kind: "failed", text: shorten(text), detail: text }),
     onTake: (take) => this.send(take),

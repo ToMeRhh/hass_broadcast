@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Recorder } from "../src/recorder";
+import { captureRate, normalize, Recorder } from "../src/recorder";
+import { clampMaxDuration } from "../src/editor-fields";
 
 // The default vitest environment is plain Node — there is no real
 // AudioWorklet/getUserMedia to run against. These are minimal hand-rolled
@@ -70,9 +71,15 @@ function installFakes(opts: { addModuleFails?: boolean; closeFails?: boolean } =
   const stream = new FakeStream();
   let context: FakeContext | undefined;
   let node: FakeNode | undefined;
+  let constraints: MediaStreamConstraints | undefined;
 
   vi.stubGlobal("navigator", {
-    mediaDevices: { getUserMedia: async () => stream },
+    mediaDevices: {
+      getUserMedia: async (requested: MediaStreamConstraints) => {
+        constraints = requested;
+        return stream;
+      },
+    },
   });
 
   vi.stubGlobal(
@@ -95,7 +102,12 @@ function installFakes(opts: { addModuleFails?: boolean; closeFails?: boolean } =
     }
   );
 
-  return { stream, getContext: () => context, getNode: () => node };
+  return {
+    stream,
+    getContext: () => context,
+    getNode: () => node,
+    getConstraints: () => constraints,
+  };
 }
 
 describe("Recorder lifecycle", () => {
@@ -107,7 +119,7 @@ describe("Recorder lifecycle", () => {
     const { stream, getContext } = installFakes({ addModuleFails: true });
     const recorder = new Recorder();
 
-    await expect(recorder.start()).rejects.toThrow("worklet failed to load");
+    await expect(recorder.start(60)).rejects.toThrow("worklet failed to load");
 
     // The mic must not stay open after a failed start() — that's the
     // privacy-relevant leak: browser recording indicator stuck lit with
@@ -122,7 +134,7 @@ describe("Recorder lifecycle", () => {
 
     // addModule rejection is the original failure; context.close() rejecting
     // during the resulting cleanup must not replace it or abort teardown.
-    await expect(recorder.start()).rejects.toThrow("worklet failed to load");
+    await expect(recorder.start(60)).rejects.toThrow("worklet failed to load");
 
     expect(stream.getTracks().every((t) => t.stopped)).toBe(true);
 
@@ -130,19 +142,19 @@ describe("Recorder lifecycle", () => {
     // working fakes proves the handles were actually cleared (active reset,
     // stream/context/node nulled) rather than teardown stopping halfway.
     const retry = installFakes();
-    await expect(recorder.start()).resolves.toBeUndefined();
+    await expect(recorder.start(60)).resolves.toBeUndefined();
     expect(retry.getContext()?.closed).toBe(false);
   });
 
   it("can retry start() after a failed attempt without orphaning the prior mic handle", async () => {
     const { stream } = installFakes({ addModuleFails: true });
     const recorder = new Recorder();
-    await expect(recorder.start()).rejects.toThrow();
+    await expect(recorder.start(60)).rejects.toThrow();
     expect(stream.getTracks().every((t) => t.stopped)).toBe(true);
 
     // Re-stub with a working worklet load and retry the same instance.
     const retry = installFakes();
-    await expect(recorder.start()).resolves.toBeUndefined();
+    await expect(recorder.start(60)).resolves.toBeUndefined();
     expect(retry.getContext()?.closed).toBe(false);
   });
 
@@ -154,7 +166,7 @@ describe("Recorder lifecycle", () => {
   it("throws on a second stop() instead of returning the same recording twice", async () => {
     const { getNode } = installFakes();
     const recorder = new Recorder();
-    await recorder.start();
+    await recorder.start(60);
 
     getNode()?.port.onmessage?.({ data: new Int16Array([1, 2, 3]) });
 
@@ -162,6 +174,82 @@ describe("Recorder lifecycle", () => {
     expect(first.blob.size).toBeGreaterThanOrEqual(44);
 
     await expect(recorder.stop()).rejects.toThrow(/no active recording/);
+  });
+});
+
+describe("Recorder capture quality", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("asks for the raw microphone, not one tuned for calls", async () => {
+    // Browsers default all three on. They are built for a live call:
+    // noise suppression warbles, gain control pumps, and on Android echo
+    // cancellation switches the mic into its narrowband voice-call mode.
+    // Nothing plays while recording, so there is no echo to cancel.
+    const { getConstraints } = installFakes();
+    await new Recorder().start(60);
+
+    expect(getConstraints()?.audio).toMatchObject({
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+    });
+  });
+
+  it("turns on noise suppression alone when asked, leaving the rest raw", async () => {
+    // The setting is for a noisy room. Gain control and echo cancellation
+    // stay off: they pump and narrow the mic whether or not the room is quiet.
+    const { getConstraints } = installFakes();
+    await new Recorder().start(60, { noiseSuppression: true });
+
+    expect(getConstraints()?.audio).toMatchObject({
+      echoCancellation: false,
+      noiseSuppression: true,
+      autoGainControl: false,
+    });
+  });
+
+  it("records at 48 kHz for the default 60-second limit", async () => {
+    const { getContext } = installFakes();
+    await new Recorder().start(60);
+    expect(getContext()?.sampleRate).toBe(48000);
+  });
+
+  it("lowers the rate only as far as the longest take needs to fit the upload", () => {
+    expect(captureRate(clampMaxDuration(300))).toBe(16000);
+    expect(captureRate(150)).toBe(32000);
+    for (let seconds = clampMaxDuration(0); seconds <= clampMaxDuration(1e9); seconds++) {
+      const rate = captureRate(seconds);
+      // Mirrors MAX_UPLOAD_BYTES in const.py; a take one second over the
+      // limit (the stop timer ticks once a second) must still be accepted.
+      expect(44 + rate * 2 * (seconds + 1)).toBeLessThanOrEqual(10 * 1024 * 1024);
+    }
+  });
+
+  it("brings a quiet take up to just under full scale", () => {
+    const samples = new Int16Array([0, 2500, -5000, 500]);
+    normalize(samples);
+    expect(Math.max(...samples.map(Math.abs))).toBeGreaterThan(28000);
+    expect(Math.max(...samples.map(Math.abs))).toBeLessThan(32767);
+    // Shape is kept: every sample scaled by the same gain.
+    expect(samples[1] / samples[2]).toBeCloseTo(-0.5, 2);
+  });
+
+  it("caps the boost so near-silence is not blown up into hiss", () => {
+    const samples = new Int16Array([10, -20]);
+    normalize(samples);
+    expect(samples[1]).toBe(-200);
+  });
+
+  it("leaves silence and already-loud takes alone", () => {
+    const silence = new Int16Array([0, 0]);
+    normalize(silence);
+    expect([...silence]).toEqual([0, 0]);
+
+    const loud = new Int16Array([32000, -30000]);
+    normalize(loud);
+    expect([...loud]).toEqual([32000, -30000]);
   });
 });
 

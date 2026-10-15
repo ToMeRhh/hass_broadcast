@@ -11,6 +11,7 @@ Lovelace card and play it on media players. Python integration in
 npm test                        # card tests, vitest (210)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
+                                # /lab: A/B recording-quality presets by ear
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 npm run check:layout            # headless: no element moves between card states
 ```
@@ -45,6 +46,11 @@ and `sections` (an ordered list of `{type, style}`) are card config, all
 written by the editor. An absent `record_mode` means push-to-talk and an
 absent `layout` means full — cards predating those keys changed on upgrade,
 deliberately, so there is one default rather than one per card age.
+
+`noise_suppression` (both cards) turns on the browser's noise suppression and
+nothing else; absent means off, and the editor drops the key rather than
+writing `false`. The rest of the browser's call processing stays off — see
+`RAW_MIC` in `recorder.ts` for why.
 
 `sections` replaced `player_list` and `show_history`. Both are still *read*,
 only when `sections` is absent (`resolveSections` in `sections.ts`), and the

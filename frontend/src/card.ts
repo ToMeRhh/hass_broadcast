@@ -65,6 +65,7 @@ export interface CardConfig {
   hide_players?: string[];
   mode?: BroadcastMode;
   max_duration?: number;
+  noise_suppression?: boolean;
   /** How the record button behaves. Absent means push-to-talk. */
   record_mode?: RecordMode;
   /** Absent means full. */
@@ -103,6 +104,7 @@ export class HassBroadcastCard extends LitElement {
   private rec = new RecordingController(this, {
     recordMode: () => this.recordMode,
     maxDuration: () => clampMaxDuration(this.config.max_duration),
+    noiseSuppression: () => this.config.noise_suppression === true,
     onStart: () => this.setStatus(undefined),
     onError: (text, sticky) => this.fail(text, sticky),
     onTake: (take) => {

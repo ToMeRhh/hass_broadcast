@@ -158,7 +158,36 @@ export function maxDurationField(
   `;
 }
 
+/**
+ * The `noise_suppression` checkbox. Unticking drops the key rather than
+ * writing false: absent means off, and only one of the two should survive a
+ * round trip.
+ */
+export function noiseSuppressionField(
+  value: boolean | undefined,
+  onChange: (value: true | undefined) => void,
+): TemplateResult {
+  return html`
+    <div class="field">
+      <label class="check">
+        <input
+          type="checkbox"
+          .checked=${value === true}
+          @change=${(e: Event) =>
+            onChange((e.target as HTMLInputElement).checked || undefined)}
+        />
+        Noise suppression
+      </label>
+      <div class="hint">
+        Filters out background noise such as a TV, fan or kitchen. Leave it
+        off in a quiet room: it can make a voice sound slightly processed.
+      </div>
+    </div>
+  `;
+}
+
 export const editorStyles = css`
+  label.check { display: flex; align-items: center; gap: 8px; }
   .field { display: block; margin-bottom: 12px; }
   label { display: block; margin-bottom: 4px; font-weight: 500; }
   .hint { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 4px; }

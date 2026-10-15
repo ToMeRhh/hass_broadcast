@@ -79,3 +79,27 @@ Below the card is a **broadcast tile**, in a box the size of its
 sections-view grid cell, with the real tile editor under the card's in the
 panel. Its sends go through the same mocked backend, so the broadcast-result
 and latency switches apply to it too.
+
+## Sound lab — `/lab`
+
+`http://localhost:8099/lab` records one take through several capture presets
+at once and plays each back twice: as the WAV the card uploads, and as the MP3
+the speaker is handed. Use it to judge recording quality by ear instead of
+deploying to Home Assistant and broadcasting.
+
+- **Presets** are the `PRESETS` list at the top of `lab.ts`: sample rate, mic
+  constraints, peak boost and MP3 bitrate. Edit or add to it freely. Each one
+  runs the real `Recorder` with `CaptureOptions` overrides; "Shipped" passes
+  none, so it is exactly what the card does.
+- **The MP3 step** is `POST /lab/mp3` in `serve.mjs`, which runs the same
+  ffmpeg command as `audio_processing.py`. Keep the two in step. It needs
+  `ffmpeg` on `PATH`; without it the MP3 players say so and the WAVs still work.
+- **Shared takes and browser processing.** Chrome can give every stream open
+  on a microphone the same echo cancellation / noise suppression / gain
+  control, so a preset asking for different processing than its neighbours may
+  not get it. Each preset shows what the browser actually granted and is
+  flagged when that differs from what it asked; "Record alone" re-records just
+  that preset.
+- **On a phone**, the lab needs a secure context like real capture does. Over
+  USB: `adb reverse tcp:8099 tcp:8099`, then open `http://localhost:8099/lab`
+  in Chrome on the phone.

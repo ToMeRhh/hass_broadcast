@@ -208,6 +208,11 @@ describe("broadcast tile editor", () => {
     expect(text).toMatch(/not available/);
   });
 
+  it("offers noise suppression", () => {
+    const { editor } = newEditor({ type: "custom:hass-broadcast-tile" });
+    expect(renderedText(editor.render())).toContain("Noise suppression");
+  });
+
   it("writes the shape and drops a blank name", () => {
     const { editor, configs } = newEditor({
       type: "custom:hass-broadcast-tile",

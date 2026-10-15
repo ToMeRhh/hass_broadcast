@@ -5,6 +5,7 @@ import {
   editorStyles,
   maxDurationField,
   modeField,
+  noiseSuppressionField,
   playerChecklist,
   segmented,
   speakerOptions,
@@ -18,6 +19,7 @@ interface TileConfig {
   shape?: "square" | "horizontal";
   mode?: string;
   max_duration?: number;
+  noise_suppression?: boolean;
 }
 
 @customElement("hass-broadcast-tile-editor")
@@ -93,6 +95,9 @@ export class HassBroadcastTileEditor extends LitElement {
       ${modeField(this.config.mode, (mode) => this.emit({ mode }))}
       ${maxDurationField(this.config.max_duration, (max_duration) =>
         this.emit({ max_duration }),
+      )}
+      ${noiseSuppressionField(this.config.noise_suppression, (noise_suppression) =>
+        this.emit({ noise_suppression }),
       )}
     `;
   }

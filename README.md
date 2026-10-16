@@ -22,6 +22,15 @@ speakers — a simple intercom, without leaving the UI.
 - **A one-tap intercom tile** that sends straight to the speakers you chose
 - **No services, no entities** — installing it adds dashboard cards and nothing else
 
+<a id="https-required"></a>
+
+> [!IMPORTANT]
+> **Recording needs HTTPS.** Browsers only allow microphone access on secure pages,
+> so on `http://<ip>:8123` the record button stays disabled. This is a browser rule,
+> not a limitation of this card. Workaround in Chrome: open
+> `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add your Home Assistant
+> URL, enable it and relaunch. Other options are under [Requirements](#hard-requirements).
+
 ## Installation
 
 ### HACS (recommended)
@@ -206,145 +215,61 @@ mode: restore
 
 ## Requirements and restrictions
 
-**Please read this section before filing a bug.** Most problems people hit are one of
-the items below.
+Most problems people run into are covered below, so please read this section before
+filing a bug.
 
 ### Hard requirements
 
-1. **HTTPS is required to record.** Browsers only expose the microphone in a *secure
-   context*. If you open Home Assistant at `http://192.168.1.50:8123`, recording will
-   not work — usually with no visible error at all. Any of these are fine: HTTPS with a
-   valid certificate, Home Assistant Cloud (Nabu Casa), Tailscale, Cloudflare Tunnel, or
-   `http://localhost:8123`. The card detects an insecure context and tells you so instead
-   of failing silently.
+- **HTTPS is required to record.** Browsers only expose the microphone on secure pages.
+  HTTPS, Home Assistant Cloud, Tailscale, Cloudflare Tunnel and `localhost` all work, and
+  so does the Companion app (grant it microphone permission the first time). For a quick
+  stopgap in Chrome over plain HTTP, add your URL at
+  `chrome://flags/#unsafely-treat-insecure-origin-as-secure` and relaunch. The flag only
+  applies to that one browser.
+- **Set `internal_url` to a LAN address if you use Google Cast.** Cast speakers fetch the
+  audio from Home Assistant themselves, using the internal URL when one is set:
 
-   The **Home Assistant Companion app** works, since it connects over HTTPS. You may need
-   to grant microphone permission to the app itself in your phone's settings the first time.
+  ```yaml
+  homeassistant:
+    internal_url: "http://192.168.1.50:8123"
+  ```
 
-2. **Set `internal_url` to a LAN address if you use Google Cast.** When you broadcast, the
-   Cast device fetches the audio file from Home Assistant *itself* — Home Assistant does
-   not push audio to it. Home Assistant picks the URL via `get_url()`, which prefers the
-   internal URL. With `internal_url` set to your LAN address, the speaker fetches over your
-   local network and never goes out to the internet:
-
-   ```yaml
-   homeassistant:
-     internal_url: "http://192.168.1.50:8123"
-     external_url: "https://hass.example.com"
-   ```
-
-3. **Cloudflare Access / Zero Trust in front of Home Assistant breaks Cast playback** if the
-   Cast device has to fetch through it. A speaker cannot log in to an Access challenge, so
-   the fetch fails and nothing plays. Setting `internal_url` as in item 2 avoids this
-   entirely, because the speaker never goes through Cloudflare. If you must expose media
-   through Cloudflare, add a bypass rule for `/api/hass_broadcast/media/*`.
-
-4. **Target speakers must support `PLAY_MEDIA`.** The card only lists media players that
-   advertise this feature. A player that cannot accept a URL will not appear.
-
-5. **A modern browser is required** for `AudioWorklet` — any current Chrome, Edge, Firefox,
-   or Safari. Very old browsers will show the unsupported message.
+  This also keeps Cloudflare Access out of the path. A speaker can't log in to Access, so
+  if it has to fetch through it, nothing plays. If you can't avoid that, add a bypass rule
+  for `/api/hass_broadcast/media/*`.
+- **Speakers must support `PLAY_MEDIA`.** Players that don't support it aren't listed.
+  Only Google Cast is tested. Sonos, ESPHome and similar players should work, but Alexa
+  won't.
 
 ### Behavioural restrictions
 
-6. **There is no ducking or resume on Google Cast.** In `restore` mode, a speaker whose
-   integration implements Home Assistant's `announce` feature (Sonos, Music Assistant and
-   ESPHome media players among them) is handed the message as an announcement, and the
-   device itself ducks and resumes whatever was playing. Home Assistant's Cast integration
-   does not implement `announce`, so on Cast a broadcast simply interrupts whatever was
-   playing, and `restore` mode is an *emulation*: it snapshots and restores the
-   volume reliably, but it **cannot dependably resume an active Spotify, YouTube Music, or
-   radio session** — that is a Cast limitation, not something this integration can fix.
-   `plain` is the default for exactly this reason. Treat `restore` as best-effort. The
-   volume is put back roughly a second after the message should have finished, by a
-   background task: the card is released as soon as playback has been
-   dispatched and does not wait out the whole message. The same mechanism puts the volume
-   back after a **Set volume** broadcast, in any mode; speakers that take the native
-   announcement path manage their own announcement volume and are left alone.
-
-7. **In `chime` mode, the gap before the message is a timing heuristic, not a guarantee
-   that the chime finished playing.** Home Assistant plays a short chime, waits a fixed interval
-   derived from the chime's own length plus a latency margin, then plays the message —
-   `play_media` with `blocking=True` only confirms Home Assistant's call was accepted, not
-   that the speaker has audibly finished the chime. On a Cast device that is slow to start
-   playback, the message can clip the tail end of the chime. If that matters to you, prefer
-   `plain` or `restore`.
-
-8. **Audio is WAV, or MP3 when ffmpeg is available.** Recordings are captured as 16 kHz mono
-   16-bit PCM and wrapped in a WAV container in the browser. If `ffmpeg` is on the system
-   path — it is in every official Home Assistant image — the file is transcoded to MP3 to
-   save space. If it is not, the WAV is kept and everything still works. ffmpeg is an
-   optimization, never a requirement.
-
-   **Why not Opus?** The browser's built-in `MediaRecorder` produces Opus in a WebM
-   container in Chrome and AAC in Safari. Google Cast documents Opus as supported, but in
-   practice plays it reliably only inside a WebM *video* container — audio-only Opus often
-   fails. Capturing raw PCM avoids both the codec divergence between browsers and the Cast
-   compatibility problem.
-
-9. **Only Google Cast is tested.** Sonos, ESPHome media players, Squeezelite, and the
-   Voice Preview Edition all use the same `play_media` path and are expected to work, but
-   they are not verified. Alexa devices will **not** work: they cannot play arbitrary URLs.
-
-10. **Recording duration is measured server-side, not taken from the browser's claim.**
-    When a recording is uploaded, Home Assistant parses the true duration from the WAV
-    header itself; the duration the browser reports is only used as a fallback if that
-    parsing fails. This matters for `restore` mode, where an understated duration would
-    restore the speaker's volume while the message is still audibly playing, and it is
-    why the history timestamps and durations can be trusted even if a client misreports.
+- **Cast doesn't resume music.** Speakers that support announcements (Sonos, Music
+  Assistant, ESPHome) duck the audio and then resume it themselves. On Cast, a broadcast
+  interrupts whatever is playing. `restore` mode puts the volume back, but it can't
+  restart Spotify or the radio.
+- **`chime` timing is an estimate.** On a slow Cast device, the start of the message may
+  cut off the end of the chime.
 
 ### Storage and privacy
 
-11. **Recordings are stored unencrypted** in `<config>/hass_broadcast/`, and are therefore
-    **included in your Home Assistant backups**. If you back up off-site, your voice
-    messages go with it.
-
-12. **Retention defaults to the last 10 recordings.** Older ones are deleted automatically
-    when a new one arrives. Change this (1–200) in **Settings → Devices & services → Voice
-    Broadcast → Configure**.
-
-13. <a id="deletion-permissions"></a>**Deletion is ownership-based: you may delete your own
-    recordings, and an administrator may delete anyone's.** This is enforced on the server —
-    the websocket delete command checks that the requesting user either owns the recording or
-    is an administrator, and rejects the request with `not_authorized` otherwise. The card
-    only shows a Delete button where the server has told it deletion is permitted; it never
-    decides this on its own.
-
-    **Only deletion is ownership-restricted.** Every logged-in Home Assistant user can see
-    and play back *every* household member's recordings in the card's history and in the
-    media browser — ownership does not make a recording private, it only decides who may
-    remove it.
-
-14. **Any Home Assistant user who can see the card can record and broadcast.** Uploads
-    require a valid login but are deliberately *not* restricted to administrators — Home
-    Assistant's own media upload endpoint is admin-only, which would stop non-admin
-    household members from using the card at all. This applies to recording and sending a
-    broadcast only; deleting an existing recording is restricted as described above. If you
-    do not want a particular user broadcasting, do not put the card on a dashboard they can
-    see.
-
-    Playback URLs are individually signed and short-lived, so recordings are never served
-    unauthenticated. They are deliberately not placed in `config/www/`, which Home
-    Assistant serves with no authentication whatsoever.
-
-15. **Removing the integration deletes your recordings.** Deleting the Voice Broadcast entry
-    in **Settings → Devices & services** purges `<config>/hass_broadcast/` and the
-    `.storage/hass_broadcast` metadata, so an uninstall does not leave voice messages behind
-    on disk or in future backups. The directory itself is only removed if it is empty, so
-    anything you put there yourself is left alone. Recordings already captured in *existing*
-    backups are of course unaffected.
+- **Recordings aren't encrypted, and they're included in backups.** By default the last
+  10 are kept; you can set this anywhere from 1 to 200 under **Configure** on the
+  integration. Removing the integration deletes all recordings.
+- <a id="deletion-permissions"></a>**Any logged-in user who can see the card can record,
+  broadcast and play back every recording.** Only the person who made a recording, or an
+  admin, can delete it. Playback URLs are signed and expire after a short time.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 | --- | --- |
-| Record button is disabled | Not a secure context — see restriction 1 |
+| Record button is disabled | Not a secure context — see [Hard requirements](#hard-requirements) |
 | "Microphone permission was denied" | Allow the microphone for this site, or for the Companion app |
-| Nothing plays, no error | Cast could not fetch the URL — check `internal_url` (2) and Cloudflare Access (3) |
-| Speaker missing from the list | It does not advertise `PLAY_MEDIA` (4) |
-| Music does not resume after a broadcast | Expected on Cast — see restriction 6 |
-| Chime sounds cut off before the message starts | Cast started playback slowly — see restriction 7 |
-| Delete button is missing on a recording | You are not the owner and not an administrator — see restriction 13 |
+| Nothing plays, no error | Cast could not fetch the URL — check `internal_url` and Cloudflare Access ([Hard requirements](#hard-requirements)) |
+| Speaker missing from the list | It does not support `PLAY_MEDIA` |
+| Music does not resume after a broadcast | Expected on Cast — see [Behavioural restrictions](#behavioural-restrictions) |
+| Chime sounds cut off before the message starts | Cast started playback slowly — see [Behavioural restrictions](#behavioural-restrictions) |
+| Delete button is missing on a recording | You are not the owner and not an administrator — see [Storage and privacy](#storage-and-privacy) |
 
 ## Development
 

@@ -22,6 +22,15 @@ speakers — a simple intercom, without leaving the UI.
 - **A one-tap intercom tile** that sends straight to the speakers you chose
 - **No services, no entities** — installing it adds dashboard cards and nothing else
 
+<a id="https-required"></a>
+
+> [!IMPORTANT]
+> **Recording needs HTTPS.** Browsers only allow microphone access on secure pages,
+> so on `http://<ip>:8123` the record button stays disabled. This is a browser rule,
+> not a limitation of this card. Workaround in Chrome: open
+> `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add your Home Assistant
+> URL, enable it and relaunch. Other options are under [Requirements](#hard-requirements).
+
 ## Installation
 
 ### HACS (recommended)
@@ -207,6 +216,10 @@ the items below.
    valid certificate, Home Assistant Cloud (Nabu Casa), Tailscale, Cloudflare Tunnel, or
    `http://localhost:8123`. The card detects an insecure context and tells you so instead
    of failing silently.
+
+   As a stopgap in Chrome, open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`,
+   add your Home Assistant URL (e.g. `http://192.168.1.50:8123`), enable it and relaunch.
+   This only affects that browser on that device.
 
    The **Home Assistant Companion app** works, since it connects over HTTPS. You may need
    to grant microphone permission to the app itself in your phone's settings the first time.

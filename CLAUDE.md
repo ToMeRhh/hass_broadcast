@@ -49,9 +49,18 @@ commit in `.cache/` with a page of ours (`frontend/dev/editor/`), so iterate on
 
 Use `.venv/bin/python`, not a bare `python`. The test env pins
 `pytest-homeassistant-custom-component`, which is what pins the Home Assistant
-version under test — currently 2025.1.4. Live installs run much newer releases,
-so code that touches Home Assistant internals must tolerate both (see
-`_lovelace_resources` in `__init__.py` for the pattern).
+version under test — currently 2026.10.2, which needs Python 3.14, so create
+the venv with a 3.14 interpreter (`uv venv --python 3.14 .venv` if the system
+has none). It is the one version tested, a recent release because that is what
+users run, and it is bumped to the latest from time to time.
+
+`hacs.json` declares 2024.11.0 as the minimum, and that floor is **declared but
+not tested** — deliberately, rather than a matrix (#16, #23). Code that touches
+Home Assistant internals must still tolerate both ends, and the branches for
+older releases stay even though no test reaches them: `_lovelace_resources` in
+`__init__.py` handling both the pre-2025.2 dict and the `LovelaceData`
+dataclass is the pattern. Coverage reports those branches as missed; that is
+expected, not dead code to delete.
 
 `tsconfig.json` sets `"lib": ["ES2021", "DOM"]` with `noEmit`, and CI runs
 `npx tsc --noEmit` before the card tests, so run it locally too —

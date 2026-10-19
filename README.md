@@ -270,10 +270,13 @@ filing a bug.
 
 ## Development
 
-Python 3.12 or newer and Node 22.
+Python 3.14 and Node 22. The integration tests run against Home Assistant 2026.10.2, the version
+`requirements_test.txt` pins, which needs Python 3.14. That is the only version tested: the
+2024.11 minimum in `hacs.json` is declared but not tested, and the code keeps its branches for
+older releases.
 
 ```bash
-python -m venv .venv
+python3.14 -m venv .venv        # or: uv venv --python 3.14 .venv
 .venv/bin/pip install -r requirements_test.txt
 .venv/bin/python -m pytest -q   # integration tests; `python -m pytest`, not bare `pytest`,
                                 # so the repo root is on sys.path

@@ -1,6 +1,7 @@
 # Voice Broadcast for Home Assistant
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![Home Assistant 2024.11+](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-41BDF5.svg)](https://www.home-assistant.io/)
 [![CI](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml/badge.svg)](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

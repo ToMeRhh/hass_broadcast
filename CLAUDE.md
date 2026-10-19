@@ -7,7 +7,7 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (65)
+.venv/bin/python -m pytest -q   # integration tests (75)
 npm test                        # card tests, vitest (197)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
@@ -43,8 +43,8 @@ version under test — currently 2025.1.4. Live installs run much newer releases
 so code that touches Home Assistant internals must tolerate both (see
 `_lovelace_resources` in `__init__.py` for the pattern).
 
-`tsconfig.json` sets `"lib": ["ES2021", "DOM"]` with `noEmit`, so `npx tsc
---noEmit` is a supported check even though CI does not run it —
+`tsconfig.json` sets `"lib": ["ES2021", "DOM"]` with `noEmit`, and CI runs
+`npx tsc --noEmit` before the card tests, so run it locally too —
 `Array.prototype.at` is ES2022 and must not appear in `frontend/`.
 
 ## Card configuration keys

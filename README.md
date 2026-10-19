@@ -11,10 +11,7 @@ Record a voice message in your Home Assistant dashboard and play it on your
 speakers — a simple intercom, without leaving the UI.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/card-dark.png">
-    <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="360">
-  </picture>
+  <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="360">
 </p>
 
 - **Hold to talk** (or tap to start, tap to stop), then play it back before sending
@@ -99,10 +96,7 @@ change what the card shows, never where its buttons are.
 The card's editor is Home Assistant's own form, in four sections:
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/editor-dark.png">
-    <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/editor-light.png?raw=true" alt="The card editor: a Name field, then Appearance with picture choices for the layout and the speaker picker, a Recent messages menu and a Volume control switch, then Speakers with the speakers on the card and the ones selected when it opens" width="420">
-  </picture>
+  <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/editor-light.png?raw=true" alt="The card editor: a Name field, then Appearance with picture choices for the layout and the speaker picker, a Recent messages menu and a Volume control switch, then Speakers with the speakers on the card and the ones selected when it opens" width="420">
 </p>
 
 - **Appearance** — the layout, how speakers are picked, where recent messages

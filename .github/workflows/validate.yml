@@ -1,0 +1,43 @@
+name: Validate
+
+# Home Assistant's and HACS's own validators. Kept apart from ci.yml, which
+# tests our code: these test the repository against rules that live upstream.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  # Both validators run whatever their maintainers published last
+  # (hassfest@master pulls ghcr.io/home-assistant/hassfest:latest, hacs/action@main
+  # pulls ghcr.io/hacs/action:main), so a rule can change and start failing with
+  # no commit here. The weekly run notices that before the next PR does.
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+# Neither validator writes anything. hacs/action reads the repository through
+# the GitHub API with the job token; checkout needs contents: read.
+permissions:
+  contents: read
+
+jobs:
+  # Checks the integration as Home Assistant core would: manifest.json keys and
+  # their order, strings.json and translations/, config flow, dependencies.
+  # It runs on the checked-out tree.
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: home-assistant/actions/hassfest@master
+
+  # Checks the repository as HACS would before installing it: hacs.json, the
+  # manifest, brand assets, README, license, description, topics. It fetches
+  # the pushed branch (or the PR head) through the GitHub API, so it needs no
+  # checkout. The brands check passes on the integration's own brand/icon.png
+  # (Home Assistant 2026.3+ reads brand/ instead of home-assistant/brands), so
+  # nothing is ignored.
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@main
+        with:
+          category: integration

@@ -940,7 +940,7 @@ var er=Object.defineProperty;var tr=Object.getOwnPropertyDescriptor;var u=(t,e,r
       <ha-card>
         <div class="tile ${this.shape}" title=${this.rec.supported?"":de}>
           <div class="slot">
-            ${ke({size:this.shape==="square"?52:40,recording:r,disabled:!this.rec.supported||i||this.targets.length===0,recordMode:"push_to_talk",level:this.rec.level,maxDuration:s,label:c,onPressStart:p=>void this.rec.onPressStart(p),onPressEnd:()=>void this.rec.onPressEnd()})}
+            ${ke({size:this.shape==="square"?52:40,recording:r,disabled:!this.rec.supported||i||this.targets.length===0,recordMode:"push_to_talk",level:this.rec.level,maxDuration:s,label:c,onPressStart:p=>{this.rec.onPressStart(p)},onPressEnd:()=>{this.rec.onPressEnd()}})}
           </div>
           <div class="text">
             <span class="name">${this.name}</span>
@@ -1284,7 +1284,7 @@ var er=Object.defineProperty;var tr=Object.getOwnPropertyDescriptor;var u=(t,e,r
       </button>
       ${t.open?l`<div class="popover">${qe(t)}</div>`:d}
     </div>
-  `}var Ir=4e3,Nr=10,Br=.25,g=class extends y{constructor(){super(...arguments);this.config={type:""};this.selected=[];this.history=[];this.position=0;this.playing=!1;this.pickerOpen=!1;this.historyOpen=!1;this.volumeOpen=!1;this.menuOpen=!1;this.volumeOverride=!1;this.volume=1;this.rec=new U(this,{recordMode:()=>this.recordMode,maxDuration:()=>this.resolved.maxDuration,noiseSuppression:()=>this.resolved.noiseSuppression,onStart:()=>this.setStatus(void 0),onError:(r,i)=>this.fail(r,i),onTake:r=>{this.setClip(Et(r.blob,r.duration,r.peaks))}})}setConfig(r){this.config=r,this.selected=[...Le(r).selected]}get resolved(){return Le(this.config)}getCardSize(){let r=this.resolved;if(r.layout==="compact")return 2;let i=5;return i+=r.speakerPicker==="list"?4:r.speakerPicker==="chips"?1:0,r.recentMessages==="list"&&(i+=3),i}getGridOptions(){return{columns:12,min_columns:6}}static getConfigForm(){return _t}static getStubConfig(r){return{type:"custom:hass-broadcast-card",layout:"full",speaker_picker:"dropdown",recent_messages:"button",volume_control:!0,speakers:F(r),selected:[],record_mode:"push_to_talk",max_duration:60,mode:"plain"}}connectedCallback(){super.connectedCallback(),this.rec.supported||(this.status={kind:"error",text:de,sticky:!0}),this.refreshHistory()}updated(){let r=this.renderRoot?.querySelector?.("dialog");r&&!r.open&&r.showModal?.()}disconnectedCallback(){super.disconnectedCallback(),this.stopPlayback(),this.clearStatusTimer(),ve(this.clip),this.clip=void 0,this.historyOpen=!1,this.menuOpen=!1,this.volumeOpen=!1}async refreshHistory(){if(!(!this.hass||this.resolved.recentMessages==="off"))try{this.history=await ut(this.hass)}catch{this.history=[]}}get players(){return vt(F(this.hass),this.resolved.speakers)}get targets(){return yt(this.selected,this.resolved.speakers)}get recordMode(){return this.resolved.recordMode}clearStatusTimer(){this.statusTimer!==void 0&&(window.clearTimeout(this.statusTimer),this.statusTimer=void 0)}setStatus(r){this.clearStatusTimer(),this.status=r,r&&!r.sticky&&(this.statusTimer=window.setTimeout(()=>{this.statusTimer=void 0,this.status===r&&(this.status=void 0)},Ir))}fail(r,i=!1){this.setStatus({kind:"error",text:r,sticky:i})}setClip(r){this.stopPlayback(),this.clip&&this.clip!==r&&ve(this.clip),this.clip=r}clearClip(){this.stopPlayback(),ve(this.clip),this.clip=void 0}seek(r){if(!this.clip)return;this.position=r*this.clip.duration;let i=this.ensureAudio();i&&i.src===this.clip.url&&(i.currentTime=this.position)}ensureAudio(){if(!(typeof Audio>"u"))return this.audio||(this.audio=new Audio,this.audio.addEventListener("timeupdate",()=>{this.position=this.audio?.currentTime??0}),this.audio.addEventListener("ended",()=>{this.playing=!1,this.position=0})),this.audio}togglePlay(){let r=this.ensureAudio();if(!(!r||!this.clip)){if(this.playing){r.pause(),this.playing=!1;return}r.src!==this.clip.url&&(r.src=this.clip.url,r.currentTime=this.position),r.play().then(()=>{this.playing=!0},i=>{this.fail(`Could not play that here: ${i?.message??i}`)})}}stopPlayback(){this.audio?.pause(),this.playing=!1,this.position=0}toggleTarget(r){this.selected=this.selected.includes(r)?this.selected.filter(i=>i!==r):[...this.selected,r]}get canBroadcast(){return this.clip!==void 0&&this.targets.length>0&&this.rec.phase==="idle"}async broadcast(){if(this.rec.phase!=="idle")return;let r=this.clip;if(!r){this.fail("Record a message or pick one from below first.");return}let i=this.targets;if(i.length===0){this.fail("Pick at least one speaker first.");return}this.rec.setSending(!0),this.setStatus(void 0);try{let s=await ye({hass:this.hass,clip:r,targets:i,mode:this.resolved.mode,volume:this.volumeOverride?this.volume:void 0,onStored:o=>{this.clip===r&&(this.clip={...r,source:{kind:"stored",id:o}})}});this.rec.setSending(!1),this.setStatus(be(this.hass,s)),await this.refreshHistory()}catch(s){this.rec.setSending(!1),this.fail(`Could not send: ${s?.message??s}`)}}async loadMessage(r){this.loadingId=r.id,this.historyOpen=!1,this.setStatus(void 0);try{this.setClip(await Rt(this.hass,r))}catch(i){this.fail(i?.message??String(i))}finally{this.loadingId=void 0}}async deleteRecording(r){try{await mt(this.hass,r)&&await this.refreshHistory()}catch(i){i?.code==="not_authorized"?this.fail("You do not have permission to delete this recording."):this.fail(`Could not delete: ${i?.message??i}`)}}get hint(){return this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}get recordLabel(){return this.rec.phase==="sending"?"Broadcasting":this.rec.phase==="recording"?this.recordMode==="push_to_talk"?"Recording \u2014 release to stop":"Recording \u2014 tap to stop":this.hint}get view(){return this.rec.phase==="recording"?"recording":this.status?"status":this.clip?"review":"idle"}get timerWarning(){let r=this.resolved.maxDuration,i=Math.min(Nr,r*Br);return this.rec.phase==="recording"&&r-this.rec.elapsed<=i}historyProps(){return{messages:this.history,loadedId:this.clip?fe(this.clip):void 0,loadingId:this.loadingId,onLoad:r=>void this.loadMessage(r),onDelete:r=>void this.deleteRecording(r),onDialogOpenChange:r=>{this.historyOpen=r}}}get parts(){let r=this.rec.phase==="recording",i=this.rec.phase==="sending",s=this.clip!==void 0&&!r,o={enabled:this.volumeOverride,value:this.volume,onToggle:()=>{this.volumeOverride=!this.volumeOverride},onChange:a=>{this.volume=a}},n=this.resolved;return{title:n.title,view:this.view,speakerPicker:n.speakerPicker,recentMessages:n.recentMessages,volumeControl:n.volumeControl,hint:this.hint,timer:O(this.rec.elapsed),timerWarning:this.timerWarning,status:this.status,reviewing:s,mic:a=>ke({size:a,recording:r,disabled:!this.rec.supported||i,recordMode:this.recordMode,level:this.rec.level,maxDuration:this.resolved.maxDuration,label:this.recordLabel,onPressStart:c=>void this.rec.onPressStart(c),onPressEnd:()=>void this.rec.onPressEnd()}),play:()=>l`
+  `}var Ir=4e3,Nr=10,Br=.25,g=class extends y{constructor(){super(...arguments);this.config={type:""};this.selected=[];this.history=[];this.position=0;this.playing=!1;this.pickerOpen=!1;this.historyOpen=!1;this.volumeOpen=!1;this.menuOpen=!1;this.volumeOverride=!1;this.volume=1;this.rec=new U(this,{recordMode:()=>this.recordMode,maxDuration:()=>this.resolved.maxDuration,noiseSuppression:()=>this.resolved.noiseSuppression,onStart:()=>this.setStatus(void 0),onError:(r,i)=>this.fail(r,i),onTake:r=>{this.setClip(Et(r.blob,r.duration,r.peaks))}})}setConfig(r){this.config=r,this.selected=[...Le(r).selected]}get resolved(){return Le(this.config)}getCardSize(){let r=this.resolved;if(r.layout==="compact")return 2;let i=5;return i+=r.speakerPicker==="list"?4:r.speakerPicker==="chips"?1:0,r.recentMessages==="list"&&(i+=3),i}getGridOptions(){return{columns:12,min_columns:6}}static getConfigForm(){return _t}static getStubConfig(r){return{type:"custom:hass-broadcast-card",layout:"full",speaker_picker:"dropdown",recent_messages:"button",volume_control:!0,speakers:F(r),selected:[],record_mode:"push_to_talk",max_duration:60,mode:"plain"}}connectedCallback(){super.connectedCallback(),this.rec.supported||(this.status={kind:"error",text:de,sticky:!0}),this.refreshHistory()}updated(){let r=this.renderRoot?.querySelector?.("dialog");r&&!r.open&&r.showModal?.()}disconnectedCallback(){super.disconnectedCallback(),this.stopPlayback(),this.clearStatusTimer(),ve(this.clip),this.clip=void 0,this.historyOpen=!1,this.menuOpen=!1,this.volumeOpen=!1}async refreshHistory(){if(!(!this.hass||this.resolved.recentMessages==="off"))try{this.history=await ut(this.hass)}catch{this.history=[]}}get players(){return vt(F(this.hass),this.resolved.speakers)}get targets(){return yt(this.selected,this.resolved.speakers)}get recordMode(){return this.resolved.recordMode}clearStatusTimer(){this.statusTimer!==void 0&&(window.clearTimeout(this.statusTimer),this.statusTimer=void 0)}setStatus(r){this.clearStatusTimer(),this.status=r,r&&!r.sticky&&(this.statusTimer=window.setTimeout(()=>{this.statusTimer=void 0,this.status===r&&(this.status=void 0)},Ir))}fail(r,i=!1){this.setStatus({kind:"error",text:r,sticky:i})}setClip(r){this.stopPlayback(),this.clip&&this.clip!==r&&ve(this.clip),this.clip=r}clearClip(){this.stopPlayback(),ve(this.clip),this.clip=void 0}seek(r){if(!this.clip)return;this.position=r*this.clip.duration;let i=this.ensureAudio();i&&i.src===this.clip.url&&(i.currentTime=this.position)}ensureAudio(){if(!(typeof Audio>"u"))return this.audio||(this.audio=new Audio,this.audio.addEventListener("timeupdate",()=>{this.position=this.audio?.currentTime??0}),this.audio.addEventListener("ended",()=>{this.playing=!1,this.position=0})),this.audio}togglePlay(){let r=this.ensureAudio();if(!(!r||!this.clip)){if(this.playing){r.pause(),this.playing=!1;return}r.src!==this.clip.url&&(r.src=this.clip.url,r.currentTime=this.position),r.play().then(()=>{this.playing=!0},i=>{this.fail(`Could not play that here: ${i?.message??i}`)})}}stopPlayback(){this.audio?.pause(),this.playing=!1,this.position=0}toggleTarget(r){this.selected=this.selected.includes(r)?this.selected.filter(i=>i!==r):[...this.selected,r]}get canBroadcast(){return this.clip!==void 0&&this.targets.length>0&&this.rec.phase==="idle"}async broadcast(){if(this.rec.phase!=="idle")return;let r=this.clip;if(!r){this.fail("Record a message or pick one from below first.");return}let i=this.targets;if(i.length===0){this.fail("Pick at least one speaker first.");return}this.rec.setSending(!0),this.setStatus(void 0);try{let s=await ye({hass:this.hass,clip:r,targets:i,mode:this.resolved.mode,volume:this.volumeOverride?this.volume:void 0,onStored:o=>{this.clip===r&&(this.clip={...r,source:{kind:"stored",id:o}})}});this.rec.setSending(!1),this.setStatus(be(this.hass,s)),await this.refreshHistory()}catch(s){this.rec.setSending(!1),this.fail(`Could not send: ${s?.message??s}`)}}async loadMessage(r){this.loadingId=r.id,this.historyOpen=!1,this.setStatus(void 0);try{this.setClip(await Rt(this.hass,r))}catch(i){this.fail(i?.message??String(i))}finally{this.loadingId=void 0}}async deleteRecording(r){try{await mt(this.hass,r)&&await this.refreshHistory()}catch(i){i?.code==="not_authorized"?this.fail("You do not have permission to delete this recording."):this.fail(`Could not delete: ${i?.message??i}`)}}get hint(){return this.recordMode==="push_to_talk"?"Hold to talk":"Tap to record"}get recordLabel(){return this.rec.phase==="sending"?"Broadcasting":this.rec.phase==="recording"?this.recordMode==="push_to_talk"?"Recording \u2014 release to stop":"Recording \u2014 tap to stop":this.hint}get view(){return this.rec.phase==="recording"?"recording":this.status?"status":this.clip?"review":"idle"}get timerWarning(){let r=this.resolved.maxDuration,i=Math.min(Nr,r*Br);return this.rec.phase==="recording"&&r-this.rec.elapsed<=i}historyProps(){return{messages:this.history,loadedId:this.clip?fe(this.clip):void 0,loadingId:this.loadingId,onLoad:r=>{this.loadMessage(r)},onDelete:r=>{this.deleteRecording(r)},onDialogOpenChange:r=>{this.historyOpen=r}}}get parts(){let r=this.rec.phase==="recording",i=this.rec.phase==="sending",s=this.clip!==void 0&&!r,o={enabled:this.volumeOverride,value:this.volume,onToggle:()=>{this.volumeOverride=!this.volumeOverride},onChange:a=>{this.volume=a}},n=this.resolved;return{title:n.title,view:this.view,speakerPicker:n.speakerPicker,recentMessages:n.recentMessages,volumeControl:n.volumeControl,hint:this.hint,timer:O(this.rec.elapsed),timerWarning:this.timerWarning,status:this.status,reviewing:s,mic:a=>ke({size:a,recording:r,disabled:!this.rec.supported||i,recordMode:this.recordMode,level:this.rec.level,maxDuration:this.resolved.maxDuration,label:this.recordLabel,onPressStart:c=>{this.rec.onPressStart(c)},onPressEnd:()=>{this.rec.onPressEnd()}}),play:()=>l`
         <button
           class="icon play"
           ?disabled=${!s||i}
@@ -1312,7 +1312,7 @@ var er=Object.defineProperty;var tr=Object.getOwnPropertyDescriptor;var u=(t,e,r
               data-sending=${i}
               title=${p}
               aria-label=${i?"Broadcasting":p}
-              @click=${()=>void this.broadcast()}
+              @click=${()=>{this.broadcast()}}
             >
               ${i?l`<span class="spinner" aria-hidden="true"></span>`:Ut}
               ${a==="pill"?l`<span>Send</span>`:d}
@@ -1344,20 +1344,18 @@ var er=Object.defineProperty;var tr=Object.getOwnPropertyDescriptor;var u=(t,e,r
    *)
 
 @lit/reactive-element/reactive-element.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
 lit-html/lit-html.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
 lit-element/lit-element.js:
+@lit/reactive-element/decorators/custom-element.js:
+@lit/reactive-element/decorators/property.js:
+@lit/reactive-element/decorators/state.js:
+@lit/reactive-element/decorators/event-options.js:
+@lit/reactive-element/decorators/base.js:
+@lit/reactive-element/decorators/query.js:
+@lit/reactive-element/decorators/query-all.js:
+@lit/reactive-element/decorators/query-async.js:
+@lit/reactive-element/decorators/query-assigned-nodes.js:
+lit-html/directive.js:
   (**
    * @license
    * Copyright 2017 Google LLC
@@ -1371,80 +1369,11 @@ lit-html/is-server.js:
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 
-@lit/reactive-element/decorators/custom-element.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/property.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/state.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/event-options.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/base.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/query.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/query-all.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/query-async.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
 @lit/reactive-element/decorators/query-assigned-elements.js:
+lit-html/directives/keyed.js:
   (**
    * @license
    * Copyright 2021 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/query-assigned-nodes.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/directive.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 
@@ -1452,13 +1381,6 @@ lit-html/directive-helpers.js:
   (**
    * @license
    * Copyright 2020 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/directives/keyed.js:
-  (**
-   * @license
-   * Copyright 2021 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 */

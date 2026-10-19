@@ -57,6 +57,15 @@ so code that touches Home Assistant internals must tolerate both (see
 `npx tsc --noEmit` before the card tests, so run it locally too —
 `Array.prototype.at` is ES2022 and must not appear in `frontend/`.
 
+`ci.yml` runs four parallel jobs: `frontend` (tsc, card tests), `bundle`
+(rebuild and stale-bundle check), `python` (integration tests) and `layout`.
+`frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
+`--cov=custom_components/hass_broadcast --cov-branch`) and write it to the job
+summary. There is no coverage floor yet. The coverage flags are in `ci.yml`,
+not `pytest.ini` or `npm test`, so the local commands above stay unchanged.
+`pytest-cov` is pinned to the version pytest-homeassistant-custom-component
+itself pins; bump them together.
+
 ## Card configuration keys
 
 The card's config is flat, one key per editor field: `title`, `layout`
@@ -158,7 +167,7 @@ release is cut**: users pulling the default branch get the new bundle file at th
 old `?v=` URL and keep serving their cached copy. Cutting the release is the
 delivery event, not merging to `master`.
 
-`.github/workflows/ci.yml` guards the other half: it rebuilds the bundle and
+`.github/workflows/ci.yml` guards the other half: its `bundle` job rebuilds the bundle and
 fails if the committed one differs. The build is deterministic, so that check is
 reliable rather than flaky.
 

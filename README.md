@@ -306,8 +306,18 @@ upload it under **Settings → General → Social preview**.
 committed to the repository**, because HACS installs the repository as-is and the integration
 serves that file directly — an uncommitted bundle means every dashboard gets a 404 instead of a
 card. Whenever anything under `frontend/src/` changes, run `npm run build` and commit the
-regenerated bundle in the same change. CI fails if the committed bundle is stale. CI also runs
-`npm run check:layout`, which fails if any part of the card moves between states.
+regenerated bundle in the same change. CI fails if the committed bundle is stale.
+
+CI runs four jobs in parallel: `frontend` (type-check and card tests), `bundle` (rebuilds the
+card and fails if the committed bundle differs), `python` (integration tests) and `layout`
+(`npm run check:layout`, which fails if any part of the card moves between states). `frontend`
+and `python` measure coverage and write it to the run's summary page; there is no minimum yet.
+To measure locally:
+
+```bash
+npm test -- --coverage
+.venv/bin/python -m pytest -q --cov=custom_components/hass_broadcast --cov-branch
+```
 
 Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/)
 (`fix:`, `feat:`, `docs:`, `refactor:`, `chore:`).

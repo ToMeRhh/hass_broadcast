@@ -115,7 +115,7 @@ it, and a page reload picks it up.
   to ask for a GitHub login.
 
 The first run takes a few minutes; later ones start once the gallery has
-compiled. It is not in CI, for the same reason as `check:layout`. The cache
+compiled. It is not in CI: the download is far too large to repeat on every push. The cache
 cannot live under `node_modules`: Node refuses to strip types from `.ts` files
 there, and the gallery's build scripts are TypeScript.
 

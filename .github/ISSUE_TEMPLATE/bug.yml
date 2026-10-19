@@ -1,0 +1,115 @@
+name: Bug report
+description: The card, the tile or a broadcast does not work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please check these. Between them they cover most reports:
+
+        - [Troubleshooting](https://github.com/ToMeRhh/hass_broadcast#troubleshooting) and [Requirements and restrictions](https://github.com/ToMeRhh/hass_broadcast#requirements-and-restrictions) in the README.
+        - **Just updated?** Reload the dashboard without the cache (Ctrl+Shift+R, or Cmd+Shift+R on a Mac). In the Companion app, reset its frontend cache in the app's settings, or force-stop and reopen it. A stale copy of the card looks like a bug in the new version.
+        - **Record button disabled?** The page is not on HTTPS. See [Recording needs HTTPS](https://github.com/ToMeRhh/hass_broadcast#https-required).
+        - **`Custom element doesn't exist: hass-broadcast-card` on mobile with a YAML dashboard?** Add the resource yourself, as described under [Manual](https://github.com/ToMeRhh/hass_broadcast#manual) installation.
+
+        General Home Assistant questions get faster answers on the [community forum](https://community.home-assistant.io/).
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      description: Settings → About.
+      placeholder: "2026.10.1"
+    validations:
+      required: true
+  - type: input
+    id: integration-version
+    attributes:
+      label: Voice Broadcast version
+      description: As shown in HACS, or `version` in `custom_components/hass_broadcast/manifest.json`.
+      placeholder: "0.8.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Where does it happen?
+      description: Pick every place you have seen it.
+      multiple: true
+      options:
+        - Desktop browser
+        - Mobile browser
+        - Home Assistant Companion app, Android
+        - Home Assistant Companion app, iOS / iPadOS
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser, app and OS version
+      placeholder: "Chrome 141 on Windows 11, or Companion app 2026.9 on Android 15"
+  - type: dropdown
+    id: dashboard-mode
+    attributes:
+      label: Dashboard mode
+      description: >-
+        UI-managed is the default. YAML mode means `lovelace: mode: yaml` in
+        `configuration.yaml`, which changes how the card is loaded.
+      options:
+        - UI-managed (the default)
+        - YAML mode
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: https
+    attributes:
+      label: Is Home Assistant opened over HTTPS?
+      description: Browsers only allow the microphone on secure pages. See [Recording needs HTTPS](https://github.com/ToMeRhh/hass_broadcast#https-required).
+      options:
+        - Yes, HTTPS (including Home Assistant Cloud, Tailscale, Cloudflare Tunnel)
+        - No, plain http://
+        - localhost
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: speakers
+    attributes:
+      label: Speaker type
+      description: For playback problems, the integration your speakers come from.
+      placeholder: "Google Cast, Sonos, ESPHome, Music Assistant..."
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the card's YAML (Edit card → Show code editor) if it is relevant.
+      placeholder: |
+        1. Open the dashboard with the card
+        2. Hold the record button
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console output
+      description: Open the developer tools (F12) on the dashboard, reproduce the problem, and paste anything from the Console tab. For the Companion app, use `chrome://inspect` in desktop Chrome (Android) or Safari's Develop menu (iOS).
+      render: shell
+  - type: textarea
+    id: ha-log
+    attributes:
+      label: Home Assistant log
+      description: For problems after Send, any lines mentioning `hass_broadcast` from Settings → System → Logs.
+      render: shell

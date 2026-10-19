@@ -1,0 +1,35 @@
+version: 2
+
+# pip is deliberately absent. requirements_test.txt pins
+# pytest-homeassistant-custom-component, which pins the Home Assistant version
+# the suite runs against, and home-assistant-frontend alongside it. Bumping
+# them changes which Home Assistant is under test, so it is done by hand and on
+# purpose, not by a bot. See #23 (test against more than one HA version).
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    labels: ["ci"]
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # lit is bundled into the committed card and esbuild produces it, so a bump
+  # to either can change custom_components/hass_broadcast/www/. CI then fails on
+  # the stale bundle: run `npm run build` on the PR branch and commit the result.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      dev-dependencies:
+        dependency-type: development
+      dependencies:
+        dependency-type: production

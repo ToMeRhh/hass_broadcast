@@ -39,3 +39,29 @@ jobs:
           cache-dependency-path: requirements_test.txt
       - run: pip install -r requirements_test.txt
       - run: python -m pytest -q
+
+  # The card promises that nothing moves between idle, recording, review and
+  # sending. vitest has no layout engine, so check:layout drives the dev
+  # harness in headless Chromium and fails if any .slot changes its box. Its
+  # own job, so the browser download does not hold up the tests above.
+  layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - run: npm run check:layout
+
+      # The check screenshots every state it visits; on a failure they show
+      # what moved.
+      - name: Upload the layout screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: layout-screenshots
+          path: /tmp/hass-broadcast-layout-*/

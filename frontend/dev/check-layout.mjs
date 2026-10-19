@@ -8,8 +8,8 @@
  * if any of them differs from idle. Screenshots of every state land in a temp
  * directory for a human to look at too.
  *
- * vitest cannot do this: it runs without a layout engine. It is not in CI
- * because CI would have to download a browser; run it before merging UI work.
+ * vitest cannot do this: it runs without a layout engine. CI runs it as the
+ * `layout` job; run it locally too before pushing UI work.
  * First time on a machine: npx playwright-core install chromium
  */
 import { spawn } from "node:child_process";

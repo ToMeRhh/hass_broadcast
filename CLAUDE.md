@@ -20,9 +20,10 @@ npm run dev:editor -- --screenshots   # regenerate docs/images/editor-{light,dar
 
 `check:layout` drives the harness in headless Chromium (`playwright-core`, a
 dev dependency) and compares every `.slot`'s box across idle, recording,
-review and sending. It is not in CI, because CI would have to download a
-browser, so run it after any change to the card's markup or CSS. First run on
-a machine: `npx playwright-core install chromium`.
+review and sending. CI runs it as its own job (`layout` in `ci.yml`, which
+uploads the screenshots on failure); run it locally too after any change to
+the card's markup or CSS. First run on a machine: `npx playwright-core install
+chromium`.
 
 `npm run dev` renders the real card and tile against a mocked `hass`, with
 live reload and switches for the states that are painful to reach on a live

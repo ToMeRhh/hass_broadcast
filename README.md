@@ -286,7 +286,8 @@ npm test                        # card tests (vitest)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness on http://localhost:8099
 npm run dev:editor              # the editors, drawn by Home Assistant's own frontend, on :8100
-npm run check:layout            # headless check that nothing moves between card states
+npm run check:layout            # headless check that nothing moves between card states;
+                                # first run: npx playwright-core install chromium
 ```
 
 `npm run dev` renders the real card and tile against a mocked Home Assistant,
@@ -301,7 +302,11 @@ the editor images in this README. See
 committed to the repository**, because HACS installs the repository as-is and the integration
 serves that file directly — an uncommitted bundle means every dashboard gets a 404 instead of a
 card. Whenever anything under `frontend/src/` changes, run `npm run build` and commit the
-regenerated bundle in the same change. CI fails if the committed bundle is stale.
+regenerated bundle in the same change. CI fails if the committed bundle is stale. CI also runs
+`npm run check:layout`, which fails if any part of the card moves between states.
+
+Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`fix:`, `feat:`, `docs:`, `refactor:`, `chore:`).
 
 Releases are cut with **Actions → Release → Run workflow**, which bumps the version in
 `manifest.json`, tags, and publishes a GitHub release with `hass_broadcast.zip` attached —

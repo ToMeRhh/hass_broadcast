@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!--
+    Voice Broadcast icon: the card's record button mid-take. The blobs are the
+    card's level blobs (.blob-outer, .blob-inner in frontend/src/styles.ts):
+    their shapes are two of the blob-shape keyframes, their sizes 1.22x and
+    1.12x the button, grown 1.4x as on a loud word. Colours are the card's
+    --mic-color fallback (#db4437) and its blob gradient.
+    The group is shifted so the whole silhouette, not the button, is centred:
+    the blobs reach further right than left, and would otherwise be clipped.
+    Rendered to PNG by `npm run brand`.
+  -->
+  <defs>
+    <radialGradient id="blob" cx="0.3" cy="0.3" r="0.99" fx="0.3" fy="0.3">
+      <stop offset="0" stop-color="#eb9891"/>
+      <stop offset="0.65" stop-color="#db4437"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(-9.375 4.375)">
+    <path transform="translate(128 128) rotate(-35)" fill="url(#blob)" fill-opacity="0.28" d="M23.91 -119.56A95.65 148.25 0 0 1 119.56 28.69A83.69 90.87 0 0 1 35.87 119.56A155.43 107.6 0 0 1 -119.56 11.96A143.47 131.52 0 0 1 23.91 -119.56Z"/>
+    <path transform="translate(128 128) rotate(20)" fill="url(#blob)" fill-opacity="0.5" d="M-17.56 -109.76A127.32 87.81 0 0 1 109.76 -21.95A138.3 131.71 0 0 1 -28.54 109.76A81.22 120.74 0 0 1 -109.76 -10.98A92.2 98.78 0 0 1 -17.56 -109.76Z"/>
+    <circle cx="128" cy="128" r="70" fill="#db4437"/>
+    <path transform="translate(90.20 90.20) scale(3.1500)" fill="#ffffff" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/>
+  </g>
+</svg>

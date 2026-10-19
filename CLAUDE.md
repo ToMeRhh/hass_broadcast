@@ -16,7 +16,17 @@ npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 npm run check:layout            # headless: no element moves between card states
 npm run dev:editor              # the editors, drawn by HA's own frontend (gallery), :8100
 npm run dev:editor -- --screenshots   # regenerate docs/images/editor-{light,dark}.png
+npm run brand                   # icon, logos, social preview from docs/brand/icon.svg
 ```
+
+The brand images are generated, like the bundle: edit `docs/brand/icon.svg`
+(or `frontend/dev/brand.mjs` for the logos and social preview), run `npm run
+brand`, and commit the PNGs with the change. `custom_components/hass_broadcast/brand/`
+ships in the release zip; Home Assistant 2026.3+ reads it in place of
+home-assistant/brands, and older releases show the placeholder. The social
+preview must be uploaded by hand in the repository settings. The script sets
+text in Roboto from `home-assistant-frontend` in `.venv`, so run it with that
+installed (`VENV=` points at another venv, e.g. from a worktree).
 
 `check:layout` drives the harness in headless Chromium (`playwright-core`, a
 dev dependency) and compares every `.slot`'s box across idle, recording,
@@ -185,7 +195,14 @@ release with generated notes and `hass_broadcast.zip` attached.
 `custom_components/hass_broadcast/`, at the zip root) instead of the repository
 tree, and GitHub counts its downloads as installs. HACS reads `hacs.json` from the
 tag it installs, so releases before v0.7.1 still install from the tree.
-`tests/test_hacs.py` checks that `filename` matches the domain. Don't tag or bump by hand; the workflow keeps the
+`tests/test_hacs.py` checks that `filename` matches the domain.
+
+`hacs.json` also sets `render_readme`, so HACS shows `README.md` on the
+integration's page. Its renderer keeps `<img>` but prints `<picture>` and
+`<source>` as literal text, so README images are plain `<img>` tags. They use
+absolute `https://github.com/ToMeRhh/hass_broadcast/blob/master/...?raw=true`
+URLs rather than relative paths, which also means a new image only shows once
+it is on `master`. Don't tag or bump by hand; the workflow keeps the
 manifest version, the tag, and the release in agreement.
 
 Commit subjects follow Conventional Commits (`fix:`, `feat:`, `docs:`,

@@ -16,6 +16,12 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      # Vitest and esbuild strip types without checking them, so a type error
+      # or an API newer than the target would otherwise sail through. tsconfig
+      # sets lib ES2021: Array.prototype.at, for one, is ES2022 and must not
+      # appear in frontend/ (see CLAUDE.md).
+      - name: Type-check the card
+        run: npx tsc --noEmit
       - run: npm test
 
       # The card bundle is a committed build output -- installs get exactly

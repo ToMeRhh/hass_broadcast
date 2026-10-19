@@ -195,7 +195,14 @@ release with generated notes and `hass_broadcast.zip` attached.
 `custom_components/hass_broadcast/`, at the zip root) instead of the repository
 tree, and GitHub counts its downloads as installs. HACS reads `hacs.json` from the
 tag it installs, so releases before v0.7.1 still install from the tree.
-`tests/test_hacs.py` checks that `filename` matches the domain. Don't tag or bump by hand; the workflow keeps the
+`tests/test_hacs.py` checks that `filename` matches the domain.
+
+`hacs.json` also sets `render_readme`, so HACS shows `README.md` on the
+integration's page. Its renderer keeps `<img>` but prints `<picture>` and
+`<source>` as literal text, so README images are plain `<img>` tags. They use
+absolute `https://github.com/ToMeRhh/hass_broadcast/blob/master/...?raw=true`
+URLs rather than relative paths, which also means a new image only shows once
+it is on `master`. Don't tag or bump by hand; the workflow keeps the
 manifest version, the tag, and the release in agreement.
 
 Commit subjects follow Conventional Commits (`fix:`, `feat:`, `docs:`,

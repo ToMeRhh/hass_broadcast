@@ -1,3 +1,5 @@
+<img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/custom_components/hass_broadcast/brand/icon.png?raw=true" alt="" width="96">
+
 # Voice Broadcast for Home Assistant
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
@@ -289,6 +291,7 @@ npm run dev                     # card dev harness on http://localhost:8099
 npm run dev:editor              # the editors, drawn by Home Assistant's own frontend, on :8100
 npm run check:layout            # headless check that nothing moves between card states;
                                 # first run: npx playwright-core install chromium
+npm run brand                   # regenerate the icon, logos and social preview from docs/brand/icon.svg
 ```
 
 `npm run dev` renders the real card and tile against a mocked Home Assistant,
@@ -298,6 +301,12 @@ Assistant's own forms, so `npm run dev:editor` runs Home Assistant's design
 gallery locally to show them; `npm run dev:editor -- --screenshots` regenerates
 the editor images in this README. See
 [`frontend/dev/README.md`](frontend/dev/README.md).
+
+The icon's source is [`docs/brand/icon.svg`](docs/brand/icon.svg): the card's record button
+mid-take. `npm run brand` renders it into `custom_components/hass_broadcast/brand/`, which Home
+Assistant 2026.3 and later shows instead of a placeholder, and into
+`docs/brand/social-preview.png`, the repository's social preview. GitHub has no API for that one:
+upload it under **Settings → General → Social preview**.
 
 `custom_components/hass_broadcast/www/hass-broadcast-card.js` is a **build output that is
 committed to the repository**, because HACS installs the repository as-is and the integration

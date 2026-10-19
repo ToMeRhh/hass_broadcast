@@ -9,3 +9,9 @@ pytest-homeassistant-custom-component==0.13.205
 # without it a clean install fails every test with
 # ModuleNotFoundError: No module named 'hass_frontend'.
 home-assistant-frontend==20250109.2
+
+# CI measures coverage with `pytest --cov`. pytest-homeassistant-custom-component
+# already pins this exact version (and coverage==7.6.8), so any other pin would
+# not resolve; it is listed here because CI uses it directly, not by accident
+# of a transitive dependency. Bump it together with the line above.
+pytest-cov==6.0.0

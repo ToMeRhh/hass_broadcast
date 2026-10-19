@@ -54,7 +54,7 @@ async def test_non_admin_user_can_upload(
     client = await hass_client(hass_read_only_access_token)
     resp = await client.post(
         "/api/hass_broadcast/upload",
-        data={"file": _wav_bytes(), "duration": "1.5"},
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "1.5"},
     )
     assert resp.status == HTTPStatus.OK
     body = await resp.json()
@@ -68,7 +68,10 @@ async def test_upload_rejects_oversized_file(
     client = await hass_client()
     resp = await client.post(
         "/api/hass_broadcast/upload",
-        data={"file": b"x" * (10 * 1024 * 1024 + 1), "duration": "1"},
+        data={
+            "file": io.BytesIO(b"x" * (10 * 1024 * 1024 + 1)),
+            "duration": "1",
+        },
     )
     assert resp.status == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
 
@@ -98,7 +101,7 @@ async def test_upload_records_the_uploading_user(
     client = await hass_client(hass_read_only_access_token)
     resp = await client.post(
         "/api/hass_broadcast/upload",
-        data={"file": _wav_bytes(), "duration": "1.0"},
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "1.0"},
     )
     assert resp.status == HTTPStatus.OK
     message_id = (await resp.json())["message_id"]
@@ -120,7 +123,8 @@ async def test_upload_rejects_non_wave_riff_file(
     client = await hass_client()
     webp = b"RIFF$\x00\x00\x00WEBPVP8 " + b"\x00" * 32
     resp = await client.post(
-        "/api/hass_broadcast/upload", data={"file": webp, "duration": "1"}
+        "/api/hass_broadcast/upload",
+        data={"file": io.BytesIO(webp), "duration": "1"},
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
@@ -132,7 +136,7 @@ async def test_upload_stores_the_recording(
     client = await hass_client()
     resp = await client.post(
         "/api/hass_broadcast/upload",
-        data={"file": _wav_bytes(), "duration": "2.0"},
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "2.0"},
     )
     message_id = (await resp.json())["message_id"]
 
@@ -152,7 +156,7 @@ async def test_upload_derives_duration_from_wav_data(
     resp = await client.post(
         "/api/hass_broadcast/upload",
         data={
-            "file": _real_wav_bytes(seconds=2.5),
+            "file": io.BytesIO(_real_wav_bytes(seconds=2.5)),
             "duration": "999",  # deliberately wrong -- must be ignored
         },
     )
@@ -181,7 +185,7 @@ async def test_upload_survives_options_reload(
     client = await hass_client()
     resp = await client.post(
         "/api/hass_broadcast/upload",
-        data={"file": _wav_bytes(), "duration": "1.0"},
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "1.0"},
     )
     assert resp.status == HTTPStatus.OK
     body = await resp.json()

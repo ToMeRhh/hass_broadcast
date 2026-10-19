@@ -1,17 +1,26 @@
 # Pinned: pytest-homeassistant-custom-component tracks Home Assistant
 # releases, and nothing else here pins the Home Assistant version under test,
 # so leaving it unpinned silently changes which HA the suite runs against.
-pytest-homeassistant-custom-component==0.13.205
+#
+# This is the latest release (Home Assistant 2026.10.2, Python 3.14), because
+# users of a HACS integration overwhelmingly run a recent Home Assistant. It is
+# the only version tested. hacs.json still declares 2024.11.0 as the minimum:
+# that floor is deliberate but untested, so the code's branches for older
+# releases (`_lovelace_resources` in __init__.py, for one) must stay even
+# though nothing here exercises them. See #16 and #23.
+pytest-homeassistant-custom-component==0.13.373
 
 # manifest.json declares a dependency on `frontend`, so setting up the config
 # entry imports homeassistant.components.frontend, which imports hass_frontend.
 # pytest-homeassistant-custom-component does not depend on this package, so
 # without it a clean install fails every test with
-# ModuleNotFoundError: No module named 'hass_frontend'.
-home-assistant-frontend==20250109.2
+# ModuleNotFoundError: No module named 'hass_frontend'. Pinned to exactly what
+# the Home Assistant release above requires (its package_constraints.txt), so
+# bump it together with the line above.
+home-assistant-frontend==20260930.4
 
 # CI measures coverage with `pytest --cov`. pytest-homeassistant-custom-component
-# already pins this exact version (and coverage==7.6.8), so any other pin would
+# already pins this exact version (and coverage==7.16.2), so any other pin would
 # not resolve; it is listed here because CI uses it directly, not by accident
 # of a transitive dependency. Bump it together with the line above.
-pytest-cov==6.0.0
+pytest-cov==7.1.0

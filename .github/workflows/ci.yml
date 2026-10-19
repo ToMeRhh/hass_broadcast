@@ -5,8 +5,10 @@ on:
     branches: [master]
   pull_request:
 
+# Four independent jobs, so a Python failure does not wait on the frontend
+# pipeline and the check that failed names the half that broke.
 jobs:
-  test:
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -22,7 +24,48 @@ jobs:
       # appear in frontend/ (see CLAUDE.md).
       - name: Type-check the card
         run: npx tsc --noEmit
-      - run: npm test
+      # Coverage is measured, not enforced: there is no floor until there is
+      # a baseline to pick one from. Locally, `npm test` stays coverage-free.
+      - run: npm test -- --coverage
+      - name: Coverage summary
+        if: ${{ !cancelled() && hashFiles('coverage/coverage-summary.json') != '' }}
+        run: |
+          node -e '
+            const path = require("path");
+            const s = require("./coverage/coverage-summary.json");
+            const kinds = ["statements", "branches", "functions", "lines"];
+            const cell = (m) => `${m.pct}% (${m.covered}/${m.total})`;
+            const out = [
+              "### Frontend coverage (`frontend/src/`)",
+              "",
+              "| Statements | Branches | Functions | Lines |",
+              "| --- | --- | --- | --- |",
+              "| " + kinds.map((k) => cell(s.total[k])).join(" | ") + " |",
+              "",
+              "<details><summary>Per file</summary>",
+              "",
+              "| File | Statements | Branches | Functions | Lines |",
+              "| --- | --- | --- | --- | --- |",
+            ];
+            for (const [file, m] of Object.entries(s)) {
+              if (file === "total") continue;
+              const name = path.relative(process.cwd(), file);
+              out.push("| `" + name + "` | " + kinds.map((k) => m[k].pct + "%").join(" | ") + " |");
+            }
+            out.push("", "</details>");
+            console.log(out.join("\n"));
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
 
       # The card bundle is a committed build output -- installs get exactly
       # what is in the repo, there is no build step on the user's machine. A
@@ -38,13 +81,33 @@ jobs:
             exit 1
           fi
 
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements_test.txt
       - run: pip install -r requirements_test.txt
-      - run: python -m pytest -q
+      # The coverage flags live here, not in pytest.ini, so a local
+      # `python -m pytest -q` stays as quick and as quiet as it was. Measured,
+      # not enforced, like the frontend's.
+      - run: >-
+          python -m pytest -q
+          --cov=custom_components/hass_broadcast --cov-branch
+          --cov-report=term-missing
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        run: |
+          [ -f .coverage ] || exit 0
+          {
+            echo '### Python coverage (`custom_components/hass_broadcast/`)'
+            echo
+            python -m coverage report --format=markdown
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # The card promises that nothing moves between idle, recording, review and
   # sending. vitest has no layout engine, so check:layout drives the dev

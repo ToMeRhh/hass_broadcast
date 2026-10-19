@@ -11,3 +11,9 @@ custom_components/hass_broadcast/www/*.js
 .superpowers/
 .venv/
 .cache/
+
+# Coverage output: vitest (coverage/), pytest-cov (.coverage, htmlcov/).
+coverage/
+.coverage
+.coverage.*
+htmlcov/

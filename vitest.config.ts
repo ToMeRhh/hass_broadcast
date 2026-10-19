@@ -9,5 +9,14 @@ export default defineConfig({
     env: {
       TZ: "UTC",
     },
+    // Off unless asked for: `npm test` stays as it is, and CI runs
+    // `npx vitest run --coverage`. Every file under frontend/src/ counts,
+    // including ones no test imports, so the number is not flattered by
+    // leaving files out. json-summary is what CI turns into the job summary.
+    coverage: {
+      provider: "v8",
+      include: ["frontend/src/**"],
+      reporter: ["text", "json-summary"],
+    },
   },
 });

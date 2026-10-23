@@ -1,10 +1,17 @@
 """Tests for hass_broadcast setup."""
 
+from pathlib import Path
+
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast.const import DOMAIN
+from custom_components.hass_broadcast.const import (
+    DATA_STORE,
+    DOMAIN,
+    STORAGE_DIR,
+    STORAGE_KEY,
+)
 
 
 async def test_setup_and_unload(hass: HomeAssistant) -> None:
@@ -30,14 +37,6 @@ async def test_removing_the_entry_deletes_the_recordings(
     recordings in <config>/hass_broadcast/ (and in every later backup) with
     no UI left to delete them.
     """
-    from pathlib import Path
-
-    from custom_components.hass_broadcast.const import (
-        DATA_STORE,
-        STORAGE_DIR,
-        STORAGE_KEY,
-    )
-
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)

@@ -4,8 +4,13 @@ import asyncio
 from contextlib import suppress
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.setup import async_setup_component
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_mock_service,
+)
 
 from custom_components.hass_broadcast import playback
 from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
@@ -18,8 +23,6 @@ ANNOUNCE_FEATURE = 1048576
 @pytest.fixture
 async def setup_entry(hass: HomeAssistant) -> MockConfigEntry:
     """Set up the integration."""
-    from homeassistant.setup import async_setup_component
-
     assert await async_setup_component(hass, "media_source", {})
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     entry.add_to_hass(hass)
@@ -31,8 +34,6 @@ async def setup_entry(hass: HomeAssistant) -> MockConfigEntry:
 @pytest.fixture
 def play_calls(hass: HomeAssistant):
     """Capture media_player.play_media calls."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     return async_mock_service(hass, "media_player", "play_media")
 
 
@@ -126,8 +127,6 @@ async def test_one_failing_target_does_not_stop_the_others(
     hass: HomeAssistant, setup_entry, caplog, hass_ws_client
 ) -> None:
     """A target that errors is logged; remaining targets still play."""
-    from homeassistant.exceptions import HomeAssistantError
-
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
@@ -244,8 +243,6 @@ async def test_restore_mode_returns_before_the_restore_tail(
     one-minute recording, and a websocket reconnect in that window made the
     card report a failure for a broadcast that had actually played.
     """
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=60, user_id=None
@@ -276,8 +273,6 @@ async def test_restore_tail_puts_the_volume_back(
     hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """The detached tail still restores the snapshotted volume."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -304,8 +299,6 @@ async def test_restore_tail_failure_is_logged_not_raised(
     unhandled task exception at garbage-collection time rather than as a
     reported failure.
     """
-    from homeassistant.exceptions import HomeAssistantError
-
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -340,8 +333,6 @@ async def test_restore_uses_native_announce_when_the_target_supports_it(
     integration implements announce, that guess is both unnecessary and worse
     than what the device does natively, so hand the work over.
     """
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
@@ -366,8 +357,6 @@ async def test_restore_falls_back_when_the_target_lacks_announce(
     hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """Without the feature bit the sleep-based tail still runs."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -395,8 +384,6 @@ async def test_volume_override_sets_and_restores_in_plain_mode(
     hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """A requested volume is set before playback and put back afterward."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -418,8 +405,6 @@ async def test_no_volume_calls_when_no_override_is_requested(
     hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """Without a volume override, plain mode never touches volume_set."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
@@ -439,8 +424,6 @@ async def test_volume_override_applies_before_the_chime_too(
     hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """Chime mode sets the override once, before the chime, not per clip."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     monkeypatch.setattr(playback, "CHIME_GAP_S", 0)
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
@@ -464,8 +447,6 @@ async def test_volume_override_combines_with_restore_mode(
     hass: HomeAssistant, setup_entry, play_calls, monkeypatch, hass_ws_client
 ) -> None:
     """Restore mode both sets the override and puts the original back."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
@@ -489,8 +470,6 @@ async def test_volume_override_skipped_for_native_announce_targets(
     hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """A player that ducks itself is left alone, override or not."""
-    from pytest_homeassistant_custom_component.common import async_mock_service
-
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None

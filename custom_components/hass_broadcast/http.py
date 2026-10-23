@@ -7,7 +7,6 @@ import io
 import wave
 
 from aiohttp import web
-
 from homeassistant.components.http import KEY_HASS_USER, HomeAssistantView
 from homeassistant.core import HomeAssistant
 

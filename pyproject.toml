@@ -160,3 +160,25 @@ max-complexity = 25
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+# Strict, with no per-line suppressions: where Home Assistant's types and the
+# integration disagree, the config below says why once.
+[tool.mypy]
+# The floor's Python, like ruff's target-version: typeshed then reports any
+# standard library API newer than what Home Assistant 2024.11 runs on.
+python_version = "3.12"
+strict = true
+files = ["custom_components/hass_broadcast"]
+# typings/voluptuous/ types voluptuous as probatio, which is what Home
+# Assistant 2026.10 makes it at runtime. The stub says why.
+mypy_path = "typings"
+
+# `--strict` turns on no_implicit_reexport for every module, Home Assistant's
+# included, and Home Assistant re-exports names implicitly: for one,
+# `homeassistant.components.http` imports HomeAssistantView from
+# `homeassistant.helpers.http` under a bare `# noqa: F401`. Integrations import
+# from those paths everywhere, so accept them rather than chase the defining
+# module of every name.
+[[tool.mypy.overrides]]
+module = ["homeassistant.*"]
+implicit_reexport = true

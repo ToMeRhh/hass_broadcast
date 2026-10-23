@@ -281,6 +281,7 @@ python3.14 -m venv .venv        # or: uv venv --python 3.14 .venv
 .venv/bin/python -m pytest -q   # integration tests; `python -m pytest`, not bare `pytest`,
                                 # so the repo root is on sys.path
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint and format
+.venv/bin/mypy                  # type-check the integration (strict)
 
 npm ci
 npm test                        # card tests (vitest)

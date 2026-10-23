@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 import voluptuous as vol
 
 from .const import CONF_RETENTION, DEFAULT_RETENTION, DOMAIN
@@ -32,7 +37,7 @@ class BroadcastConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(title="Voice Broadcast", data={})
 
     @staticmethod
-    def async_get_options_flow(config_entry) -> BroadcastOptionsFlow:
+    def async_get_options_flow(config_entry: ConfigEntry) -> BroadcastOptionsFlow:
         """Return the options flow."""
         return BroadcastOptionsFlow()
 

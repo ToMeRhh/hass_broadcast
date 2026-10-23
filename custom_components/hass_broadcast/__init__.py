@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
@@ -36,8 +37,15 @@ _LOGGER = logging.getLogger(__name__)
 LOVELACE_DOMAIN = "lovelace"
 
 
-def _lovelace_resources(hass: HomeAssistant):
-    """Return Lovelace's resource collection, or None when it has none."""
+def _lovelace_resources(hass: HomeAssistant) -> Any:
+    """Return Lovelace's resource collection, or None when it has none.
+
+    Typed `Any` on purpose. The container it comes out of is a dict before
+    2025.2 and a `LovelaceData` dataclass after, and the collection is a
+    storage-mode or a YAML-mode class that the callers tell apart by
+    `hasattr`. Naming those classes would mean importing them from
+    Lovelace's own modules, which this file avoids (see LOVELACE_DOMAIN).
+    """
     data = hass.data.get(LOVELACE_DOMAIN)
     if data is None:
         return None

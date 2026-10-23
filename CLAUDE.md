@@ -9,6 +9,7 @@ Lovelace card and play it on media players. Python integration in
 ```bash
 .venv/bin/python -m pytest -q   # integration tests (75)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
+.venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
 npm test                        # card tests, vitest (197)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
@@ -62,6 +63,14 @@ the 3.14 the tests run on, so pyupgrade never rewrites the integration into
 syntax 2024.11 cannot import. Markdown is excluded: ruff 0.17 formats code
 blocks in it, and `docs/superpowers/` is a record, not code.
 
+mypy runs strict with no `# type: ignore` anywhere; keep it that way, and put
+any genuine disagreement with Home Assistant's types in `pyproject.toml` or a
+stub with the reason, as the re-export override and `typings/voluptuous/` do.
+The stub types voluptuous as probatio, because Home Assistant 2026.10 aliases
+it to probatio at runtime while the 2024.11 floor has no probatio to import.
+mypy's `python_version` is the floor's 3.12, for the same reason as ruff's
+target.
+
 `hacs.json` declares 2024.11.0 as the minimum, and that floor is **declared but
 not tested** — deliberately, rather than a matrix (#16, #23). Code that touches
 Home Assistant internals must still tolerate both ends, and the branches for
@@ -74,9 +83,9 @@ expected, not dead code to delete.
 `npx tsc --noEmit` before the card tests, so run it locally too —
 `Array.prototype.at` is ES2022 and must not appear in `frontend/`.
 
-`ci.yml` runs five parallel jobs: `frontend` (tsc, card tests), `bundle`
-(rebuild and stale-bundle check), `python` (integration tests), `ruff` and
-`layout`. `frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
+`ci.yml` runs six parallel jobs: `frontend` (tsc, card tests), `bundle`
+(rebuild and stale-bundle check), `python` (integration tests), `ruff`, `mypy`
+and `layout`. `frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
 `--cov=custom_components/hass_broadcast --cov-branch`) and write it to the job
 summary. There is no coverage floor yet. The coverage flags are in `ci.yml`,
 not `pyproject.toml` or `npm test`, so the local commands above stay unchanged.

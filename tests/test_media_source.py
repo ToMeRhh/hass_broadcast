@@ -52,9 +52,7 @@ async def test_browse_lists_recordings(hass: HomeAssistant, setup_entry) -> None
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     await store.async_add(b"RIFFdata", extension="wav", duration=1, user_id=None)
 
-    browse = await media_source.async_browse_media(
-        hass, f"media-source://{DOMAIN}"
-    )
+    browse = await media_source.async_browse_media(hass, f"media-source://{DOMAIN}")
     assert len(browse.children) == 1
     assert browse.children[0].can_play is True
 

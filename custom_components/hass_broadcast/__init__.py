@@ -8,7 +8,6 @@ from typing import Any
 
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
@@ -17,13 +16,12 @@ from .const import (
     CARD_URL,
     CHIME_URL,
     CONF_RETENTION,
-    DATA_STORE,
     DEFAULT_RETENTION,
     DOMAIN,
     STATIC_URL,
 )
 from .http import async_register_views
-from .storage import BroadcastStore
+from .storage import BroadcastConfigEntry, BroadcastData, BroadcastStore
 from .websocket import async_register_websocket_commands
 
 _LOGGER = logging.getLogger(__name__)
@@ -129,18 +127,15 @@ async def _async_unregister_card(hass: HomeAssistant) -> None:
 
 async def _async_register_static(hass: HomeAssistant) -> None:
     """Serve the card, worklet and chime, and register the card module."""
-    # This sentinel deliberately lives at hass.data["hass_broadcast_static_registered"],
-    # OUTSIDE hass.data[DOMAIN]. hass.data[DOMAIN] is a dict keyed by entry id
-    # whose values are entry data dicts, and every store lookup takes the first
-    # value in it -- putting a bare True in there would make those lookups
-    # return True and fail with TypeError on the DATA_STORE subscript.
-    #
-    # It guards only the static paths: aiohttp rejects a duplicate route, and
-    # there is no way to unregister one, so they are registered once per Home
-    # Assistant run and survive the entry being removed. The Lovelace resource
-    # is the opposite -- it IS removed with the entry -- so it must not share
-    # this guard, or re-adding the integration in the same session would leave
-    # the card unregistered. _async_register_card is idempotent instead.
+    # This sentinel lives in hass.data, not in the entry's runtime_data,
+    # because it has to outlive the entry: Home Assistant deletes runtime_data
+    # on unload. It guards only the static paths. aiohttp rejects a duplicate
+    # route, and there is no way to unregister one, so they are registered
+    # once per Home Assistant run and survive the entry being unloaded or
+    # removed. The Lovelace resource is the opposite -- it IS removed with the
+    # entry -- so it must not share this guard, or re-adding the integration
+    # in the same session would leave the card unregistered.
+    # _async_register_card is idempotent instead.
     if not hass.data.get(f"{DOMAIN}_static_registered"):
         hass.data[f"{DOMAIN}_static_registered"] = True
 
@@ -155,7 +150,7 @@ async def _async_register_static(hass: HomeAssistant) -> None:
     await _async_register_card(hass)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: BroadcastConfigEntry) -> bool:
     """Set up Voice Broadcast from a config entry."""
     store = BroadcastStore(
         hass, retention=entry.options.get(CONF_RETENTION, DEFAULT_RETENTION)
@@ -164,24 +159,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_register_static(hass)
     async_register_views(hass)
     async_register_websocket_commands(hass)
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {DATA_STORE: store}
+    entry.runtime_data = BroadcastData(store=store)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    hass.data[DOMAIN].pop(entry.entry_id, None)
+async def async_unload_entry(hass: HomeAssistant, entry: BroadcastConfigEntry) -> bool:
+    """Unload a config entry; Home Assistant drops its runtime_data."""
     return True
 
 
-async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_remove_entry(hass: HomeAssistant, entry: BroadcastConfigEntry) -> None:
     """Delete the recordings and metadata when the integration is removed.
 
-    Runs after `async_unload_entry`, which has already dropped the live
-    store, so this builds a throwaway one to reach the same files. Removing
-    the integration and leaving every household member's voice recordings on
-    disk -- and in every future backup -- is not a defensible default.
+    Runs after the entry is unloaded, when Home Assistant has already deleted
+    its runtime_data, so this builds a throwaway store to reach the same
+    files. Removing the integration and leaving every household member's
+    voice recordings on disk -- and in every future backup -- is not a
+    defensible default.
     """
     store = BroadcastStore(
         hass, retention=entry.options.get(CONF_RETENTION, DEFAULT_RETENTION)
@@ -191,6 +186,8 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await _async_unregister_card(hass)
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _async_update_listener(
+    hass: HomeAssistant, entry: BroadcastConfigEntry
+) -> None:
     """Reload the entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)

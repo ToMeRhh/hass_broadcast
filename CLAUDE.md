@@ -7,7 +7,7 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (75)
+.venv/bin/python -m pytest -q   # integration tests (76)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 .venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
 npm test                        # card tests, vitest (197)

@@ -9,7 +9,6 @@ import voluptuous as vol
 
 from custom_components.hass_broadcast.const import (
     CONF_RETENTION,
-    DATA_STORE,
     DEFAULT_RETENTION,
     DOMAIN,
 )
@@ -130,7 +129,7 @@ async def test_changing_options_reloads_the_entry(hass: HomeAssistant) -> None:
     missing update listener would leave the old limit in force until restart.
     """
     entry = await _set_up_entry(hass)
-    before = hass.data[DOMAIN][entry.entry_id][DATA_STORE]
+    before = entry.runtime_data.store
     assert before.retention == DEFAULT_RETENTION
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -140,6 +139,6 @@ async def test_changing_options_reloads_the_entry(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    after = hass.data[DOMAIN][entry.entry_id][DATA_STORE]
+    after = entry.runtime_data.store
     assert after is not before
     assert after.retention == 3

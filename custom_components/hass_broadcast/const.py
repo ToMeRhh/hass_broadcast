@@ -2,12 +2,6 @@
 
 DOMAIN = "hass_broadcast"
 
-# Key under hass.data[DOMAIN][entry_id] holding the BroadcastStore. It lives
-# here, rather than in __init__.py, so http/media_source/playback/websocket
-# can import it at module level instead of each deferring the import inside a
-# helper to dodge a circular dependency on the package root.
-DATA_STORE = "store"
-
 STATIC_URL = "/api/hass_broadcast/static"
 CARD_URL = f"{STATIC_URL}/hass-broadcast-card.js"
 CHIME_URL = f"{STATIC_URL}/chime.wav"

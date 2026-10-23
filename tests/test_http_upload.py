@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
+from custom_components.hass_broadcast.const import DOMAIN
 
 
 @pytest.fixture
@@ -106,7 +106,7 @@ async def test_upload_records_the_uploading_user(
     assert resp.status == HTTPStatus.OK
     message_id = (await resp.json())["message_id"]
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     stored = await store.async_get(message_id)
     assert stored["user_id"] == hass_read_only_user.id
 
@@ -140,7 +140,7 @@ async def test_upload_stores_the_recording(
     )
     message_id = (await resp.json())["message_id"]
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     assert (await store.async_get(message_id))["duration"] == 2.0
 
 
@@ -163,7 +163,7 @@ async def test_upload_derives_duration_from_wav_data(
     assert resp.status == HTTPStatus.OK
     message_id = (await resp.json())["message_id"]
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     stored = await store.async_get(message_id)
     assert stored["duration"] == pytest.approx(2.5)
 

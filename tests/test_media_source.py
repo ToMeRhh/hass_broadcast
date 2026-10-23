@@ -6,7 +6,7 @@ from homeassistant.setup import async_setup_component
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
+from custom_components.hass_broadcast.const import DOMAIN
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ async def test_resolves_to_signable_relative_url(
     hass: HomeAssistant, setup_entry
 ) -> None:
     """Resolution returns a root-relative URL with no query params."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -48,7 +48,7 @@ async def test_resolve_unknown_id_raises(hass: HomeAssistant, setup_entry) -> No
 
 async def test_browse_lists_recordings(hass: HomeAssistant, setup_entry) -> None:
     """Browsing lists stored recordings as playable children."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     await store.async_add(b"RIFFdata", extension="wav", duration=1, user_id=None)
 
     browse = await media_source.async_browse_media(hass, f"media-source://{DOMAIN}")
@@ -65,7 +65,7 @@ async def test_browse_survives_a_corrupt_timestamp(
     whose timestamp could not be parsed raised AttributeError and made browse
     fail for every recording, not just the bad one.
     """
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     good_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )

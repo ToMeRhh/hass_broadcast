@@ -503,9 +503,7 @@ async def test_volume_override_skipped_for_native_announce_targets(
     )
 
     client = await hass_ws_client(hass)
-    await _send(
-        client, message_id, ["media_player.study"], mode="restore", volume=0.8
-    )
+    await _send(client, message_id, ["media_player.study"], mode="restore", volume=0.8)
     await hass.async_block_till_done()
 
     assert len(play_calls) == 1

@@ -6,12 +6,8 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast.const import (
-    DATA_STORE,
-    DOMAIN,
-    STORAGE_DIR,
-    STORAGE_KEY,
-)
+from custom_components.hass_broadcast.const import DOMAIN, STORAGE_DIR, STORAGE_KEY
+from custom_components.hass_broadcast.storage import async_get_store
 
 
 async def test_setup_and_unload(hass: HomeAssistant) -> None:
@@ -28,6 +24,27 @@ async def test_setup_and_unload(hass: HomeAssistant) -> None:
     assert entry.state is ConfigEntryState.NOT_LOADED
 
 
+async def test_store_is_found_only_while_the_entry_is_loaded(
+    hass: HomeAssistant,
+) -> None:
+    """The http, websocket and media source lookup sees only a loaded entry.
+
+    Before setup and after unload there is no store, and the callers answer
+    "not set up" rather than reaching into a stale or missing runtime_data.
+    """
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+    entry.add_to_hass(hass)
+    assert async_get_store(hass) is None
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert async_get_store(hass) is entry.runtime_data.store
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert async_get_store(hass) is None
+
+
 async def test_removing_the_entry_deletes_the_recordings(
     hass: HomeAssistant, hass_storage
 ) -> None:
@@ -42,7 +59,7 @@ async def test_removing_the_entry_deletes_the_recordings(
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    store = hass.data[DOMAIN][entry.entry_id][DATA_STORE]
+    store = entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )

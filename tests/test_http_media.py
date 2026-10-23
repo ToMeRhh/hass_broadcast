@@ -1,7 +1,9 @@
 """Tests for the media serving endpoint."""
 
+from datetime import timedelta
 from http import HTTPStatus
 
+from homeassistant.components.http.auth import async_sign_path
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -79,10 +81,6 @@ async def test_signed_path_grants_access(
     hass: HomeAssistant, setup_entry, hass_client_no_auth
 ) -> None:
     """A signed path works without a token — this is how Cast fetches."""
-    from datetime import timedelta
-
-    from homeassistant.components.http.auth import async_sign_path
-
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None

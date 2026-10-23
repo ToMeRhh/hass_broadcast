@@ -147,6 +147,4 @@ class BroadcastStore:
         try:
             self._dir.rmdir()
         except OSError:
-            _LOGGER.debug(
-                "Left %s in place: it is missing or not empty", self._dir
-            )
+            _LOGGER.debug("Left %s in place: it is missing or not empty", self._dir)

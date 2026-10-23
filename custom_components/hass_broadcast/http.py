@@ -7,7 +7,6 @@ import io
 import wave
 
 from aiohttp import web
-
 from homeassistant.components.http import KEY_HASS_USER, HomeAssistantView
 from homeassistant.core import HomeAssistant
 
@@ -114,9 +113,7 @@ class BroadcastUploadView(HomeAssistantView):
         # restore mode, an understated duration would restore volume while
         # the message is still audibly playing. The client value is only a
         # fallback for when parsing fails.
-        parsed_duration = await hass.async_add_executor_job(
-            _parse_wav_duration, raw
-        )
+        parsed_duration = await hass.async_add_executor_job(_parse_wav_duration, raw)
         duration = parsed_duration if parsed_duration is not None else client_duration
 
         # MP3 is the format we aim to store: the speaker fetches and decodes

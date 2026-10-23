@@ -277,9 +277,10 @@ older releases.
 
 ```bash
 python3.14 -m venv .venv        # or: uv venv --python 3.14 .venv
-.venv/bin/pip install -r requirements_test.txt
+.venv/bin/pip install -r requirements_test.txt -r requirements_lint.txt
 .venv/bin/python -m pytest -q   # integration tests; `python -m pytest`, not bare `pytest`,
                                 # so the repo root is on sys.path
+.venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint and format
 
 npm ci
 npm test                        # card tests (vitest)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from http import HTTPStatus
 import io
 import wave
@@ -73,13 +74,13 @@ class BroadcastUploadView(HomeAssistantView):
         # `.file` is a real tempfile handle (aiohttp buffers multipart file
         # fields to disk); `.read()` is a blocking syscall, so it must not
         # run inline on the event loop.
-        raw = (
-            await hass.async_add_executor_job(file_field.file.read)
-            if hasattr(file_field, "file")
-            else file_field
-        )
-        if isinstance(raw, str):
-            raw = raw.encode()
+        raw: bytes
+        if isinstance(file_field, web.FileField):
+            raw = await hass.async_add_executor_job(file_field.file.read)
+        elif isinstance(file_field, str):
+            raw = file_field.encode()
+        else:
+            raw = bytes(file_field)
 
         # This is a post-buffer check: aiohttp/HA has already read the full
         # body into `raw` by this point (bounded by HA's own 16 MB
@@ -103,10 +104,12 @@ class BroadcastUploadView(HomeAssistantView):
                 status=HTTPStatus.BAD_REQUEST,
             )
 
-        try:
-            client_duration = float(data.get("duration", 0))
-        except (TypeError, ValueError):
-            client_duration = 0.0
+        # A file part under that name is as unusable as an unparseable value.
+        client_duration = 0.0
+        duration_field = data.get("duration")
+        if duration_field is not None and not isinstance(duration_field, web.FileField):
+            with suppress(ValueError):
+                client_duration = float(duration_field)
 
         # Duration is derived server-side from the actual WAV data whenever
         # possible: the client-supplied form field is untrusted and, in

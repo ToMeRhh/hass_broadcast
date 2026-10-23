@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.media_player import MediaClass, MediaType
 from homeassistant.components.media_source import (
     BrowseMediaSource,
@@ -18,7 +20,7 @@ from .http import CONTENT_TYPES
 from .storage import async_get_store
 
 
-def _title(message: dict) -> str:
+def _title(message: dict[str, Any]) -> str:
     """Return a display title for a recording.
 
     One unparseable `created` must not take down browse for every other

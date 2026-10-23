@@ -14,7 +14,9 @@ as a resource, and `add_extra_js_url` is kept only for YAML-mode Lovelace,
 where resources are user-managed and an integration must not write to them.
 """
 
+from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
 from homeassistant.core import HomeAssistant
+from homeassistant.loader import async_get_integration
 from homeassistant.setup import async_setup_component
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -69,8 +71,6 @@ async def test_card_resource_url_is_version_busted(
     hass: HomeAssistant, setup_entry
 ) -> None:
     """The URL carries the integration version so upgrades bust WebView caches."""
-    from homeassistant.loader import async_get_integration
-
     integration = await async_get_integration(hass, DOMAIN)
     resources = await _card_resources(hass)
     assert resources[0]["url"] == f"{CARD_URL}?v={integration.version}"
@@ -84,8 +84,6 @@ async def test_storage_mode_does_not_also_register_an_extra_module(
     The second evaluation hits `customElements.define` for the editor element,
     which throws because the name is already taken, so it must not happen.
     """
-    from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
-
     manager = hass.data.get(DATA_EXTRA_MODULE_URL)
     urls = manager.urls if manager is not None else set()
     assert not any("hass-broadcast-card.js" in url for url in urls)
@@ -109,8 +107,6 @@ async def test_existing_card_resource_is_updated_not_duplicated(
 
 async def test_yaml_mode_falls_back_to_an_extra_module(hass: HomeAssistant) -> None:
     """YAML-mode resources are user-managed, so fall back to add_extra_js_url."""
-    from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
-
     assert await async_setup_component(hass, "lovelace", {"lovelace": {"mode": "yaml"}})
     await _setup_entry(hass)
 

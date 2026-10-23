@@ -3,9 +3,8 @@
 import logging
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from homeassistant.core import HomeAssistant
+import pytest
 
 from custom_components.hass_broadcast.audio_processing import async_transcode_to_mp3
 

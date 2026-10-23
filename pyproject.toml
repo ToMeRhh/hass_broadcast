@@ -6,7 +6,7 @@ asyncio_mode = "auto"
 
 [tool.ruff]
 required-version = ">=0.17.1"
-# hacs.json declares Home Assistant 2024.11 as the minimum, and that release
+# hacs.json declares Home Assistant 2024.12 as the minimum, and that release
 # runs on Python 3.12. The suite runs on 3.14, but pyupgrade must not rewrite
 # the integration into syntax the oldest supported release cannot import.
 target-version = "py312"
@@ -18,10 +18,10 @@ extend-exclude = ["*.md"]
 # 2026.10), trimmed where it does not apply. What was dropped and why:
 #   - The banned-api entries for probatio, httpx2, httpcore2 and the
 #     config_validation helpers: core moved to replacements that do not
-#     exist in 2024.11, and voluptuous is what that release ships.
+#     exist in 2024.12, and voluptuous is what that release ships.
 #   - The ban on `from __future__ import annotations`: core can drop it
 #     because it requires Python 3.14, which defers annotations itself.
-#     The 2024.11 floor is 3.12, where it still matters.
+#     The 2024.12 floor is 3.12, where it still matters.
 #   - The flake8-import-conventions aliases: core's own platform schemas.
 #   - PLE0605 and the ISC004/LOG004 deferrals: workarounds for core's code,
 #     and nothing here trips them.

@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureRate, normalize, Recorder } from "../src/recorder";
 import { clampMaxDuration } from "../src/config";
+import { BAR_COUNT } from "../src/levels";
 
 // The default vitest environment is plain Node — there is no real
 // AudioWorklet/getUserMedia to run against. These are minimal hand-rolled
@@ -24,14 +25,43 @@ class FakeStream {
 
 class FakePort {
   closed = false;
-  onmessage: ((event: { data: Int16Array }) => void) | null = null;
+  onmessage: ((event: { data: Int16Array | string }) => void) | null = null;
+  /** Chunks the worklet has posted that the main thread has not handled yet. */
+  inFlight: Int16Array[] = [];
+
+  constructor(private answersFlush: boolean) {}
+
+  /** The worklet's side: a message from the main thread arrives. */
+  postMessage(message: unknown) {
+    if (message !== "flush" || !this.answersFlush) {
+      return;
+    }
+    // Port messages arrive in order, so what the worklet posted before its
+    // answer is delivered before it.
+    queueMicrotask(() => {
+      for (const chunk of this.inFlight.splice(0)) {
+        this.deliver(chunk);
+      }
+      this.deliver("flushed");
+    });
+  }
+
+  deliver(data: Int16Array | string) {
+    if (!this.closed) {
+      this.onmessage?.({ data });
+    }
+  }
+
   close() {
     this.closed = true;
   }
 }
 
 class FakeNode {
-  port = new FakePort();
+  port: FakePort;
+  constructor(answersFlush: boolean) {
+    this.port = new FakePort(answersFlush);
+  }
   disconnected = false;
   connect() {}
   disconnect() {
@@ -67,7 +97,9 @@ class FakeContext {
 }
 
 /** Stubs the browser globals Recorder touches for the duration of one test. */
-function installFakes(opts: { addModuleFails?: boolean; closeFails?: boolean } = {}) {
+function installFakes(
+  opts: { addModuleFails?: boolean; closeFails?: boolean; answersFlush?: boolean } = {}
+) {
   const stream = new FakeStream();
   let context: FakeContext | undefined;
   let node: FakeNode | undefined;
@@ -96,7 +128,7 @@ function installFakes(opts: { addModuleFails?: boolean; closeFails?: boolean } =
     "AudioWorkletNode",
     class extends FakeNode {
       constructor() {
-        super();
+        super(opts.answersFlush ?? true);
         node = this;
       }
     }
@@ -112,6 +144,7 @@ function installFakes(opts: { addModuleFails?: boolean; closeFails?: boolean } =
 
 describe("Recorder lifecycle", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -164,16 +197,91 @@ describe("Recorder lifecycle", () => {
   });
 
   it("throws on a second stop() instead of returning the same recording twice", async () => {
+    vi.useFakeTimers();
     const { getNode } = installFakes();
     const recorder = new Recorder();
     await recorder.start(60);
 
-    getNode()?.port.onmessage?.({ data: new Int16Array([1, 2, 3]) });
+    getNode()?.port.deliver(new Int16Array([1, 2, 3]));
 
-    const first = await recorder.stop();
+    const first = await finish(recorder);
     expect(first.blob.size).toBeGreaterThanOrEqual(44);
 
     await expect(recorder.stop()).rejects.toThrow(/no active recording/);
+  });
+});
+
+/** Run stop() to completion, skipping over its timers. */
+async function finish(recorder: Recorder) {
+  const result = recorder.stop();
+  await vi.runAllTimersAsync();
+  return result;
+}
+
+describe("Recorder stop", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps the speech the microphone delivers after the button is released", async () => {
+    // A phone's audio input runs a few hundred milliseconds behind the
+    // voice: the last word is still on its way when the finger lifts.
+    const { stream, getNode } = installFakes();
+    const recorder = new Recorder();
+    await recorder.start(60, { sampleRate: 16000 });
+    getNode()?.port.deliver(new Int16Array(1600));
+
+    const stopping = recorder.stop();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(stream.getTracks()[0].stopped).toBe(false);
+    getNode()?.port.deliver(new Int16Array(1600));
+    await vi.runAllTimersAsync();
+
+    expect((await stopping).duration).toBeCloseTo(0.2);
+  });
+
+  it("keeps chunks the worklet posted that the page had not handled yet", async () => {
+    const { getNode } = installFakes();
+    const recorder = new Recorder();
+    await recorder.start(60, { sampleRate: 16000 });
+    getNode()?.port.deliver(new Int16Array(1600));
+    getNode()?.port.inFlight.push(new Int16Array(800));
+
+    expect((await finish(recorder)).duration).toBeCloseTo(0.15);
+  });
+
+  it("draws the waveform from the recorded audio, tail included", async () => {
+    // Bars timed by when levels reached the page drift from the sound, and
+    // miss the tail entirely: the strip ran ahead of playback.
+    const { getNode } = installFakes();
+    const recorder = new Recorder();
+    await recorder.start(60, { sampleRate: 16000 });
+    getNode()?.port.deliver(new Int16Array(2400));
+
+    const stopping = recorder.stop();
+    getNode()?.port.deliver(new Int16Array(2400).fill(8000));
+    await vi.runAllTimersAsync();
+    const { peaks } = await stopping;
+
+    expect(peaks).toHaveLength(BAR_COUNT);
+    expect(peaks.slice(0, BAR_COUNT / 2).every((peak) => peak === 0)).toBe(true);
+    expect(peaks.slice(BAR_COUNT / 2).every((peak) => peak === 1)).toBe(true);
+  });
+
+  it("still finishes when the worklet never answers the flush", async () => {
+    // A browser can hold on to a worklet from before the flush existed.
+    const { stream, getNode } = installFakes({ answersFlush: false });
+    const recorder = new Recorder();
+    await recorder.start(60, { sampleRate: 16000 });
+    getNode()?.port.deliver(new Int16Array(1600));
+
+    expect((await finish(recorder)).duration).toBeCloseTo(0.1);
+    expect(stream.getTracks()[0].stopped).toBe(true);
   });
 });
 

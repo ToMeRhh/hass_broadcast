@@ -459,7 +459,7 @@ export class HassBroadcastCard extends LitElement {
 
   /** Which layer the state-dependent slots show. */
   private get view(): View {
-    if (this.rec.phase === "recording") {
+    if (this.rec.phase === "recording" || this.rec.phase === "finishing") {
       return "recording";
     }
     if (this.status) {
@@ -471,7 +471,7 @@ export class HassBroadcastCard extends LitElement {
   private get timerWarning(): boolean {
     const limit = this.resolved.maxDuration;
     const window = Math.min(WARN_SECONDS, limit * WARN_FRACTION);
-    return this.rec.phase === "recording" && limit - this.rec.elapsed <= window;
+    return this.view === "recording" && limit - this.rec.elapsed <= window;
   }
 
   private historyProps() {
@@ -490,7 +490,7 @@ export class HassBroadcastCard extends LitElement {
   private get parts(): CardParts {
     const recording = this.rec.phase === "recording";
     const sending = this.rec.phase === "sending";
-    const reviewing = this.clip !== undefined && !recording;
+    const reviewing = this.clip !== undefined && this.view !== "recording";
     const volumeProps = {
       enabled: this.volumeOverride,
       value: this.volume,

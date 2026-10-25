@@ -11,15 +11,16 @@ const { HassBroadcastTile, RESULT_MS } = await import("../src/tile");
 class FakeRecorder {
   started = 0;
   stopped = 0;
-  stopImpl: () => Promise<{ blob: Blob; duration: number }> = async () => ({
+  stopImpl: () => Promise<{ blob: Blob; duration: number; peaks: number[] }> = async () => ({
     blob: new Blob(["x"]),
     duration: 2,
+    peaks: [],
   });
   onLevel(): void {}
   async start(): Promise<void> {
     this.started += 1;
   }
-  async stop(): Promise<{ blob: Blob; duration: number }> {
+  async stop(): Promise<{ blob: Blob; duration: number; peaks: number[] }> {
     this.stopped += 1;
     return this.stopImpl();
   }
@@ -90,6 +91,22 @@ describe("broadcast tile", () => {
     expect(tile.rec.phase).toBe("idle");
   });
 
+  it("shows the message as sending from the moment the button is released", async () => {
+    const { tile, recorder } = makeTile();
+    let finish!: (result: { blob: Blob; duration: number; peaks: number[] }) => void;
+    recorder.stopImpl = () => new Promise((resolve) => (finish = resolve));
+
+    await tile.rec.onPressStart(press);
+    const releasing = tile.rec.onPressEnd();
+
+    const html = renderedText(tile.render());
+    expect(html).toContain("Sending…");
+    expect(html).not.toContain("release to send");
+
+    finish({ blob: new Blob(["x"]), duration: 2, peaks: [] });
+    await releasing;
+  });
+
   it("goes back to ready once the result has been shown", async () => {
     const { tile } = makeTile();
     await tile.rec.onPressStart(press);
@@ -123,7 +140,7 @@ describe("broadcast tile", () => {
 
   it("does not send a tap", async () => {
     const { tile, recorder, calls } = makeTile();
-    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2, peaks: [] });
 
     await tile.rec.onPressStart(press);
     await tile.rec.onPressEnd();

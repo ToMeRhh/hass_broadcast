@@ -285,7 +285,9 @@ export class HassBroadcastTile extends LitElement {
 
   render() {
     const recording = this.rec.phase === "recording";
-    const sending = this.rec.phase === "sending";
+    // From the release on, the take is on its way: the tile sends it once
+    // Recorder.stop() has finished recording the tail.
+    const sending = this.rec.phase === "sending" || this.rec.phase === "finishing";
     const limit = clampMaxDuration(this.config.max_duration);
     const warning =
       recording && limit - this.rec.elapsed <= Math.min(10, limit * 0.25);

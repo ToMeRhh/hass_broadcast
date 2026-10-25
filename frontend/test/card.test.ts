@@ -22,9 +22,10 @@ class FakeRecorder {
   stopped = 0;
   levelCallback?: (level: number) => void;
   startImpl: () => Promise<void> = async () => {};
-  stopImpl: () => Promise<{ blob: Blob; duration: number }> = async () => ({
+  stopImpl: () => Promise<{ blob: Blob; duration: number; peaks: number[] }> = async () => ({
     blob: new Blob([new Uint8Array([1, 2, 3])]),
     duration: 2,
+    peaks: [],
   });
 
   onLevel(callback: (level: number) => void): void {
@@ -34,7 +35,7 @@ class FakeRecorder {
     this.started += 1;
     return this.startImpl();
   }
-  async stop(): Promise<{ blob: Blob; duration: number }> {
+  async stop(): Promise<{ blob: Blob; duration: number; peaks: number[] }> {
     this.stopped += 1;
     return this.stopImpl();
   }
@@ -473,6 +474,18 @@ describe("card render reflects phase, not just the clip", () => {
     expect(parts.view).toBe("recording");
   });
 
+  it("lets go of the record button while the take finishes", () => {
+    const card = cardWithLoadedClip();
+    card.rec.phase = "finishing";
+
+    const html = renderedText(card.render());
+
+    expect(html).not.toContain("release to stop");
+    expect(card.parts.reviewing).toBe(false);
+    // The strip holds the stopped timer until the new take replaces it.
+    expect(card.parts.view).toBe("recording");
+  });
+
   it("restores the loaded clip's transport once idle again", () => {
     const card = cardWithLoadedClip();
     card.rec.phase = "idle";
@@ -868,7 +881,7 @@ describe("push to talk", () => {
   it("discards a tap too short to be speech", async () => {
     const { card, recorder } = makeCard();
     card.setConfig({ type: "custom:hass-broadcast-card" });
-    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2, peaks: [] });
 
     await card.rec.onPressStart(press);
     await card.rec.onPressEnd();
@@ -880,7 +893,7 @@ describe("push to talk", () => {
   it("keeps a short recording in start-stop mode, where it was deliberate", async () => {
     const { card, recorder } = makeCard();
     card.setConfig({ type: "custom:hass-broadcast-card", record_mode: "start_stop" });
-    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2, peaks: [] });
 
     await card.rec.onPressStart(press);
     await card.rec.onPressStart(press);

@@ -1,3 +1,4 @@
+import { BAR_COUNT, peaksOf } from "./levels";
 import { encodeWav } from "./wav";
 
 /**
@@ -10,8 +11,17 @@ const CAPTURE_RATES = [48000, 32000, 24000, 16000];
 // what decides whether the longest take the card allows still fits.
 const UPLOAD_BUDGET = 10 * 1024 * 1024;
 const WAV_HEADER_BYTES = 44;
-// Headroom for the stop timer, which fires on a one-second tick.
+// Headroom for the stop timer, which fires on a one-second tick, and for
+// STOP_TAIL_MS after it.
 const OVERRUN_SECONDS = 1;
+
+// How long stop() keeps recording. A phone's audio input runs a few hundred
+// milliseconds behind the voice, so a take cut the instant the button is
+// released loses its last word.
+export const STOP_TAIL_MS = 300;
+// How long stop() waits for the worklet to answer its flush. A worklet the
+// browser cached from before the flush existed never answers.
+const FLUSH_TIMEOUT_MS = 250;
 
 // -1 dBFS, and at most +20 dB: enough to rescue a quiet mic, not so much that
 // a near-silent take turns into amplified hiss.
@@ -29,6 +39,7 @@ export interface CaptureOptions {
   sampleRate?: number;
   constraints?: MediaTrackConstraints;
   normalize?: boolean;
+  stopTail?: number;
 }
 
 // The browser's call processing is off: noise suppression warbles, gain
@@ -51,6 +62,7 @@ export class Recorder {
   private levelCallback?: (level: number) => void;
   private active = false;
   private options: CaptureOptions = {};
+  private flushed?: () => void;
 
   /**
    * Recording needs a secure context; browsers hide the API otherwise.
@@ -98,7 +110,11 @@ export class Recorder {
 
       const source = this.context.createMediaStreamSource(this.stream);
       this.node = new AudioWorkletNode(this.context, "recorder-worklet");
-      this.node.port.onmessage = (event: MessageEvent<Int16Array>) => {
+      this.node.port.onmessage = (event: MessageEvent<Int16Array | "flushed">) => {
+        if (event.data === "flushed") {
+          this.flushed?.();
+          return;
+        }
         this.chunks.push(event.data);
         if (this.levelCallback) {
           this.levelCallback(peak(event.data));
@@ -118,10 +134,13 @@ export class Recorder {
     }
   }
 
-  async stop(): Promise<{ blob: Blob; duration: number }> {
+  async stop(): Promise<{ blob: Blob; duration: number; peaks: number[] }> {
     if (!this.active) {
       throw new Error("Recorder.stop() called with no active recording session");
     }
+    this.active = false;
+    await new Promise((resolve) => setTimeout(resolve, this.options.stopTail ?? STOP_TAIL_MS));
+    await this.flush();
     const sampleRate = this.context?.sampleRate ?? CAPTURE_RATES[0];
     const chunks = this.chunks;
     const boost = this.options.normalize ?? true;
@@ -141,7 +160,28 @@ export class Recorder {
     return {
       blob: encodeWav(samples, sampleRate),
       duration: total / sampleRate,
+      peaks: peaksOf(samples, BAR_COUNT),
     };
+  }
+
+  /**
+   * Wait until every chunk the worklet has posted has been handled. Port
+   * messages arrive in order, so its answer comes after all of them; closing
+   * the port without asking drops whatever is still queued.
+   */
+  private flush(): Promise<void> {
+    const node = this.node;
+    if (!node) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const timeout = setTimeout(resolve, FLUSH_TIMEOUT_MS);
+      this.flushed = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+      node.port.postMessage("flush");
+    });
   }
 
   /** Tears down mic/audio resources and clears session state. Safe to call from any state. */
@@ -160,6 +200,7 @@ export class Recorder {
       this.node = undefined;
       this.chunks = [];
       this.active = false;
+      this.flushed = undefined;
     }
   }
 }

@@ -3,7 +3,7 @@
 # Voice Broadcast for Home Assistant
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
-[![Home Assistant 2024.11+](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-41BDF5.svg)](https://www.home-assistant.io/)
+[![Home Assistant 2024.12+](https://img.shields.io/badge/Home%20Assistant-2024.12%2B-41BDF5.svg)](https://www.home-assistant.io/)
 [![CI](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml/badge.svg)](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -272,7 +272,7 @@ filing a bug.
 
 Python 3.14 and Node 22. The integration tests run against Home Assistant 2026.10.2, the version
 `requirements_test.txt` pins, which needs Python 3.14. That is the only version tested: the
-2024.11 minimum in `hacs.json` is declared but not tested, and the code keeps its branches for
+2024.12 minimum in `hacs.json` is declared but not tested, and the code keeps its branches for
 older releases.
 
 ```bash

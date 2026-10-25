@@ -54,13 +54,22 @@ the venv with a 3.14 interpreter (`uv venv --python 3.14 .venv` if the system
 has none). It is the one version tested, a recent release because that is what
 users run, and it is bumped to the latest from time to time.
 
-`hacs.json` declares 2024.11.0 as the minimum, and that floor is **declared but
+`hacs.json` declares 2024.12.0 as the minimum, and that floor is **declared but
 not tested** — deliberately, rather than a matrix (#16, #23). Code that touches
 Home Assistant internals must still tolerate both ends, and the branches for
 older releases stay even though no test reaches them: `_lovelace_resources` in
 `__init__.py` handling both the pre-2025.2 dict and the `LovelaceData`
 dataclass is the pattern. Coverage reports those branches as missed; that is
 expected, not dead code to delete.
+
+Untested is not unchecked: the floor was 2024.11 until a run against it showed
+the options flow crashing there (`OptionsFlow.config_entry` is set by Home
+Assistant only from 2024.12), unnoticed because nothing tested it. Before a
+change that touches Home Assistant APIs, run the suite against the floor by
+hand: a Python 3.12 venv with `pytest-homeassistant-custom-component==0.13.190`
+(Home Assistant 2024.12.0), `home-assistant-frontend==20241127.4` and
+`josepy<2` (2024's `acme` breaks on josepy 2). Raise the floor rather than
+carry a workaround for a release nobody should be on.
 
 `tsconfig.json` sets `"lib": ["ES2021", "DOM"]` with `noEmit`, and CI runs
 `npx tsc --noEmit` before the card tests, so run it locally too —
@@ -100,7 +109,7 @@ The editors are `getConfigForm()` schemas in `forms.ts`, not custom elements.
 of ours needs a lazy-load workaround that has broken custom cards before, so
 don't. A field that `getConfigForm` cannot express is a reason to reshape the
 config, not to write an editor element. `forms.test.ts` holds that every config
-key has exactly one field. Features newer than the 2024.11 minimum degrade
+key has exactly one field. Features newer than the 2024.12 minimum degrade
 acceptably: select `mode: box` (2025.3) falls back to a plain select, and
 `visible` (2026.8) is ignored, so the speaker-picker field shows in compact too.
 

@@ -284,12 +284,12 @@ python3.14 -m venv .venv        # or: uv venv --python 3.14 .venv
 .venv/bin/mypy                  # type-check the integration (strict)
 
 npm ci
-npm test                        # card tests (vitest)
+npx playwright install chromium # once per machine: the browser tests and check:layout need it
+npm test                        # card tests (vitest): Node, then headless Chromium
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness on http://localhost:8099
 npm run dev:editor              # the editors, drawn by Home Assistant's own frontend, on :8100
-npm run check:layout            # headless check that nothing moves between card states;
-                                # first run: npx playwright-core install chromium
+npm run check:layout            # headless check that nothing moves between card states
 npm run brand                   # regenerate the icon, logos and social preview from docs/brand/icon.svg
 ```
 

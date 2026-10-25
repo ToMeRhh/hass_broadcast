@@ -19,3 +19,5 @@ coverage/
 .coverage
 .coverage.*
 htmlcov/
+# Vitest browser mode: screenshots of the page when a browser test fails.
+.vitest/

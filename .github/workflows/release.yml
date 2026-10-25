@@ -25,6 +25,8 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      # The card tests include a browser project, run in headless Chromium.
+      - run: npx playwright install --with-deps chromium
       - run: npm test
 
       # Rebuild rather than trust the committed bundle: this is the last point

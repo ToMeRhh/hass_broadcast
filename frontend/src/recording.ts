@@ -2,13 +2,15 @@ import { ReactiveController, ReactiveControllerHost } from "lit";
 
 import { micErrorMessage } from "./errors";
 import { LevelEnvelope } from "./levels";
-import { Recorder } from "./recorder";
+import { Recorder, STOP_TAIL_MS } from "./recorder";
 
 export type Phase = "idle" | "recording" | "sending";
 export type RecordMode = "push_to_talk" | "start_stop";
 
 /** Below this, a push-to-talk press is a mis-tap rather than a message. */
 export const MIN_PRESS_SECONDS = 0.4;
+// What a take that short comes back as: stop() records on past the release.
+const MIN_TAKE_SECONDS = MIN_PRESS_SECONDS + STOP_TAIL_MS / 1000;
 
 /** One finished recording, before anything has decided what to do with it. */
 export interface Take {
@@ -222,7 +224,7 @@ export class RecordingController implements ReactiveController {
       this.phase = "idle";
       if (
         this.options.recordMode() === "push_to_talk" &&
-        duration < MIN_PRESS_SECONDS
+        duration < MIN_TAKE_SECONDS
       ) {
         // A tap, not a message. Saying so beats loading a clip of silence
         // that the user then has to work out how to get rid of.

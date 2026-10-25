@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { STOP_TAIL_MS } from "../src/recorder";
 import { RecordingController, RecordingOptions, Take } from "../src/recording";
 
 /** Stand-in for Recorder; the level callback is driven by hand. */
@@ -142,6 +143,20 @@ describe("RecordingController", () => {
   it("calls a short push-to-talk press a tap, not a take", async () => {
     const { controller, recorder, takes, errors } = makeController();
     recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+
+    await controller.onPressStart(press);
+    await controller.onPressEnd();
+
+    expect(takes).toHaveLength(0);
+    expect(errors[0].text).toMatch(/Hold/);
+  });
+
+  it("calls a short press a tap even though stop() records on past the release", async () => {
+    const { controller, recorder, takes, errors } = makeController();
+    recorder.stopImpl = async () => ({
+      blob: new Blob(["x"]),
+      duration: 0.2 + STOP_TAIL_MS / 1000,
+    });
 
     await controller.onPressStart(press);
     await controller.onPressEnd();

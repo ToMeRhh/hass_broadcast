@@ -34,7 +34,7 @@ interface Preset {
 const PRESETS: Preset[] = [
   {
     name: "Shipped",
-    note: "What the card does now: 48 kHz, raw mic, quiet takes boosted, 128k MP3.",
+    note: "What the card does now: 48 kHz, raw mic, quiet takes boosted, recording 0.5 s past the stop, 128k MP3.",
     capture: {},
     bitrate: "128k",
   },
@@ -54,6 +54,12 @@ const PRESETS: Preset[] = [
     name: "Shipped + noise suppression",
     note: "The card's noise_suppression setting: removes the background, rest of the mic raw.",
     capture: { noiseSuppression: true },
+    bitrate: "128k",
+  },
+  {
+    name: "Stop at release",
+    note: "Before the fix: the take ends the instant the button is let go, losing the last word on a phone.",
+    capture: { stopTail: 0 },
     bitrate: "128k",
   },
   {

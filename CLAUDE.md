@@ -10,7 +10,7 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (76)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 .venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
-npm test                        # card tests, vitest (197)
+npm test                        # card tests, vitest (204): unit (Node), browser (Chromium)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
                                 # /lab: A/B recording-quality presets by ear
@@ -34,8 +34,20 @@ installed (`VENV=` points at another venv, e.g. from a worktree).
 dev dependency) and compares every `.slot`'s box across idle, recording,
 review and sending. CI runs it as its own job (`layout` in `ci.yml`, which
 uploads the screenshots on failure); run it locally too after any change to
-the card's markup or CSS. First run on a machine: `npx playwright-core install
-chromium`.
+the card's markup or CSS. First run on a machine: `npx playwright install
+chromium`, which `npm test` needs too.
+
+`npm test` runs two Vitest projects (`vitest.config.ts`). `unit` is plain
+Node and holds most of the suite, including the card tests that read
+`renderedText()` (Lit's DOM shim lets the card construct without a DOM).
+`browser` runs `*.browser.test.ts` in headless Chromium through Playwright,
+with the card mounted into a real document against `frontend/dev/mock-hass.ts`:
+put a test there when it needs rendered DOM, styles or layout. Both pin the
+timezone to UTC, the browser through Playwright's `timezoneId`, since
+`test.env` cannot reach the page. Coverage reads lower than on Vitest 2
+(84% against 91%) for the same tests: Vitest 4 maps V8 coverage through the
+AST, so never-executed lines such as template text no longer count as
+covered.
 
 `npm run dev` renders the real card and tile against a mocked `hass`, with
 live reload and switches for the states that are painful to reach on a live

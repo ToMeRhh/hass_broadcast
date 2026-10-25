@@ -24,6 +24,8 @@ jobs:
       # appear in frontend/ (see CLAUDE.md).
       - name: Type-check the card
         run: npx tsc --noEmit
+      # For the browser project: *.browser.test.ts runs in headless Chromium.
+      - run: npx playwright install --with-deps chromium
       # Coverage is measured, not enforced: there is no floor until there is
       # a baseline to pick one from. Locally, `npm test` stays coverage-free.
       - run: npm test -- --coverage

@@ -33,11 +33,3 @@ updates:
         dependency-type: development
       dependencies:
         dependency-type: production
-    # vitest's major versions are the deliberate upgrade in #24 (browser
-    # mode, a unit/browser split), and @vitest/coverage-v8 must move in step
-    # with it. Until then, take their minor and patch releases only.
-    ignore:
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@vitest/*"
-        update-types: ["version-update:semver-major"]

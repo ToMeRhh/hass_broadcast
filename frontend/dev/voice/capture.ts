@@ -28,9 +28,16 @@ export class Capture {
     return window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
   }
 
-  async start(onLevel: (level: number) => void): Promise<void> {
+  /**
+   * `noiseSuppression` is the card's `noise_suppression` setting, applied the
+   * way `Recorder.start` applies it: the browser's own suppression on an
+   * otherwise raw mic.
+   */
+  async start(onLevel: (level: number) => void, noiseSuppression = false): Promise<void> {
     this.chunks = [];
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: RAW_MIC });
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { ...RAW_MIC, noiseSuppression },
+    });
     this.context = new AudioContext({ sampleRate: 48000 });
     const url = URL.createObjectURL(new Blob([WORKLET], { type: "text/javascript" }));
     await this.context.audioWorklet.addModule(url);
@@ -42,6 +49,11 @@ export class Capture {
     };
     this.context.createMediaStreamSource(this.stream).connect(node);
     node.connect(this.context.destination);
+  }
+
+  /** What the browser granted, which may differ from what was asked. */
+  get noiseSuppression(): boolean | undefined {
+    return this.stream?.getAudioTracks()[0]?.getSettings().noiseSuppression;
   }
 
   async stop(): Promise<Audio> {

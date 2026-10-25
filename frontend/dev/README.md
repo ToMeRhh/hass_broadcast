@@ -162,4 +162,7 @@ the same change by each method.
   once per take and shared.
 - **Presets** are data: an engine with its parameters plus an effects chain.
   Edit or add freely; the page renders whatever is there.
+- **Noise suppression** in the concept card is the card's `noise_suppression`
+  setting, applied the same way (the browser's, on an otherwise raw mic). It
+  affects mic takes only; each take's facts say what the browser granted.
 - Nothing here is in the shipped bundle.

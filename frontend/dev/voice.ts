@@ -52,6 +52,10 @@ export class VoiceLab extends LitElement {
   @state() private speaker = SPEAKERS[0];
   @state() private analysisNote = "";
   @state() private error = "";
+  /** The card's `noise_suppression` setting, for the next recording. */
+  @state() private noiseSuppression = true;
+  /** How the current take was captured, for the lab's facts. */
+  @state() private takeNote = "";
 
   private capture?: Capture;
   private timer?: number;
@@ -131,6 +135,8 @@ export class VoiceLab extends LitElement {
     .send select { flex: 1; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; font: inherit; background: #fff; color: #212121; }
     .send button { background: #03a9f4; color: #fff; border: 0; border-radius: 8px; padding: 8px 18px; font: inherit; font-weight: 500; cursor: pointer; }
     .send button:disabled { background: #bdbdbd; }
+    .option { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: #424242; cursor: pointer; }
+    .option input { accent-color: #03a9f4; width: 16px; height: 16px; margin: 0; }
     .cardstatus { min-height: 20px; margin-top: 8px; font-size: 12px; color: #5f6368; }
 
     /* ---- the lab ---- */
@@ -212,6 +218,15 @@ export class VoiceLab extends LitElement {
                 <span class="text">${this.stripText()}</span>`}
         </div>
       </div>
+      <label class="option">
+        <input
+          type="checkbox"
+          .checked=${this.noiseSuppression}
+          ?disabled=${this.recording}
+          @change=${(e: Event) => (this.noiseSuppression = (e.target as HTMLInputElement).checked)}
+        />
+        Noise suppression
+      </label>
       <div class="group">Voices</div>
       <div class="voices">
         ${chip({ id: "original", emoji: "🙂", name: "Original" })}
@@ -281,6 +296,7 @@ export class VoiceLab extends LitElement {
       <div class="facts">
         <span class="chip">${seconds.toFixed(1)} s</span>
         <span class="chip">${this.clip.rate / 1000} kHz</span>
+        <span class="chip">${this.takeNote}</span>
         ${this.analysisNote ? html`<span class="chip">${this.analysisNote}</span>` : nothing}
       </div>
       <div class="row">
@@ -344,7 +360,9 @@ export class VoiceLab extends LitElement {
       window.clearInterval(this.timer);
       this.recording = false;
       this.level = 0;
-      this.setClip(await this.capture!.stop());
+      const granted = this.capture!.noiseSuppression;
+      const clip = await this.capture!.stop();
+      this.setClip(clip, `mic · noise suppression ${granted === undefined ? "unknown" : granted ? "on" : "off"}`);
       return;
     }
     if (!Capture.isSupported()) {
@@ -354,7 +372,7 @@ export class VoiceLab extends LitElement {
     this.player.pause();
     this.capture = new Capture();
     try {
-      await this.capture.start((level) => (this.level = level));
+      await this.capture.start((level) => (this.level = level), this.noiseSuppression);
     } catch (error) {
       this.error = String(error);
       return;
@@ -379,14 +397,15 @@ export class VoiceLab extends LitElement {
 
   private async loadBlob(blob: Blob): Promise<void> {
     try {
-      this.setClip(await decode(blob));
+      // The browser suppresses noise while capturing; a file is taken as it is.
+      this.setClip(await decode(blob), "file · as recorded, no noise suppression");
       this.error = "";
     } catch (error) {
       this.error = `Could not decode that file: ${error}`;
     }
   }
 
-  private setClip(clip: Audio): void {
+  private setClip(clip: Audio, note: string): void {
     for (const r of this.results.values()) URL.revokeObjectURL(r.url);
     if (this.clipUrl) URL.revokeObjectURL(this.clipUrl);
     this.generation++;
@@ -394,6 +413,7 @@ export class VoiceLab extends LitElement {
     this.clip = clip;
     this.clipUrl = URL.createObjectURL(toWav(clip));
     this.analysisNote = "";
+    this.takeNote = note;
     this.status = "";
     // Card voices first (what a user taps), then the comparison rows.
     this.queue = [

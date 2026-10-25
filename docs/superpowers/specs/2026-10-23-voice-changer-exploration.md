@@ -130,7 +130,11 @@ What a real card needs that the POC does not have:
    test. The vocoder and effects need no worklet.
 6. **Config** would follow the existing conventions: flat keys, one editor
    field each, e.g. `voices` (which presets to offer), `speakers`, `mode`,
-   `max_duration`.
+   `max_duration`, and `noise_suppression` with the card's meaning: the
+   browser's own suppression on an otherwise raw mic. The lab's switch does
+   exactly that, so a voice card would reuse `Recorder` unchanged. Background
+   noise matters more here than in the plain card: the vocoder's pitch tracker
+   and aperiodicity estimate read it as part of the voice.
 
 ## Open questions
 

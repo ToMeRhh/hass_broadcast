@@ -17,7 +17,7 @@ const OVERRUN_SECONDS = 1;
 // How long stop() keeps recording. A phone's audio input runs a few hundred
 // milliseconds behind the voice, so a take cut the instant the button is
 // released loses its last word.
-export const STOP_TAIL_MS = 500;
+export const STOP_TAIL_MS = 300;
 // How long stop() waits for the worklet to answer its flush. A worklet the
 // browser cached from before the flush existed never answers.
 const FLUSH_TIMEOUT_MS = 250;

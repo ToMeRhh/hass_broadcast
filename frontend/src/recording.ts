@@ -4,7 +4,9 @@ import { micErrorMessage } from "./errors";
 import { LevelEnvelope } from "./levels";
 import { Recorder, STOP_TAIL_MS } from "./recorder";
 
-export type Phase = "idle" | "recording" | "sending";
+// "finishing" runs from the release until the take is ready: Recorder.stop()
+// records on past it, but the button is already let go.
+export type Phase = "idle" | "recording" | "finishing" | "sending";
 export type RecordMode = "push_to_talk" | "start_stop";
 
 /** Below this, a push-to-talk press is a mis-tap rather than a message. */
@@ -166,6 +168,9 @@ export class RecordingController implements ReactiveController {
     this.options.onStart?.();
     try {
       this.recorder.onLevel((level) => {
+        if (this.phase !== "recording") {
+          return;
+        }
         if (this.envelope.push(level, Date.now())) {
           this.level = this.envelope.tail(1)[0];
           this.host.requestUpdate();
@@ -218,6 +223,9 @@ export class RecordingController implements ReactiveController {
     }
     this.busy = true;
     this.clearTimer();
+    this.phase = "finishing";
+    this.level = 0;
+    this.host.requestUpdate();
     let take: Take | undefined;
     try {
       const { blob, duration } = await this.recorder.stop();

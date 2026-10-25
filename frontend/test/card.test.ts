@@ -473,6 +473,18 @@ describe("card render reflects phase, not just the clip", () => {
     expect(parts.view).toBe("recording");
   });
 
+  it("lets go of the record button while the take finishes", () => {
+    const card = cardWithLoadedClip();
+    card.rec.phase = "finishing";
+
+    const html = renderedText(card.render());
+
+    expect(html).not.toContain("release to stop");
+    expect(card.parts.reviewing).toBe(false);
+    // The strip holds the stopped timer until the new take replaces it.
+    expect(card.parts.view).toBe("recording");
+  });
+
   it("restores the loaded clip's transport once idle again", () => {
     const card = cardWithLoadedClip();
     card.rec.phase = "idle";

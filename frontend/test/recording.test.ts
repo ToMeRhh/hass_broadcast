@@ -165,6 +165,25 @@ describe("RecordingController", () => {
     expect(errors[0].text).toMatch(/Hold/);
   });
 
+  it("lets go of the button on release while stop() records the tail", async () => {
+    const { controller, recorder, takes } = makeController();
+    let finish!: (result: { blob: Blob; duration: number }) => void;
+    recorder.stopImpl = () => new Promise((resolve) => (finish = resolve));
+
+    await controller.onPressStart(press);
+    const stopping = controller.onPressEnd();
+
+    expect(controller.phase).toBe("finishing");
+    recorder.levelCallback?.(0.9);
+    vi.advanceTimersByTime(100);
+    expect(controller.level).toBe(0);
+
+    finish({ blob: new Blob(["x"]), duration: 2 });
+    await stopping;
+    expect(controller.phase).toBe("idle");
+    expect(takes).toHaveLength(1);
+  });
+
   it("waits for the host to finish with a take before resolving", async () => {
     // The tile sends from onTake; stopRecording resolving only afterwards is
     // what lets its tests (and its own sequencing) await the whole gesture.

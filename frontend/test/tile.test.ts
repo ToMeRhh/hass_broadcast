@@ -90,6 +90,22 @@ describe("broadcast tile", () => {
     expect(tile.rec.phase).toBe("idle");
   });
 
+  it("shows the message as sending from the moment the button is released", async () => {
+    const { tile, recorder } = makeTile();
+    let finish!: (result: { blob: Blob; duration: number }) => void;
+    recorder.stopImpl = () => new Promise((resolve) => (finish = resolve));
+
+    await tile.rec.onPressStart(press);
+    const releasing = tile.rec.onPressEnd();
+
+    const html = renderedText(tile.render());
+    expect(html).toContain("Sending…");
+    expect(html).not.toContain("release to send");
+
+    finish({ blob: new Blob(["x"]), duration: 2 });
+    await releasing;
+  });
+
   it("goes back to ready once the result has been shown", async () => {
     const { tile } = makeTile();
     await tile.rec.onPressStart(press);

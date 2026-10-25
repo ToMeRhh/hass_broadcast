@@ -4,7 +4,7 @@
 #
 # This is the latest release (Home Assistant 2026.10.2, Python 3.14), because
 # users of a HACS integration overwhelmingly run a recent Home Assistant. It is
-# the only version tested. hacs.json still declares 2024.11.0 as the minimum:
+# the only version tested. hacs.json still declares 2024.12.0 as the minimum:
 # that floor is deliberate but untested, so the code's branches for older
 # releases (`_lovelace_resources` in __init__.py, for one) must stay even
 # though nothing here exercises them. See #16 and #23.

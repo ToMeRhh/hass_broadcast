@@ -1,3 +1,4 @@
+import { BAR_COUNT, peaksOf } from "./levels";
 import { encodeWav } from "./wav";
 
 /**
@@ -133,7 +134,7 @@ export class Recorder {
     }
   }
 
-  async stop(): Promise<{ blob: Blob; duration: number }> {
+  async stop(): Promise<{ blob: Blob; duration: number; peaks: number[] }> {
     if (!this.active) {
       throw new Error("Recorder.stop() called with no active recording session");
     }
@@ -159,6 +160,7 @@ export class Recorder {
     return {
       blob: encodeWav(samples, sampleRate),
       duration: total / sampleRate,
+      peaks: peaksOf(samples, BAR_COUNT),
     };
   }
 

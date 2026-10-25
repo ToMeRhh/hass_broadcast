@@ -9,9 +9,10 @@ class FakeRecorder {
   stopped = 0;
   levelCallback?: (level: number) => void;
   startImpl: () => Promise<void> = async () => {};
-  stopImpl: () => Promise<{ blob: Blob; duration: number }> = async () => ({
+  stopImpl: () => Promise<{ blob: Blob; duration: number; peaks: number[] }> = async () => ({
     blob: new Blob(["x"]),
     duration: 2,
+    peaks: [],
   });
   onLevel(callback: (level: number) => void): void {
     this.levelCallback = callback;
@@ -22,7 +23,7 @@ class FakeRecorder {
     this.startArgs = args;
     return this.startImpl();
   }
-  async stop(): Promise<{ blob: Blob; duration: number }> {
+  async stop(): Promise<{ blob: Blob; duration: number; peaks: number[] }> {
     this.stopped += 1;
     return this.stopImpl();
   }
@@ -69,20 +70,15 @@ describe("RecordingController", () => {
     (globalThis as any).isSecureContext = undefined;
   });
 
-  it("hands a finished take, with its level envelope, to the host", async () => {
-    const { controller, recorder, takes, starts } = makeController();
+  it("hands a finished take to the host", async () => {
+    const { controller, takes, starts } = makeController();
 
     await controller.onPressStart(press);
     expect(starts()).toBe(1);
-    for (let ms = 0; ms <= 200; ms += 10) {
-      vi.setSystemTime(ms);
-      recorder.levelCallback?.(0.5);
-    }
     await controller.onPressEnd();
 
     expect(takes).toHaveLength(1);
     expect(takes[0].duration).toBe(2);
-    expect(takes[0].peaks.length).toBeGreaterThan(0);
     expect(controller.phase).toBe("idle");
   });
 
@@ -142,7 +138,7 @@ describe("RecordingController", () => {
 
   it("calls a short push-to-talk press a tap, not a take", async () => {
     const { controller, recorder, takes, errors } = makeController();
-    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2 });
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 0.2, peaks: [] });
 
     await controller.onPressStart(press);
     await controller.onPressEnd();
@@ -156,6 +152,7 @@ describe("RecordingController", () => {
     recorder.stopImpl = async () => ({
       blob: new Blob(["x"]),
       duration: 0.2 + STOP_TAIL_MS / 1000,
+      peaks: [],
     });
 
     await controller.onPressStart(press);
@@ -167,7 +164,7 @@ describe("RecordingController", () => {
 
   it("lets go of the button on release while stop() records the tail", async () => {
     const { controller, recorder, takes } = makeController();
-    let finish!: (result: { blob: Blob; duration: number }) => void;
+    let finish!: (result: { blob: Blob; duration: number; peaks: number[] }) => void;
     recorder.stopImpl = () => new Promise((resolve) => (finish = resolve));
 
     await controller.onPressStart(press);
@@ -178,10 +175,21 @@ describe("RecordingController", () => {
     vi.advanceTimersByTime(100);
     expect(controller.level).toBe(0);
 
-    finish({ blob: new Blob(["x"]), duration: 2 });
+    finish({ blob: new Blob(["x"]), duration: 2, peaks: [] });
     await stopping;
     expect(controller.phase).toBe("idle");
     expect(takes).toHaveLength(1);
+  });
+
+  it("hands over the waveform the recorder drew from the audio", async () => {
+    const { controller, recorder, takes } = makeController();
+    recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 2, peaks: [0.25, 1] });
+
+    await controller.startRecording();
+    recorder.levelCallback?.(0.5);
+    await controller.stopRecording();
+
+    expect(takes[0].peaks).toEqual([0.25, 1]);
   });
 
   it("waits for the host to finish with a take before resolving", async () => {

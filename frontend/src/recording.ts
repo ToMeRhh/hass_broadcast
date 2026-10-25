@@ -18,7 +18,7 @@ const MIN_TAKE_SECONDS = MIN_PRESS_SECONDS + STOP_TAIL_MS / 1000;
 export interface Take {
   blob: Blob;
   duration: number;
-  /** The level envelope captured while recording, one peak per window. */
+  /** The waveform, drawn from the recorded audio. */
   peaks: number[];
 }
 
@@ -228,7 +228,7 @@ export class RecordingController implements ReactiveController {
     this.host.requestUpdate();
     let take: Take | undefined;
     try {
-      const { blob, duration } = await this.recorder.stop();
+      const { blob, duration, peaks } = await this.recorder.stop();
       this.phase = "idle";
       if (
         this.options.recordMode() === "push_to_talk" &&
@@ -238,7 +238,7 @@ export class RecordingController implements ReactiveController {
         // that the user then has to work out how to get rid of.
         this.options.onError("Hold the button while you speak.", false);
       } else {
-        take = { blob, duration, peaks: this.envelope.all() };
+        take = { blob, duration, peaks };
       }
     } catch (err: any) {
       // Don't strand the UI showing "recording" over a dead session — a

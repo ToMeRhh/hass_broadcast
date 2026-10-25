@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureRate, normalize, Recorder } from "../src/recorder";
 import { clampMaxDuration } from "../src/config";
+import { BAR_COUNT } from "../src/levels";
 
 // The default vitest environment is plain Node — there is no real
 // AudioWorklet/getUserMedia to run against. These are minimal hand-rolled
@@ -252,6 +253,24 @@ describe("Recorder stop", () => {
     getNode()?.port.inFlight.push(new Int16Array(800));
 
     expect((await finish(recorder)).duration).toBeCloseTo(0.15);
+  });
+
+  it("draws the waveform from the recorded audio, tail included", async () => {
+    // Bars timed by when levels reached the page drift from the sound, and
+    // miss the tail entirely: the strip ran ahead of playback.
+    const { getNode } = installFakes();
+    const recorder = new Recorder();
+    await recorder.start(60, { sampleRate: 16000 });
+    getNode()?.port.deliver(new Int16Array(2400));
+
+    const stopping = recorder.stop();
+    getNode()?.port.deliver(new Int16Array(2400).fill(8000));
+    await vi.runAllTimersAsync();
+    const { peaks } = await stopping;
+
+    expect(peaks).toHaveLength(BAR_COUNT);
+    expect(peaks.slice(0, BAR_COUNT / 2).every((peak) => peak === 0)).toBe(true);
+    expect(peaks.slice(BAR_COUNT / 2).every((peak) => peak === 1)).toBe(true);
   });
 
   it("still finishes when the worklet never answers the flush", async () => {

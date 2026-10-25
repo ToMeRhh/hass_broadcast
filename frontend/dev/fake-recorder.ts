@@ -15,6 +15,8 @@
  * The patch is installed unconditionally and decides per call, so the panel
  * toggle takes effect immediately and real capture is untouched on localhost.
  */
+import { decodePeaks } from "../src/clip";
+import { BAR_COUNT } from "../src/levels";
 import { Recorder } from "../src/recorder";
 import { fakeSpeech } from "./mock-hass";
 
@@ -97,7 +99,8 @@ export function installRecorderMock(options: RecorderMockOptions): void {
     sessions.delete(this);
     callbacks.get(this)?.(0);
     const duration = (Date.now() - session.started) / 1000;
-    return { blob: fakeSpeech(duration), duration };
+    const blob = fakeSpeech(duration);
+    return { blob, duration, peaks: await decodePeaks(blob, BAR_COUNT) };
   };
 }
 

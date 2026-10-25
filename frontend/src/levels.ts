@@ -62,10 +62,28 @@ export function normalize(peaks: number[]): number[] {
 }
 
 /**
- * The peaks of one recording, accumulated while it runs.
- *
- * Doubles as the live view's source (its tail) and, once recording stops, as
- * the finished clip's waveform — so a fresh recording never needs decoding.
+ * A waveform of `count` bars, drawn from the audio itself: each bar is the
+ * loudest sample in its stretch of the clip, so the bars line up with
+ * playback. Any sample scale works; the result is normalized.
+ */
+export function peaksOf(samples: ArrayLike<number>, count: number): number[] {
+  const peaks: number[] = [];
+  for (let bar = 0; bar < count; bar++) {
+    const start = Math.floor((bar * samples.length) / count);
+    const end = Math.floor(((bar + 1) * samples.length) / count);
+    let max = 0;
+    for (let index = start; index < end; index++) {
+      max = Math.max(max, Math.abs(samples[index]));
+    }
+    peaks.push(max);
+  }
+  return normalize(peaks);
+}
+
+/**
+ * The peaks of one recording, accumulated while it runs: the live view's
+ * source. Windowed by when levels reach the page, which is close enough for
+ * a meter but not for the finished clip — that is drawn with `peaksOf`.
  */
 export class LevelEnvelope {
   private peaks: number[] = [];

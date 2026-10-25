@@ -1,5 +1,5 @@
 import { BroadcastMessage } from "./api";
-import { BAR_COUNT, normalize, resample } from "./levels";
+import { BAR_COUNT, normalize, peaksOf, resample } from "./levels";
 
 /**
  * Where a loaded clip's audio came from, which is the only thing that
@@ -21,7 +21,7 @@ export interface Clip {
   peaks: number[];
 }
 
-/** Turn a just-finished recording into a clip, using the levels we captured. */
+/** Turn a just-finished recording into a clip, with the waveform the recorder drew. */
 export function freshClip(
   blob: Blob,
   duration: number,
@@ -45,8 +45,8 @@ export type PeakDecoder = (blob: Blob, count: number) => Promise<number[]>;
 /**
  * Reduce encoded audio to one peak per bar.
  *
- * Used only for clips loaded from history: a fresh recording already has an
- * envelope from the level callbacks. Goes through `decodeAudioData` because
+ * Used only for clips loaded from history: the recorder draws a fresh
+ * recording's waveform from its samples. Goes through `decodeAudioData` because
  * the integration transcodes uploads to MP3 when ffmpeg is available, so the
  * bytes are not necessarily the WAV the card produced.
  */
@@ -59,18 +59,7 @@ export const decodePeaks: PeakDecoder = async (blob, count) => {
   const context = new Ctor();
   try {
     const buffer = await context.decodeAudioData(await blob.arrayBuffer());
-    const samples: Float32Array = buffer.getChannelData(0);
-    const peaks: number[] = [];
-    for (let bar = 0; bar < count; bar++) {
-      const start = Math.floor((bar * samples.length) / count);
-      const end = Math.floor(((bar + 1) * samples.length) / count);
-      let max = 0;
-      for (let index = start; index < end; index++) {
-        max = Math.max(max, Math.abs(samples[index]));
-      }
-      peaks.push(max);
-    }
-    return normalize(peaks);
+    return peaksOf(buffer.getChannelData(0), count);
   } finally {
     // An AudioContext held open per history click would exhaust the browser's
     // limit after a few dozen loads.

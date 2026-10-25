@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.hass_broadcast import playback
-from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
+from custom_components.hass_broadcast.const import DOMAIN
 
 # MediaPlayerEntityFeature.MEDIA_ANNOUNCE, spelled out so the test pins the
 # wire value rather than restating whatever the import happens to resolve to.
@@ -64,7 +64,7 @@ async def test_send_fans_out_to_every_target(
     hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """Each target receives a play_media call with the media source id."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -107,7 +107,7 @@ async def test_chime_mode_plays_chime_first(
     """
     monkeypatch.setattr(playback, "CHIME_GAP_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -127,7 +127,7 @@ async def test_one_failing_target_does_not_stop_the_others(
     hass: HomeAssistant, setup_entry, caplog, hass_ws_client
 ) -> None:
     """A target that errors is logged; remaining targets still play."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -163,7 +163,7 @@ async def test_one_failing_target_survives_non_home_assistant_error(
     reproduces that: catching only `HomeAssistantError` would let this
     abort the whole broadcast and leave later targets silent.
     """
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -196,7 +196,7 @@ async def test_send_reports_which_targets_failed(
     Without this the card cannot tell "played everywhere" from "played
     nowhere" -- three unreachable speakers would look like a success.
     """
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -219,7 +219,7 @@ async def test_send_reports_no_failures_when_every_target_plays(
     hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """A fully successful broadcast reports an empty failure list."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -243,7 +243,7 @@ async def test_restore_mode_returns_before_the_restore_tail(
     one-minute recording, and a websocket reconnect in that window made the
     card report a failure for a broadcast that had actually played.
     """
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=60, user_id=None
     )
@@ -275,7 +275,7 @@ async def test_restore_tail_puts_the_volume_back(
     """The detached tail still restores the snapshotted volume."""
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -301,7 +301,7 @@ async def test_restore_tail_failure_is_logged_not_raised(
     """
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -333,7 +333,7 @@ async def test_restore_uses_native_announce_when_the_target_supports_it(
     integration implements announce, that guess is both unnecessary and worse
     than what the device does natively, so hand the work over.
     """
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -359,7 +359,7 @@ async def test_restore_falls_back_when_the_target_lacks_announce(
     """Without the feature bit the sleep-based tail still runs."""
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -386,7 +386,7 @@ async def test_volume_override_sets_and_restores_in_plain_mode(
     """A requested volume is set before playback and put back afterward."""
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -405,7 +405,7 @@ async def test_no_volume_calls_when_no_override_is_requested(
     hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """Without a volume override, plain mode never touches volume_set."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -427,7 +427,7 @@ async def test_volume_override_applies_before_the_chime_too(
     monkeypatch.setattr(playback, "CHIME_GAP_S", 0)
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -449,7 +449,7 @@ async def test_volume_override_combines_with_restore_mode(
     """Restore mode both sets the override and puts the original back."""
     monkeypatch.setattr(playback, "RESTORE_TAIL_MARGIN_S", 0)
 
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )
@@ -470,7 +470,7 @@ async def test_volume_override_skipped_for_native_announce_targets(
     hass: HomeAssistant, setup_entry, play_calls, hass_ws_client
 ) -> None:
     """A player that ducks itself is left alone, override or not."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=0, user_id=None
     )

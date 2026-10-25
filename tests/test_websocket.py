@@ -4,7 +4,6 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast import DATA_STORE
 from custom_components.hass_broadcast.const import DOMAIN
 
 
@@ -29,7 +28,7 @@ async def test_list_returns_recordings_newest_first(
     hass: HomeAssistant, setup_entry, hass_ws_client
 ) -> None:
     """The list command returns stored recordings, newest first."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     first = await store.async_add(b"a", extension="wav", duration=1, user_id=None)
     second = await store.async_add(b"b", extension="wav", duration=2, user_id=None)
 
@@ -45,7 +44,7 @@ async def test_delete_removes_a_recording(
     hass: HomeAssistant, setup_entry, hass_ws_client
 ) -> None:
     """The delete command removes a recording."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(b"a", extension="wav", duration=1, user_id=None)
 
     client = await hass_ws_client(hass)
@@ -77,7 +76,7 @@ async def test_list_includes_can_delete_and_not_user_id(
     hass: HomeAssistant, setup_entry, hass_ws_client, admin_user
 ) -> None:
     """List responses contain can_delete and do not contain user_id."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     # Add recording as someone else (use a different user_id)
     message_id = await store.async_add(
         b"a", extension="wav", duration=1, user_id="other_user"
@@ -103,7 +102,7 @@ async def test_non_owner_cannot_delete(
     hass: HomeAssistant, setup_entry, hass_ws_client, hass_read_only_access_token
 ) -> None:
     """Non-admin, non-owner cannot delete a recording."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     # Add recording as someone else
     other_user_id = "some_other_user_id"
     message_id = await store.async_add(
@@ -128,7 +127,7 @@ async def test_owner_can_delete_own_recording(
     hass: HomeAssistant, setup_entry, hass_ws_client, admin_user
 ) -> None:
     """Owner can delete their own recording."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     # Add recording as the admin user (who is also the WebSocket client user)
     message_id = await store.async_add(
         b"a", extension="wav", duration=1, user_id=admin_user
@@ -149,7 +148,7 @@ async def test_admin_can_delete_any_recording(
     hass: HomeAssistant, setup_entry, hass_ws_client
 ) -> None:
     """Admin can delete a recording owned by someone else."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     # Add recording owned by someone else
     message_id = await store.async_add(
         b"a", extension="wav", duration=1, user_id="some_other_user"

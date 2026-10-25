@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.hass_broadcast.const import DATA_STORE, DOMAIN
+from custom_components.hass_broadcast.const import DOMAIN
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ async def test_serves_stored_recording(
     hass: HomeAssistant, setup_entry, hass_client
 ) -> None:
     """A stored recording is served with its bytes intact."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -53,7 +53,7 @@ async def test_extension_mismatch_is_not_found(
     The id exists but the stored file is a .wav; serving it for a .mp3
     request would hand back WAV bytes labelled audio/mpeg.
     """
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -67,7 +67,7 @@ async def test_media_requires_authentication(
     hass: HomeAssistant, setup_entry, hass_client_no_auth
 ) -> None:
     """Unauthenticated, unsigned requests are rejected."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )
@@ -81,7 +81,7 @@ async def test_signed_path_grants_access(
     hass: HomeAssistant, setup_entry, hass_client_no_auth
 ) -> None:
     """A signed path works without a token — this is how Cast fetches."""
-    store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
+    store = setup_entry.runtime_data.store
     message_id = await store.async_add(
         b"RIFFdata", extension="wav", duration=1, user_id=None
     )

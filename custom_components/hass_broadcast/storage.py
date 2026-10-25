@@ -2,18 +2,32 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from pathlib import Path
 from typing import Any
 import uuid
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import DATA_STORE, DOMAIN, STORAGE_DIR, STORAGE_KEY, STORAGE_VERSION
+from .const import DOMAIN, STORAGE_DIR, STORAGE_KEY, STORAGE_VERSION
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class BroadcastData:
+    """What a loaded config entry holds, as its `runtime_data`."""
+
+    store: BroadcastStore
+
+
+# Defined here rather than in __init__.py so that http, media_source and
+# websocket can import it alongside async_get_store without a cycle.
+type BroadcastConfigEntry = ConfigEntry[BroadcastData]
 
 
 @callback
@@ -21,12 +35,14 @@ def async_get_store(hass: HomeAssistant) -> BroadcastStore | None:
     """Return the store for the single config entry, or None when not set up.
 
     Only one entry can exist -- the config flow calls
-    `_abort_if_unique_id_configured` -- so taking the first entry's data is
-    unambiguous. This is the one place the lookup lives; http, media_source,
-    playback and websocket all call it.
+    `_abort_if_unique_id_configured`. The callers (http, media_source and
+    websocket) are handed `hass`, not an entry, so this is the one place
+    that finds it.
     """
-    entry_data = next(iter(hass.data.get(DOMAIN, {}).values()), None)
-    return entry_data[DATA_STORE] if entry_data else None
+    entries: list[BroadcastConfigEntry] = hass.config_entries.async_loaded_entries(
+        DOMAIN
+    )
+    return entries[0].runtime_data.store if entries else None
 
 
 class BroadcastStore:

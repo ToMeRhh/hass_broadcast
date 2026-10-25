@@ -5,7 +5,7 @@ on:
     branches: [master]
   pull_request:
 
-# Five independent jobs, so a Python failure does not wait on the frontend
+# Six independent jobs, so a Python failure does not wait on the frontend
 # pipeline and the check that failed names the half that broke.
 jobs:
   frontend:
@@ -126,6 +126,24 @@ jobs:
       # GitHub output format annotates the offending lines on the PR.
       - run: ruff check --output-format=github .
       - run: ruff format --check --diff .
+
+  # Strict, over custom_components/hass_broadcast/. It reads Home Assistant's
+  # own types, so it installs what the python job does; its own job so a type
+  # error does not stop the tests from reporting.
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements_test.txt
+            requirements_lint.txt
+      - run: pip install -r requirements_test.txt -r requirements_lint.txt
+      - run: mypy
 
   # The card promises that nothing moves between idle, recording, review and
   # sending. vitest has no layout engine, so check:layout drives the dev

@@ -1,6 +1,14 @@
-# Python lint and format, configured in pyproject.toml. Kept apart from
-# requirements_test.txt so CI's ruff job does not install Home Assistant.
-# The version matches Home Assistant core's (requirements_test_pre_commit.txt),
-# whose ruleset pyproject.toml starts from; bump it by hand, like the pins in
-# requirements_test.txt (dependabot does not watch pip).
+# Python lint, format and type checking, configured in pyproject.toml.
+#
+# ruff is kept out of requirements_test.txt so CI's ruff job does not install
+# Home Assistant. Its version matches Home Assistant core's
+# (requirements_test_pre_commit.txt), whose ruleset pyproject.toml starts from.
 ruff==0.17.1
+
+# mypy does need Home Assistant installed, to read its types, so CI runs it in
+# the python job, after requirements_test.txt. Core's version
+# (requirements_test.txt), like ruff's.
+mypy==2.4.0
+
+# Bump both by hand, like the pins in requirements_test.txt: dependabot does
+# not watch pip.

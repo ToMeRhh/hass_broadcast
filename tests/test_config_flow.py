@@ -1,12 +1,11 @@
 """Tests for the config and options flows."""
 
-import pytest
-import voluptuous as vol
-
 from homeassistant.config_entries import SOURCE_USER, ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+import voluptuous as vol
 
 from custom_components.hass_broadcast.const import (
     CONF_RETENTION,

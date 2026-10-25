@@ -28,7 +28,7 @@ def _warm_pycares_shutdown_thread():
     so every test sees it as already present and none gets blamed for it.
     """
     try:
-        import pycares
+        import pycares  # noqa: PLC0415 -- optional: absent, there is no thread to warm
     except ImportError:
         return
     pycares.Channel()

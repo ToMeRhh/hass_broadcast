@@ -1,0 +1,6 @@
+# Python lint and format, configured in pyproject.toml. Kept apart from
+# requirements_test.txt so CI's ruff job does not install Home Assistant.
+# The version matches Home Assistant core's (requirements_test_pre_commit.txt),
+# whose ruleset pyproject.toml starts from; bump it by hand, like the pins in
+# requirements_test.txt (dependabot does not watch pip).
+ruff==0.17.1

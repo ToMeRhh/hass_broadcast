@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 
 from .const import MODE_PLAIN, MODES
 from .playback import async_broadcast
 from .storage import async_get_store
+
 
 @websocket_api.websocket_command({vol.Required("type"): "hass_broadcast/list"})
 @websocket_api.async_response
@@ -33,9 +33,7 @@ async def ws_list(
         result_msg = dict(message)  # Create a copy to avoid mutating store's data
         user_id = result_msg.pop("user_id", None)
         # Can delete if user is admin or is the owner
-        can_delete = (
-            connection.user.is_admin or connection.user.id == user_id
-        )
+        can_delete = connection.user.is_admin or connection.user.id == user_id
         result_msg["can_delete"] = can_delete
         result_messages.append(result_msg)
     connection.send_result(msg["id"], {"messages": result_messages})
@@ -69,7 +67,7 @@ async def ws_delete(
         connection.send_error(
             msg["id"],
             "not_authorized",
-            "You do not have permission to delete this recording"
+            "You do not have permission to delete this recording",
         )
         return
     # User is authorized, delete the recording

@@ -46,9 +46,7 @@ async def test_delete_removes_a_recording(
 ) -> None:
     """The delete command removes a recording."""
     store = hass.data[DOMAIN][setup_entry.entry_id][DATA_STORE]
-    message_id = await store.async_add(
-        b"a", extension="wav", duration=1, user_id=None
-    )
+    message_id = await store.async_add(b"a", extension="wav", duration=1, user_id=None)
 
     client = await hass_ws_client(hass)
     await client.send_json(

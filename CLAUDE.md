@@ -8,6 +8,7 @@ Lovelace card and play it on media players. Python integration in
 
 ```bash
 .venv/bin/python -m pytest -q   # integration tests (75)
+.venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 npm test                        # card tests, vitest (197)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
@@ -54,6 +55,13 @@ the venv with a 3.14 interpreter (`uv venv --python 3.14 .venv` if the system
 has none). It is the one version tested, a recent release because that is what
 users run, and it is bumped to the latest from time to time.
 
+Ruff (`requirements_lint.txt`, configured in `pyproject.toml`) uses Home
+Assistant core's ruleset, trimmed; the comment above `[tool.ruff.lint]` says
+what was dropped and why. `target-version` is `py312`, the floor's Python, not
+the 3.14 the tests run on, so pyupgrade never rewrites the integration into
+syntax 2024.12 cannot import. Markdown is excluded: ruff 0.17 formats code
+blocks in it, and `docs/superpowers/` is a record, not code.
+
 `hacs.json` declares 2024.12.0 as the minimum, and that floor is **declared but
 not tested** — deliberately, rather than a matrix (#16, #23). Code that touches
 Home Assistant internals must still tolerate both ends, and the branches for
@@ -75,12 +83,12 @@ carry a workaround for a release nobody should be on.
 `npx tsc --noEmit` before the card tests, so run it locally too —
 `Array.prototype.at` is ES2022 and must not appear in `frontend/`.
 
-`ci.yml` runs four parallel jobs: `frontend` (tsc, card tests), `bundle`
-(rebuild and stale-bundle check), `python` (integration tests) and `layout`.
-`frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
+`ci.yml` runs five parallel jobs: `frontend` (tsc, card tests), `bundle`
+(rebuild and stale-bundle check), `python` (integration tests), `ruff` and
+`layout`. `frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
 `--cov=custom_components/hass_broadcast --cov-branch`) and write it to the job
 summary. There is no coverage floor yet. The coverage flags are in `ci.yml`,
-not `pytest.ini` or `npm test`, so the local commands above stay unchanged.
+not `pyproject.toml` or `npm test`, so the local commands above stay unchanged.
 `pytest-cov` is pinned to the version pytest-homeassistant-custom-component
 itself pins; bump them together.
 

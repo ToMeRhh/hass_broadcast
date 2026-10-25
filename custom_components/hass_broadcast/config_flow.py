@@ -4,13 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 import voluptuous as vol
-
-from homeassistant.config_entries import (
-    ConfigFlow,
-    ConfigFlowResult,
-    OptionsFlow,
-)
 
 from .const import CONF_RETENTION, DEFAULT_RETENTION, DOMAIN
 

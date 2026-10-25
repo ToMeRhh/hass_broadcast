@@ -74,9 +74,7 @@ class BroadcastMediaSource(MediaSource):
                 domain=DOMAIN,
                 identifier=message["id"],
                 media_class=MediaClass.MUSIC,
-                media_content_type=CONTENT_TYPES.get(
-                    message["extension"], "audio/wav"
-                ),
+                media_content_type=CONTENT_TYPES.get(message["extension"], "audio/wav"),
                 title=_title(message),
                 can_play=True,
                 can_expand=False,

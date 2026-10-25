@@ -724,6 +724,90 @@ describe("card history rendering and deletion", () => {
 
     expect(card.status.text).toMatch(/Could not delete: connection lost/);
   });
+
+  function cardHolding(id: string, deleted: boolean): any {
+    vi.stubGlobal("URL", { createObjectURL: () => "blob:x", revokeObjectURL: () => {} });
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card" });
+    card.hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async (msg: any) =>
+          msg.type === "hass_broadcast/delete" ? { deleted } : [],
+      },
+    };
+    card.clip = {
+      source: { kind: "stored", id },
+      url: "blob:stored",
+      duration: 2,
+      peaks: [],
+    };
+    return card;
+  }
+
+  it("unloads the recording it just deleted", async () => {
+    // The clip pointed at a message the server no longer has: it still
+    // played from its object URL, but Send failed with not_found.
+    const card = cardHolding("abc123", true);
+
+    await card.deleteRecording("abc123");
+
+    expect(card.clip).toBeUndefined();
+    expect(card.canBroadcast).toBe(false);
+  });
+
+  it("unloads it when the server says it was already gone", async () => {
+    const card = cardHolding("abc123", false);
+
+    await card.deleteRecording("abc123");
+
+    expect(card.clip).toBeUndefined();
+  });
+
+  it("keeps the loaded recording when deleting a different one", async () => {
+    const card = cardHolding("other", true);
+    const clip = card.clip;
+
+    await card.deleteRecording("abc123");
+
+    expect(card.clip).toBe(clip);
+  });
+});
+
+describe("card sending a recording deleted elsewhere", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("unloads it and says why instead of the raw not_found", async () => {
+    vi.stubGlobal("URL", { createObjectURL: () => "blob:x", revokeObjectURL: () => {} });
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", speakers: ["media_player.a"] });
+    card.hass = {
+      states: { "media_player.a": { state: "idle", attributes: { supported_features: 512 } } },
+      connection: {
+        sendMessagePromise: async (msg: any) => {
+          if (msg.type === "hass_broadcast/send") {
+            throw { code: "not_found", message: "Unknown recording abc123" };
+          }
+          return [];
+        },
+      },
+    };
+    card.selected = ["media_player.a"];
+    card.clip = {
+      source: { kind: "stored", id: "abc123" },
+      url: "blob:stored",
+      duration: 2,
+      peaks: [],
+    };
+
+    await card.broadcast();
+
+    expect(card.clip).toBeUndefined();
+    expect(card.status.text).toBe("That recording was deleted.");
+    expect(card.rec.phase).toBe("idle");
+  });
 });
 
 describe("push to talk", () => {

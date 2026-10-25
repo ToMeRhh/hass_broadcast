@@ -379,6 +379,16 @@ export class HassBroadcastCard extends LitElement {
       await this.refreshHistory();
     } catch (err: any) {
       this.rec.setSending(false);
+      // Deleted from another card or device since it was loaded: the audio
+      // still plays from its object URL, but there is nothing left to send.
+      if (err?.code === "not_found" && storedId(clip) !== undefined) {
+        if (this.clip === clip) {
+          this.clearClip();
+        }
+        this.fail("That recording was deleted.");
+        await this.refreshHistory();
+        return;
+      }
       this.fail(`Could not send: ${err?.message ?? err}`);
     }
   }
@@ -402,6 +412,11 @@ export class HassBroadcastCard extends LitElement {
   private async deleteRecording(id: string): Promise<void> {
     try {
       const deleted = await deleteMessage(this.hass, id);
+      // Either way the server no longer has it, so a loaded copy would play
+      // but could never be sent.
+      if (this.clip && storedId(this.clip) === id) {
+        this.clearClip();
+      }
       if (deleted) {
         await this.refreshHistory();
       }

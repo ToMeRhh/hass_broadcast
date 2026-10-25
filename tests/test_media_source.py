@@ -46,6 +46,22 @@ async def test_resolve_unknown_id_raises(hass: HomeAssistant, setup_entry) -> No
         )
 
 
+async def test_resolves_the_chime(hass: HomeAssistant, setup_entry) -> None:
+    """The chime resolves to its static URL, like a recording does.
+
+    It goes through the media source rather than as a bare path because
+    players differ in what they accept: Cast expands a root-relative URL
+    itself, Music Assistant does not and fails with "Could not resolve"
+    (#53). Every player resolves `media-source://` ids.
+    """
+    item = await media_source.async_resolve_media(
+        hass, f"media-source://{DOMAIN}/chime", None
+    )
+
+    assert item.url == "/api/hass_broadcast/static/chime.wav"
+    assert item.mime_type == "audio/wav"
+
+
 async def test_browse_lists_recordings(hass: HomeAssistant, setup_entry) -> None:
     """Browsing lists stored recordings as playable children."""
     store = setup_entry.runtime_data.store

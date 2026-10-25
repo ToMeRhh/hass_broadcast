@@ -117,7 +117,7 @@ async def test_chime_mode_plays_chime_first(
 
     assert msg["success"] is True
     assert len(play_calls) == 2
-    assert play_calls[0].data["media_content_id"].endswith("chime.wav")
+    assert play_calls[0].data["media_content_id"] == f"media-source://{DOMAIN}/chime"
     assert play_calls[1].data["media_content_id"] == (
         f"media-source://{DOMAIN}/{message_id}"
     )
@@ -439,7 +439,7 @@ async def test_volume_override_applies_before_the_chime_too(
     await hass.async_block_till_done()
 
     assert len(play_calls) == 2
-    assert play_calls[0].data["media_content_id"].endswith("chime.wav")
+    assert play_calls[0].data["media_content_id"] == f"media-source://{DOMAIN}/chime"
     assert [call.data["volume_level"] for call in volume_calls] == [0.8, 0.4]
 
 

@@ -5,6 +5,9 @@ DOMAIN = "hass_broadcast"
 STATIC_URL = "/api/hass_broadcast/static"
 CARD_URL = f"{STATIC_URL}/hass-broadcast-card.js"
 CHIME_URL = f"{STATIC_URL}/chime.wav"
+# The chime's media source identifier. Recording ids are uuid4 hex, so a
+# word cannot collide with one.
+CHIME_ID = "chime"
 
 STORAGE_DIR = "hass_broadcast"
 STORAGE_KEY = "hass_broadcast"

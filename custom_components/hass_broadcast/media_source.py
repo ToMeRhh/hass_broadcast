@@ -15,7 +15,7 @@ from homeassistant.components.media_source import (
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import CHIME_ID, CHIME_URL, DOMAIN
 from .http import CONTENT_TYPES
 from .storage import async_get_store
 
@@ -51,7 +51,10 @@ class BroadcastMediaSource(MediaSource):
         self.hass = hass
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
-        """Resolve a recording to a playable URL."""
+        """Resolve a recording, or the chime, to a playable URL."""
+        if item.identifier == CHIME_ID:
+            return PlayMedia(CHIME_URL, "audio/wav")
+
         store = async_get_store(self.hass)
         if store is None:
             raise Unresolvable("Voice Broadcast is not set up")

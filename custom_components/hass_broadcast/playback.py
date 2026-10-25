@@ -18,7 +18,7 @@ from homeassistant.components.media_player import (
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_SUPPORTED_FEATURES
 from homeassistant.core import HomeAssistant
 
-from .const import CHIME_URL, DOMAIN, MODE_CHIME, MODE_RESTORE
+from .const import CHIME_ID, DOMAIN, MODE_CHIME, MODE_RESTORE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +35,12 @@ CHIME_GAP_S = CHIME_DURATION_S + CHIME_LATENCY_MARGIN_S
 # Extra wait before restore mode puts the volume back, on top of the
 # message's own duration -- the same dispatch-latency guess as the chime gap.
 RESTORE_TAIL_MARGIN_S = 1
+
+# A media source id, not the chime's static path: Cast expands a
+# root-relative URL itself, but Music Assistant takes anything without
+# "://" for a library id or a search term and fails to play it (#53).
+# Every player resolves a media source id, as it does the recording's.
+CHIME_CONTENT_ID = f"media-source://{DOMAIN}/{CHIME_ID}"
 
 
 def _supports_announce(state: Any | None) -> bool:
@@ -117,7 +123,7 @@ async def _async_send_to_target(
 
     wait_s = duration + RESTORE_TAIL_MARGIN_S
     if mode == MODE_CHIME:
-        await _async_play(hass, entity_id, CHIME_URL)
+        await _async_play(hass, entity_id, CHIME_CONTENT_ID)
         await asyncio.sleep(CHIME_GAP_S)
         wait_s += CHIME_GAP_S
 

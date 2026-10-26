@@ -1,5 +1,6 @@
 /**
- * The card's configuration, and the one place it is interpreted.
+ * The card's and the tile's configuration, and the one place each is
+ * interpreted.
  *
  * Every key maps to exactly one field of the editor form (`forms.ts`). Nothing
  * here is ordered: the layouts decide where each part goes, so the config only
@@ -52,6 +53,33 @@ export interface ResolvedConfig {
   mode: BroadcastMode;
 }
 
+/** The tile config as written in YAML or by the editor. */
+export interface TileConfig {
+  type: string;
+  /** The tile's label. Absent or blank means DEFAULT_TITLE. */
+  name?: string;
+  /** The speakers every message goes to. */
+  speakers?: string[];
+  shape?: TileShape;
+  /** Recording time limit in seconds. */
+  max_duration?: number;
+  /** The browser's noise suppression on the mic. Absent means off. */
+  noise_suppression?: boolean;
+  mode?: BroadcastMode;
+}
+
+export type TileShape = "square" | "horizontal";
+
+export interface ResolvedTileConfig {
+  name: string;
+  /** Unlike the card's, absent means none: a tile never sends to everyone. */
+  speakers: string[];
+  shape: TileShape;
+  maxDuration: number;
+  noiseSuppression: boolean;
+  mode: BroadcastMode;
+}
+
 /** `value` when it is one of `allowed`, otherwise the first of them. */
 function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T {
   return allowed.includes(value as T) ? (value as T) : allowed[0];
@@ -97,6 +125,17 @@ export function resolveConfig(config: CardConfig): ResolvedConfig {
     speakers,
     selected,
     recordMode: oneOf(config.record_mode, ["push_to_talk", "start_stop"] as const),
+    maxDuration: clampMaxDuration(config.max_duration),
+    noiseSuppression: config.noise_suppression === true,
+    mode: resolveMode(config.mode),
+  };
+}
+
+export function resolveTileConfig(config: TileConfig): ResolvedTileConfig {
+  return {
+    name: config.name?.trim() || DEFAULT_TITLE,
+    speakers: Array.isArray(config.speakers) ? [...new Set(config.speakers)] : [],
+    shape: oneOf(config.shape, ["square", "horizontal"] as const),
     maxDuration: clampMaxDuration(config.max_duration),
     noiseSuppression: config.noise_suppression === true,
     mode: resolveMode(config.mode),

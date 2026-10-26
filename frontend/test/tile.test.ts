@@ -193,6 +193,22 @@ describe("broadcast tile", () => {
     expect(stub.speakers).toEqual(["media_player.a"]);
     expect(HassBroadcastTile.getStubConfig(undefined).speakers).toEqual([]);
   });
+
+  it("starts out with a value in every field the editor shows", () => {
+    const stub = HassBroadcastTile.getStubConfig(undefined);
+    expect(stub.name).toBe("Voice Broadcast");
+    expect(stub.max_duration).toBe(60);
+  });
+
+  it("is called Voice Broadcast when the name is left empty", () => {
+    const { tile } = makeTile({ name: " " });
+    expect(renderedText(tile.render())).toContain("Voice Broadcast");
+  });
+
+  it("tells a screen reader which speakers the button talks to", () => {
+    const { tile } = makeTile();
+    expect(renderedText(tile.render())).toContain("Hold to talk to media_player.kids, Garage");
+  });
 });
 
 describe("broadcast tile editor", () => {

@@ -1,8 +1,13 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-import { BroadcastMode } from "./api";
-import { clampMaxDuration, resolveMode } from "./config";
+import {
+  DEFAULT_TITLE,
+  ResolvedTileConfig,
+  TileConfig,
+  TileShape,
+  resolveTileConfig,
+} from "./config";
 import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { formatClock } from "./format";
 import { discoverPlayers } from "./players";
@@ -16,17 +21,6 @@ import { layers, timerText } from "./ui/strip";
 
 /** How long the tile shows how a send went before it is ready again. */
 export const RESULT_MS = 2500;
-
-export interface TileConfig {
-  type: string;
-  name?: string;
-  /** The speakers every message goes to. */
-  speakers?: string[];
-  shape?: "square" | "horizontal";
-  mode?: BroadcastMode;
-  max_duration?: number;
-  noise_suppression?: boolean;
-}
 
 /** What the tile's second line says once something has happened. */
 interface Result {
@@ -58,8 +52,8 @@ export class HassBroadcastTile extends LitElement {
     // Release-to-send only makes sense held: a tap-to-start tile would send
     // the moment a second tap stopped it, with no way to take it back.
     recordMode: () => "push_to_talk",
-    maxDuration: () => clampMaxDuration(this.config.max_duration),
-    noiseSuppression: () => this.config.noise_suppression === true,
+    maxDuration: () => this.resolved.maxDuration,
+    noiseSuppression: () => this.resolved.noiseSuppression,
     onStart: () => this.showResult(undefined),
     onError: (text) => this.showResult({ kind: "failed", text: shorten(text), detail: text }),
     onTake: (take) => this.send(take),
@@ -165,12 +159,16 @@ export class HassBroadcastTile extends LitElement {
     this.config = config;
   }
 
-  private get shape(): "square" | "horizontal" {
-    return this.config.shape === "horizontal" ? "horizontal" : "square";
+  private get resolved(): ResolvedTileConfig {
+    return resolveTileConfig(this.config);
+  }
+
+  private get shape(): TileShape {
+    return this.resolved.shape;
   }
 
   private get targets(): string[] {
-    return Array.isArray(this.config.speakers) ? this.config.speakers : [];
+    return this.resolved.speakers;
   }
 
   getCardSize(): number {
@@ -193,9 +191,10 @@ export class HassBroadcastTile extends LitElement {
     const first = discoverPlayers(hass)[0];
     return {
       type: "custom:hass-broadcast-tile",
-      name: "Intercom",
+      name: DEFAULT_TITLE,
       speakers: first ? [first] : [],
       shape: "square",
+      max_duration: 60,
       mode: "plain",
     };
   }
@@ -245,7 +244,7 @@ export class HassBroadcastTile extends LitElement {
           peaks: [],
         },
         targets: this.targets,
-        mode: resolveMode(this.config.mode),
+        mode: this.resolved.mode,
       });
       this.showResult(this.describe(outcome));
     } catch (err: any) {
@@ -272,10 +271,6 @@ export class HassBroadcastTile extends LitElement {
     }
   }
 
-  private get name(): string {
-    return this.config.name?.trim() || "Intercom";
-  }
-
   private get idleText(): string {
     if (!this.rec.supported) {
       return "Needs HTTPS";
@@ -288,7 +283,7 @@ export class HassBroadcastTile extends LitElement {
     // From the release on, the take is on its way: the tile sends it once
     // Recorder.stop() has finished recording the tail.
     const sending = this.rec.phase === "sending" || this.rec.phase === "finishing";
-    const limit = clampMaxDuration(this.config.max_duration);
+    const { name, maxDuration: limit } = this.resolved;
     const warning =
       recording && limit - this.rec.elapsed <= Math.min(10, limit * 0.25);
     const view = recording
@@ -298,7 +293,11 @@ export class HassBroadcastTile extends LitElement {
         : this.result?.kind ?? "idle";
     const resultLayer = (icon: unknown) =>
       html`${icon}<span title=${this.result?.detail ?? ""}>${this.result?.text ?? ""}</span>`;
-    const label = recording ? "Recording — release to send" : `Hold to talk to ${this.name}`;
+    const label = recording
+      ? "Recording — release to send"
+      : this.targets.length
+        ? `Hold to talk to ${describeTargets(this.hass, this.targets)}`
+        : "Hold to talk";
     return html`
       <ha-card>
         <div class="tile ${this.shape}" title=${this.rec.supported ? "" : INSECURE_CONTEXT_MESSAGE}>
@@ -316,7 +315,7 @@ export class HassBroadcastTile extends LitElement {
             })}
           </div>
           <div class="text">
-            <span class="name">${this.name}</span>
+            <span class="name">${name}</span>
             ${layers("tile-status", view, {
               idle: html`<span>${this.idleText}</span>`,
               recording: timerText(formatClock(this.rec.elapsed), warning),
@@ -343,5 +342,5 @@ function shorten(text: string): string {
   type: "hass-broadcast-tile",
   name: "Voice Broadcast Tile",
   description: "Hold to talk, let go to send to the speakers you chose.",
-  preview: false,
+  preview: true,
 });

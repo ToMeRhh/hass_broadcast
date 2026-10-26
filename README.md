@@ -149,7 +149,7 @@ max_duration: 30
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `name` | `Intercom` | The tile's label |
+| `name` | `Voice Broadcast` | The tile's label |
 | `speakers` | first speaker found | Every message goes to all of these. A tile with none is disabled |
 | `shape` | `square` | `square` or `horizontal` |
 | `mode` | `plain` | As for the card |

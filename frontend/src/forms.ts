@@ -68,7 +68,7 @@ const noiseSuppressionField = { name: "noise_suppression", selector: { boolean: 
 /** Helper text, only where a field's label cannot carry its meaning. */
 const HELPERS: Record<string, string> = {
   title: "Leave empty for “Voice Broadcast”",
-  name: "Leave empty for “Intercom”",
+  name: "Leave empty for “Voice Broadcast”",
   noise_suppression:
     "Filters out background noise such as a TV or fan. Leave it off in a quiet room: it can make a voice sound slightly processed.",
 };

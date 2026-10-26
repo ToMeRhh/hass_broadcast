@@ -2,7 +2,7 @@ import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import { BroadcastMode } from "./api";
-import { clampMaxDuration, resolveMode } from "./config";
+import { DEFAULT_TITLE, clampMaxDuration, resolveMode } from "./config";
 import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { formatClock } from "./format";
 import { discoverPlayers } from "./players";
@@ -193,9 +193,10 @@ export class HassBroadcastTile extends LitElement {
     const first = discoverPlayers(hass)[0];
     return {
       type: "custom:hass-broadcast-tile",
-      name: "Intercom",
+      name: DEFAULT_TITLE,
       speakers: first ? [first] : [],
       shape: "square",
+      max_duration: 60,
       mode: "plain",
     };
   }
@@ -273,7 +274,7 @@ export class HassBroadcastTile extends LitElement {
   }
 
   private get name(): string {
-    return this.config.name?.trim() || "Intercom";
+    return this.config.name?.trim() || DEFAULT_TITLE;
   }
 
   private get idleText(): string {
@@ -298,7 +299,11 @@ export class HassBroadcastTile extends LitElement {
         : this.result?.kind ?? "idle";
     const resultLayer = (icon: unknown) =>
       html`${icon}<span title=${this.result?.detail ?? ""}>${this.result?.text ?? ""}</span>`;
-    const label = recording ? "Recording — release to send" : `Hold to talk to ${this.name}`;
+    const label = recording
+      ? "Recording — release to send"
+      : this.targets.length
+        ? `Hold to talk to ${describeTargets(this.hass, this.targets)}`
+        : "Hold to talk";
     return html`
       <ha-card>
         <div class="tile ${this.shape}" title=${this.rec.supported ? "" : INSECURE_CONTEXT_MESSAGE}>

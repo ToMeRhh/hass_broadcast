@@ -649,5 +649,5 @@ export class HassBroadcastCard extends LitElement {
   type: "hass-broadcast-card",
   name: "Voice Broadcast",
   description: "Record a voice message and play it on your speakers.",
-  preview: false,
+  preview: true,
 });

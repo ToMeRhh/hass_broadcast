@@ -1039,7 +1039,7 @@ var ii=Object.defineProperty;var ri=Object.getOwnPropertyDescriptor;var u=(t,e,i
           transition: none;
         }
       }
-    `],u([L({attribute:!1})],k.prototype,"hass",2),u([f()],k.prototype,"config",2),u([f()],k.prototype,"result",2),k=u([ce("hass-broadcast-tile")],k);function Ii(t){return t.split(/(?<=\.) /)[0]}window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-tile",name:"Voice Broadcast Tile",description:"Hold to talk, let go to send to the speakers you chose.",preview:!1});function Wt(t){let e=t.recentMessages!=="off"||t.volumeControl;return l`
+    `],u([L({attribute:!1})],k.prototype,"hass",2),u([f()],k.prototype,"config",2),u([f()],k.prototype,"result",2),k=u([ce("hass-broadcast-tile")],k);function Ii(t){return t.split(/(?<=\.) /)[0]}window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-tile",name:"Voice Broadcast Tile",description:"Hold to talk, let go to send to the speakers you chose.",preview:!0});function Wt(t){let e=t.recentMessages!=="off"||t.volumeControl;return l`
     <div class="card compact">
       <div class="compact-mic slot">${t.mic(72)}</div>
       <div class="compact-body">
@@ -1333,7 +1333,7 @@ var ii=Object.defineProperty;var ri=Object.getOwnPropertyDescriptor;var u=(t,e,i
         ${this.resolved.layout==="compact"?Wt(i):Ft(i)}
         <div class="sr-only" aria-live="polite">${this.status?.text??""}</div>
       </ha-card>
-    `}};m.styles=Lt,u([L({attribute:!1})],m.prototype,"hass",2),u([f()],m.prototype,"config",2),u([f()],m.prototype,"status",2),u([f()],m.prototype,"selected",2),u([f()],m.prototype,"history",2),u([f()],m.prototype,"clip",2),u([f()],m.prototype,"loadingId",2),u([f()],m.prototype,"position",2),u([f()],m.prototype,"playing",2),u([f()],m.prototype,"pickerOpen",2),u([f()],m.prototype,"historyOpen",2),u([f()],m.prototype,"volumeOpen",2),u([f()],m.prototype,"menuOpen",2),u([f()],m.prototype,"volumeOverride",2),u([f()],m.prototype,"volume",2),m=u([ce("hass-broadcast-card")],m);window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-card",name:"Voice Broadcast",description:"Record a voice message and play it on your speakers.",preview:!1});export{m as HassBroadcastCard,qi as STATUS_MS};
+    `}};m.styles=Lt,u([L({attribute:!1})],m.prototype,"hass",2),u([f()],m.prototype,"config",2),u([f()],m.prototype,"status",2),u([f()],m.prototype,"selected",2),u([f()],m.prototype,"history",2),u([f()],m.prototype,"clip",2),u([f()],m.prototype,"loadingId",2),u([f()],m.prototype,"position",2),u([f()],m.prototype,"playing",2),u([f()],m.prototype,"pickerOpen",2),u([f()],m.prototype,"historyOpen",2),u([f()],m.prototype,"volumeOpen",2),u([f()],m.prototype,"menuOpen",2),u([f()],m.prototype,"volumeOverride",2),u([f()],m.prototype,"volume",2),m=u([ce("hass-broadcast-card")],m);window.customCards=window.customCards??[];window.customCards.push({type:"hass-broadcast-card",name:"Voice Broadcast",description:"Record a voice message and play it on your speakers.",preview:!0});export{m as HassBroadcastCard,qi as STATUS_MS};
 /*! Bundled license information:
 
 @lit/reactive-element/css-tag.js:

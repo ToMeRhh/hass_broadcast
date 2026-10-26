@@ -343,5 +343,5 @@ function shorten(text: string): string {
   type: "hass-broadcast-tile",
   name: "Voice Broadcast Tile",
   description: "Hold to talk, let go to send to the speakers you chose.",
-  preview: false,
+  preview: true,
 });

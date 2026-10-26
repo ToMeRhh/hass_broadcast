@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clampMaxDuration, resolveConfig } from "../src/config";
+import { clampMaxDuration, resolveConfig, resolveTileConfig } from "../src/config";
 
 describe("resolveConfig defaults", () => {
   it("fills in every key a bare card leaves out", () => {
@@ -113,6 +113,50 @@ describe("resolveConfig in compact", () => {
 
     expect(resolved.speakerPicker).toBe("dropdown");
     expect(resolved.recentMessages).toBe("list");
+  });
+});
+
+describe("resolveTileConfig", () => {
+  it("fills in every key a bare tile leaves out", () => {
+    expect(resolveTileConfig({ type: "custom:hass-broadcast-tile" })).toEqual({
+      name: "Voice Broadcast",
+      speakers: [],
+      shape: "square",
+      maxDuration: 60,
+      noiseSuppression: false,
+      mode: "plain",
+    });
+  });
+
+  it("keeps what is configured", () => {
+    expect(
+      resolveTileConfig({
+        type: "custom:hass-broadcast-tile",
+        name: "Kids",
+        speakers: ["media_player.a"],
+        shape: "horizontal",
+        max_duration: 30,
+        noise_suppression: true,
+        mode: "chime",
+      }),
+    ).toEqual({
+      name: "Kids",
+      speakers: ["media_player.a"],
+      shape: "horizontal",
+      maxDuration: 30,
+      noiseSuppression: true,
+      mode: "chime",
+    });
+  });
+
+  it("treats a blank name as no name", () => {
+    expect(resolveTileConfig({ type: "x", name: "  " }).name).toBe("Voice Broadcast");
+  });
+
+  it("sends to each speaker once", () => {
+    expect(
+      resolveTileConfig({ type: "x", speakers: ["media_player.a", "media_player.a"] }).speakers,
+    ).toEqual(["media_player.a"]);
   });
 });
 

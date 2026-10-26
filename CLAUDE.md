@@ -125,8 +125,9 @@ decide placement. The README's options tables are the reference.
 
 All config interpretation lives in `resolveConfig` in `config.ts` — defaults,
 compact forcing the dropdown, and `speakers` absent (every speaker) versus `[]`
-(none; HA's entity picker saves `[]` when the last one is removed). Don't read
-raw config keys anywhere else in the card.
+(none; HA's entity picker saves `[]` when the last one is removed). The tile's
+is `resolveTileConfig` beside it, where absent `speakers` means none. Don't
+read raw config keys anywhere else in either card.
 
 There are no legacy keys and no migration: the integration had no installs
 when the config was flattened (2026-10-15), so `sections`, `player_list`,

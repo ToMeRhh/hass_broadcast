@@ -16,6 +16,10 @@ STORAGE_VERSION = 1
 CONF_RETENTION = "retention"
 DEFAULT_RETENTION = 10
 
+# How long a temporary recording (sent but not saved) lives without being
+# played or sent again, in seconds.
+TEMPORARY_TTL = 600
+
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 MODE_PLAIN = "plain"

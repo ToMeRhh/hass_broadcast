@@ -28,10 +28,11 @@ const CARD_KEYS = [
   "record_mode",
   "max_duration",
   "noise_suppression",
+  "keep_messages",
   "mode",
 ];
 
-const TILE_KEYS = ["name", "speakers", "shape", "max_duration", "noise_suppression", "mode"];
+const TILE_KEYS = ["name", "speakers", "shape", "max_duration", "noise_suppression", "keep_messages", "mode"];
 
 describe.each([
   ["card", cardForm, CARD_KEYS],
@@ -53,6 +54,14 @@ describe.each([
         expect(item.flatten, item.title).toBe(true);
       }
     }
+  });
+
+  it("shows keep_messages on when the key is absent", () => {
+    const field = fields(form.schema).find((f) => f.name === "keep_messages");
+    expect(field).toMatchObject({ default: true, selector: { boolean: {} } });
+    expect(field.required).toBeUndefined();
+    expect(form.computeLabel(field)).toBe("Keep sent messages");
+    expect(form.computeHelper(field)).toBe("Adds every message you send to Recent messages.");
   });
 
   it("only offers media players for speakers", () => {

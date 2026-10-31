@@ -39,6 +39,11 @@ export interface CardParts {
   clipLength: string;
   discard: () => TemplateResult;
   send: (variant: "round" | "pill") => TemplateResult;
+  /**
+   * Keep the loaded clip in history. Only on a card that does not keep what
+   * it sends, and only with a clip loaded; `nothing` otherwise.
+   */
+  save: (variant: "pill" | "icon") => TemplateResult | typeof nothing;
 
   speakers: () => TemplateResult;
   historyList: () => TemplateResult;

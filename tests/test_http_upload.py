@@ -190,3 +190,38 @@ async def test_upload_survives_options_reload(
     assert resp.status == HTTPStatus.OK
     body = await resp.json()
     assert "message_id" in body
+
+
+async def test_upload_can_be_temporary(
+    hass: HomeAssistant, setup_entry, hass_client
+) -> None:
+    """The temporary field stores the recording hidden from the list."""
+    client = await hass_client()
+    resp = await client.post(
+        "/api/hass_broadcast/upload",
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "1", "temporary": "1"},
+    )
+    assert resp.status == HTTPStatus.OK
+    message_id = (await resp.json())["message_id"]
+
+    store = setup_entry.runtime_data.store
+    stored = await store.async_get(message_id)
+    assert stored is not None
+    assert stored["temporary"] is True
+    assert await store.async_list() == []
+    store.async_shutdown()
+
+
+async def test_upload_without_the_field_is_saved(
+    hass: HomeAssistant, setup_entry, hass_client
+) -> None:
+    """Old bundles send no temporary field; their recordings are kept."""
+    client = await hass_client()
+    resp = await client.post(
+        "/api/hass_broadcast/upload",
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "1"},
+    )
+    message_id = (await resp.json())["message_id"]
+
+    store = setup_entry.runtime_data.store
+    assert [m["id"] for m in await store.async_list()] == [message_id]

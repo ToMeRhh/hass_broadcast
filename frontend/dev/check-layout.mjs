@@ -74,6 +74,9 @@ try {
     full: ["Full"],
     "full-lists": ["Full", "List", "History list"],
     compact: ["Compact"],
+    // Temporary sends put Save in the strip, in the review and status layers.
+    "full-temporary": ["Full", "Temporary"],
+    "compact-temporary": ["Compact", "Temporary"],
   };
   for (const [layout, presses] of Object.entries(configs)) {
     for (const width of ["Phone", "Desktop"]) {

@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteMessage, listMessages, sendBroadcast, uploadRecording } from "../src/api";
+import {
+  deleteMessage,
+  listMessages,
+  saveRecording,
+  sendBroadcast,
+  uploadRecording,
+} from "../src/api";
 
 function fakeHass() {
   return {
@@ -28,6 +34,33 @@ describe("api", () => {
     expect(url).toBe("/api/hass_broadcast/upload");
     expect(options.headers.Authorization).toBe("Bearer tok");
     expect(options.body.get("duration")).toBe("2.5");
+  });
+
+  it("marks an upload temporary only when asked", async () => {
+    await uploadRecording(fakeHass(), new Blob(["x"]), 1, true);
+    await uploadRecording(fakeHass(), new Blob(["x"]), 1);
+
+    const calls = (fetch as any).mock.calls;
+    expect(calls[0][1].body.get("temporary")).toBe("1");
+    expect(calls[1][1].body.get("temporary")).toBeNull();
+  });
+
+  it("saves a recording by id", async () => {
+    const hass = fakeHass();
+    hass.connection.sendMessagePromise.mockResolvedValue({ saved: true });
+
+    await saveRecording(hass, "abc");
+
+    expect(hass.connection.sendMessagePromise).toHaveBeenCalledWith({
+      type: "hass_broadcast/save",
+      message_id: "abc",
+    });
+  });
+
+  it("rejects with the websocket error when saving fails", async () => {
+    const hass = fakeHass();
+    hass.connection.sendMessagePromise.mockRejectedValue({ code: "not_found" });
+    await expect(saveRecording(hass, "abc")).rejects.toEqual({ code: "not_found" });
   });
 
   it("throws when the upload is rejected", async () => {

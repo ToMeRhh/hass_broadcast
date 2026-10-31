@@ -111,6 +111,14 @@ class BroadcastUploadView(HomeAssistantView):
             with suppress(ValueError):
                 client_duration = float(duration_field)
 
+        # Old bundles send no field and keep their recordings, as before.
+        temporary = False
+        temporary_field = data.get("temporary")
+        if temporary_field is not None and not isinstance(
+            temporary_field, web.FileField
+        ):
+            temporary = temporary_field.lower() in ("1", "true")
+
         # Duration is derived server-side from the actual WAV data whenever
         # possible: the client-supplied form field is untrusted and, in
         # restore mode, an understated duration would restore volume while
@@ -133,6 +141,7 @@ class BroadcastUploadView(HomeAssistantView):
             payload,
             extension=extension,
             duration=duration,
+            temporary=temporary,
             # KEY_HASS_USER rather than the "hass_user" literal: Home
             # Assistant is migrating request keys to AppKey, and a moved key
             # would make a literal lookup silently yield user_id=None on every

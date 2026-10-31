@@ -34,6 +34,8 @@ export interface CardConfig {
   max_duration?: number;
   /** The browser's noise suppression on the mic. Absent means off. */
   noise_suppression?: boolean;
+  /** Add every sent message to Recent messages. Absent means keep. */
+  keep_messages?: boolean;
   mode?: BroadcastMode;
 }
 
@@ -50,6 +52,7 @@ export interface ResolvedConfig {
   recordMode: RecordMode;
   maxDuration: number;
   noiseSuppression: boolean;
+  keepMessages: boolean;
   mode: BroadcastMode;
 }
 
@@ -65,6 +68,8 @@ export interface TileConfig {
   max_duration?: number;
   /** The browser's noise suppression on the mic. Absent means off. */
   noise_suppression?: boolean;
+  /** Add every sent message to Recent messages. Absent means keep. */
+  keep_messages?: boolean;
   mode?: BroadcastMode;
 }
 
@@ -77,6 +82,7 @@ export interface ResolvedTileConfig {
   shape: TileShape;
   maxDuration: number;
   noiseSuppression: boolean;
+  keepMessages: boolean;
   mode: BroadcastMode;
 }
 
@@ -127,6 +133,7 @@ export function resolveConfig(config: CardConfig): ResolvedConfig {
     recordMode: oneOf(config.record_mode, ["push_to_talk", "start_stop"] as const),
     maxDuration: clampMaxDuration(config.max_duration),
     noiseSuppression: config.noise_suppression === true,
+    keepMessages: config.keep_messages !== false,
     mode: resolveMode(config.mode),
   };
 }
@@ -138,6 +145,7 @@ export function resolveTileConfig(config: TileConfig): ResolvedTileConfig {
     shape: oneOf(config.shape, ["square", "horizontal"] as const),
     maxDuration: clampMaxDuration(config.max_duration),
     noiseSuppression: config.noise_suppression === true,
+    keepMessages: config.keep_messages !== false,
     mode: resolveMode(config.mode),
   };
 }

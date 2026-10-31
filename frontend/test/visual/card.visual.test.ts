@@ -123,6 +123,29 @@ for (const theme of ["light", "dark"] as const) {
       await shot(card, `card-partial-failure-${theme}`);
     });
 
+    it("review, not kept", async () => {
+      const card = await mountCard({ ...PICKED, keep_messages: false }, { theme });
+      await recordTake(card);
+      await shot(card, `card-review-not-kept-${theme}`);
+    });
+
+    it("saved", async () => {
+      const card = await mountCard({ ...PICKED, keep_messages: false }, { theme });
+      await recordTake(card);
+      button(card, "Save to history").click();
+      await settleUntil(card, () => !!card.shadowRoot.querySelector('.save[data-saved="true"]'));
+      await shot(card, `card-saved-${theme}`);
+    });
+
+    it("compact, not kept", async () => {
+      const card = await mountCard(
+        { ...PICKED, layout: "compact", keep_messages: false },
+        { theme },
+      );
+      await recordTake(card);
+      await shot(card, `card-compact-not-kept-${theme}`);
+    });
+
     it("microphone denied", async () => {
       const card = await mountCard(BASE, { theme, scenario: { micDenied: true } });
       press(card, "pointerdown");

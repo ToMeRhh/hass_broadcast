@@ -1,5 +1,10 @@
-import { BroadcastMode, sendBroadcast, uploadRecording } from "./api";
-import { Clip, storedId } from "./clip";
+import {
+  BroadcastMode,
+  BroadcastResult,
+  sendBroadcast,
+  uploadRecording,
+} from "./api";
+import { Clip, ClipSource } from "./clip";
 
 /** How a broadcast went, from the user's point of view. */
 export type Outcome =
@@ -21,30 +26,45 @@ export interface SendOptions {
   targets: string[];
   mode: BroadcastMode;
   volume?: number;
+  /** Keep the message in history; otherwise it is uploaded as temporary. */
+  keep: boolean;
   /**
-   * A fresh clip was just uploaded and now has this id. The caller swaps it
-   * for a stored clip so a retry — or sending the same message to another
-   * speaker — never uploads a second copy.
+   * The clip was just uploaded and now lives at this source. The caller swaps
+   * it in so a retry — or sending the same message to another speaker —
+   * never uploads a second copy.
    */
-  onStored?: (id: string) => void;
+  onStored?: (source: ClipSource) => void;
 }
 
 /** Upload the clip if it has never been, then play it on `targets`. */
 export async function sendClip(options: SendOptions): Promise<Outcome> {
-  const { hass, clip, targets } = options;
-  let id = storedId(clip);
-  if (id === undefined) {
-    const blob = (clip.source as { kind: "fresh"; blob: Blob }).blob;
-    id = await uploadRecording(hass, blob, clip.duration);
-    options.onStored?.(id);
+  const { hass, clip, targets, keep } = options;
+  const upload = async (blob: Blob): Promise<string> => {
+    const id = await uploadRecording(hass, blob, clip.duration, !keep);
+    options.onStored?.(keep ? { kind: "stored", id } : { kind: "temporary", id, blob });
+    return id;
+  };
+  const play = (id: string) =>
+    sendBroadcast(hass, id, targets, options.mode, options.volume);
+
+  const { source } = clip;
+  let result: BroadcastResult;
+  if (source.kind === "fresh") {
+    result = await play(await upload(source.blob));
+  } else if (source.kind === "temporary") {
+    try {
+      result = await play(source.id);
+    } catch (err: any) {
+      // The server forgot it (expired, or restarted): the blob is still here.
+      if (err?.code !== "not_found") {
+        throw err;
+      }
+      result = await play(await upload(source.blob));
+    }
+  } else {
+    result = await play(source.id);
   }
-  const { failed } = await sendBroadcast(
-    hass,
-    id,
-    targets,
-    options.mode,
-    options.volume,
-  );
+  const { failed } = result;
   if (failed.length === 0) {
     return { kind: "sent", targets };
   }

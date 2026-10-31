@@ -28,8 +28,10 @@ export function compactLayout(parts: CardParts): TemplateResult {
             recording: timerText(parts.timer, parts.timerWarning),
             review: html`
               ${parts.play()} ${parts.waveform("wave-mini")} ${parts.discard()}
+              ${parts.save("icon")}
             `,
-            status: statusText(parts.status),
+            // As in full: Save stays put when a status takes over the row.
+            status: html`${statusText(parts.status)}${parts.save("icon")}`,
           })}
           ${menu
             ? html`

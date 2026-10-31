@@ -6,6 +6,8 @@ import {
   BroadcastMessage,
   deleteMessage,
   listMessages,
+  saveRecording,
+  uploadRecording,
 } from "./api";
 import { INSECURE_CONTEXT_MESSAGE } from "./errors";
 import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
@@ -30,7 +32,15 @@ import { compactLayout } from "./layouts/compact";
 import { fullLayout } from "./layouts/full";
 import { CardParts, View } from "./layouts/parts";
 import { historyDialog, historySection } from "./ui/history";
-import { closeIcon, historyIcon, pauseIcon, playIcon, sendIcon } from "./ui/icons";
+import {
+  bookmarkIcon,
+  bookmarkOutlineIcon,
+  closeIcon,
+  historyIcon,
+  pauseIcon,
+  playIcon,
+  sendIcon,
+} from "./ui/icons";
 import { mic } from "./ui/mic";
 import { targetList } from "./ui/targets";
 import { visualizer } from "./ui/visualizer";
@@ -65,6 +75,8 @@ export class HassBroadcastCard extends LitElement {
   /** Off by default: an untouched card sends no volume override at all. */
   @state() private volumeOverride = false;
   @state() private volume = 1;
+  /** A Save is in flight, so its button holds still until it lands. */
+  @state() private saving = false;
 
   private audio?: HTMLAudioElement;
   private statusTimer?: number;
@@ -395,6 +407,45 @@ export class HassBroadcastCard extends LitElement {
     }
   }
 
+  /**
+   * Keep the loaded clip in history, on a card whose sends are temporary.
+   * A temporary clip is promoted where it lies; one that expired before the
+   * tap (or a fresh one never sent) is uploaded as a saved recording instead.
+   */
+  private async saveClip(): Promise<void> {
+    const clip = this.clip;
+    if (!clip || clip.source.kind === "stored" || this.saving) {
+      return;
+    }
+    const source = clip.source;
+    this.saving = true;
+    try {
+      let id: string;
+      if (source.kind === "temporary") {
+        try {
+          await saveRecording(this.hass, source.id);
+          id = source.id;
+        } catch (err: any) {
+          if (err?.code !== "not_found") {
+            throw err;
+          }
+          id = await uploadRecording(this.hass, source.blob, clip.duration);
+        }
+      } else {
+        id = await uploadRecording(this.hass, source.blob, clip.duration);
+      }
+      // As in broadcast(): a Discard tap mid-save must not bring the clip back.
+      if (this.clip === clip) {
+        this.clip = { ...clip, source: { kind: "stored", id } };
+      }
+      await this.refreshHistory();
+    } catch (err: any) {
+      this.fail(`Could not save: ${err?.message ?? err}`);
+    } finally {
+      this.saving = false;
+    }
+  }
+
   // --- history -------------------------------------------------------------
 
   /** Load a stored message so it behaves exactly like one just recorded. */
@@ -581,6 +632,35 @@ export class HassBroadcastCard extends LitElement {
             </button>
             ${variant === "round" ? html`<span class="caption">${label}</span>` : nothing}
           </div>
+        `;
+      },
+      save: (variant) => {
+        const clip = this.clip;
+        if (config.keepMessages || !clip) {
+          return nothing;
+        }
+        // "Saved" stays focusable and announced, hence aria-disabled rather
+        // than disabled; its click is a no-op. The box is the same in both
+        // states, so the swap moves nothing.
+        const saved = clip.source.kind === "stored";
+        const label = saved ? "Saved to history" : "Save to history";
+        return html`
+          <button
+            class="save save-${variant}"
+            ?disabled=${this.saving || sending}
+            aria-disabled=${saved ? "true" : "false"}
+            data-saved=${saved}
+            title=${label}
+            aria-label=${label}
+            @click=${() => {
+              if (!saved) {
+                void this.saveClip();
+              }
+            }}
+          >
+            ${saved ? bookmarkIcon : bookmarkOutlineIcon}
+            ${variant === "pill" ? html`<span>${saved ? "Saved" : "Save"}</span>` : nothing}
+          </button>
         `;
       },
       speakers: () =>

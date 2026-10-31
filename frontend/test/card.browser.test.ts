@@ -49,6 +49,43 @@ describe("hass-broadcast-card in a browser", () => {
     expect(box.height).toBeGreaterThan(0);
   });
 
+  for (const layout of ["full", "compact"]) {
+    it(`keeps Save in place when a status replaces the review (${layout})`, async () => {
+      const card = (await mount({
+        layout,
+        keep_messages: false,
+        speakers: ["media_player.kitchen"],
+        selected: ["media_player.kitchen"],
+      })) as any;
+      card.clip = {
+        source: { kind: "temporary", id: "tmp", blob: new Blob(["x"]) },
+        url: "blob:none",
+        duration: 3,
+        peaks: [],
+      };
+      await card.updateComplete;
+
+      // Every layer is always rendered, so the button is drawn in both; what
+      // matters is that the one on screen does not move when the view flips.
+      const box = (view: string) => {
+        const button = card.shadowRoot!.querySelector(`.layer-${view} button.save`);
+        expect(button, `Save in .layer-${view}`).not.toBeNull();
+        const { x, y, width, height } = button!.getBoundingClientRect();
+        return { x, y, width, height };
+      };
+      expect(card.view).toBe("review");
+      const review = box("review");
+      expect(review.width).toBeGreaterThan(0);
+
+      card.status = { kind: "info", text: "Sent to Kitchen", sticky: true };
+      await card.updateComplete;
+      expect(card.view).toBe("status");
+
+      expect(box("status")).toEqual(review);
+      expect(box("review")).toEqual(review);
+    });
+  }
+
   it("uses the configured title", async () => {
     const card = await mount({ title: "Announce", speakers: [] });
 

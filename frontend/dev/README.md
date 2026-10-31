@@ -29,7 +29,7 @@ round-trip, and — on `localhost` — microphone capture and the AudioWorklet.
 hardcodes for the worklet.
 
 **Faked** (`mock-hass.ts`): the entity list, the `hass_broadcast/send`,
-`/list`, and `/delete` websocket calls, and the `/upload` and
+`/list`, `/delete` and `/save` websocket calls, and the `/upload` and
 `/media/<id>.wav` HTTP endpoints. Uploads are kept in memory and served back
 from `/media`, so a recording made in the harness round-trips through history
 and plays back the way it would on a live install. Seeded history entries carry
@@ -77,8 +77,8 @@ checks the same thing automatically, in headless Chromium.
 
 **Card config** at the bottom of the panel has a button row per appearance
 option (layout, speaker picker, recent messages, volume control, recording
-mode) and a JSON box holding the whole config, applied when it loses focus —
-edit `speakers`, `selected`, `mode` and the rest there. `check:layout` drives
+mode, whether sends are kept) and a JSON box holding the whole config,
+applied when it loses focus — edit `speakers`, `selected`, `mode` and the rest there. `check:layout` drives
 the button rows.
 
 Below the card is a **broadcast tile**, in a box the size of its

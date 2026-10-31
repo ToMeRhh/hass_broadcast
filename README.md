@@ -139,6 +139,9 @@ The **Voice Broadcast Tile** is a second card for the call you make every
 day: hold it, speak, and let go — the message goes straight to the speakers
 you chose, with no review step and no picker. It names those speakers under
 its label, shows ✓ when every speaker played it, and names any that did not.
+Changed your mind mid-message? Slide onto the bin that appears while you
+record (under the button on a square tile, at the end of a horizontal one)
+and let go there, or press Escape: the message is discarded, not sent.
 Make a square tile bigger and its button grows with it.
 
 ```yaml

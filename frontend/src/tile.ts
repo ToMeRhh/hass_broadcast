@@ -102,18 +102,30 @@ export class HassBroadcastTile extends LitElement {
         box-sizing: border-box;
         align-items: center;
       }
+      /* Button, name, status line. The status line, which the bin covers
+         mid-take, grows with a taller tile so the bin is easier to reach:
+         its 18px at 3×2, 32px at three rows, and 44px from four. Where the
+         tile's height is not fixed (masonry) the percentage cannot resolve
+         and the row is just its content. */
       .tile.square {
-        grid-template-rows: 1fr auto;
+        grid-template-rows: 1fr auto clamp(18px, 18px + (100% - 100px) / 4.5, 44px);
         justify-items: center;
-        gap: 6px;
+        row-gap: 4px;
         padding: 12px 8px 8px;
         text-align: center;
       }
-      /* Room between the name and the bin's outline over the status line,
-         taken from the padding under it: a 3×2 tile's button is already at
-         its smallest. */
       .square > .text {
-        gap: 4px;
+        display: contents;
+      }
+      .square .tile-name,
+      .square .tile-status {
+        justify-self: stretch;
+        min-width: 0;
+      }
+      /* Placed, since the bin claims the same cell. */
+      .square .tile-status {
+        grid-row: 3;
+        grid-column: 1;
       }
       /* The button's cell is a size container, so the button can follow the
          tile as it is resized; see SQUARE_MIC. */
@@ -123,6 +135,7 @@ export class HassBroadcastTile extends LitElement {
         justify-self: stretch;
         display: grid;
         place-items: center;
+        margin-bottom: 2px;
       }
       .tile.horizontal {
         grid-template-columns: auto 1fr;
@@ -145,8 +158,11 @@ export class HassBroadcastTile extends LitElement {
         display: grid;
       }
       .tile-status {
-        height: 18px;
+        min-height: 18px;
         transition: opacity 180ms ease;
+      }
+      .horizontal .tile-status {
+        height: 18px;
       }
       /* Under a square tile's bin; the name line shows the timer instead.
          Hidden, not just covered: a bin still fading in, or one whose
@@ -233,18 +249,17 @@ export class HassBroadcastTile extends LitElement {
         width: 18px;
         height: 18px;
       }
-      /* Only the status line, centred on it so its text sits where the
-         line's does (8px padding + half the 18px line − half the 22px bin):
-         the blob around a 3×2 tile's button reaches past the name, and would
-         run into anything taller. */
+      /* The status line's row and 2px past it each way, so its text sits
+         where the line's does and it grows with the row: no further, since
+         the blob around a 3×2 tile's button reaches past the name. */
       .square > .bin {
-        position: absolute;
-        right: 8px;
-        bottom: 6px;
-        left: 8px;
-        height: 22px;
+        grid-row: 3;
+        grid-column: 1;
+        align-self: stretch;
+        justify-self: stretch;
+        margin: -2px 0;
         gap: 3px;
-        border-radius: 11px;
+        border-radius: 24px;
         font-size: 0.8em;
         white-space: nowrap;
       }

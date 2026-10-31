@@ -152,42 +152,52 @@ describe("square tile", () => {
     await settleUntil(tile, () => status(tile) === "Sent");
     expect(nameLine()).toBe(before);
   });
-
-  it("centres the bin's text on the status line it covers", async () => {
-    const tile = await mountTile({ speakers: ["media_player.kitchen"], shape: "square" }, SIZES.square);
-    const middle = (box: DOMRect) => box.top + box.height / 2;
-    const line = tile.shadowRoot.querySelector(".tile-status")!.getBoundingClientRect();
-
-    expect(middle(bin(tile).getBoundingClientRect())).toBe(middle(line));
-  });
-
-  it("leaves room between the name and the bin's outline", async () => {
-    const tile = await mountTile({ speakers: ["media_player.kitchen"], shape: "square" }, SIZES.square);
-    const name = tile.shadowRoot.querySelector(".tile-name")!.getBoundingClientRect();
-
-    expect(bin(tile).getBoundingClientRect().top).toBeGreaterThanOrEqual(name.bottom + 2);
-  });
 });
 
 describe("square tile, any size", () => {
   // The outer blob is 1.22× the button and grows up to 1.35× with the voice.
   const BLOB_REACH = (1.22 * 1.35 - 1) / 2;
 
+  // The bin's least height per tile height: easier to reach the more room
+  // there is, up to a usual touch target.
+  const BIN_HEIGHT = { 2: 22, 3: 34, 4: 48 } as const;
+
   for (const [columns, rows] of [
     [3, 2],
     [4, 3],
+    [3, 4],
     [6, 4],
   ] as const) {
-    it(`keeps the bin clear of the recording blob at ${columns}×${rows}`, async () => {
-      const tile = await mountTile(
+    const mount = () =>
+      mountTile(
         { speakers: ["media_player.kitchen"], shape: "square" },
         { width: (columns * 128) / 3 - 8, height: rows * 64 - 8 },
       );
+
+    it(`keeps the bin clear of the recording blob at ${columns}×${rows}`, async () => {
+      const tile = await mount();
       const button = mic(tile).getBoundingClientRect();
 
       expect(bin(tile).getBoundingClientRect().top).toBeGreaterThanOrEqual(
         button.bottom + button.height * BLOB_REACH,
       );
+    });
+
+    it(`sizes the bin to the tile's height at ${columns}×${rows}`, async () => {
+      const tile = await mount();
+      const height = bin(tile).getBoundingClientRect().height;
+
+      expect(height).toBeGreaterThanOrEqual(BIN_HEIGHT[rows]);
+      expect(height).toBeLessThanOrEqual(48);
+    });
+
+    it(`centres the bin on the status line, under the name, at ${columns}×${rows}`, async () => {
+      const tile = await mount();
+      const box = (selector: string) => tile.shadowRoot.querySelector(selector)!.getBoundingClientRect();
+      const middle = (rect: DOMRect) => rect.top + rect.height / 2;
+
+      expect(middle(bin(tile).getBoundingClientRect())).toBeCloseTo(middle(box(".tile-status")), 0);
+      expect(bin(tile).getBoundingClientRect().top).toBeGreaterThanOrEqual(box(".tile-name").bottom + 2);
     });
   }
 });

@@ -10,12 +10,14 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (76)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 .venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
-npm test                        # card tests, vitest (204): unit (Node), browser (Chromium)
+npm test                        # card tests, vitest (213): unit (Node), browser (Chromium)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
                                 # /lab: A/B recording-quality presets by ear
 npm run dev -- --host 127.0.0.1 --port 9000   # or HOST=/PORT= env vars
 npm run check:layout            # headless: no element moves between card states
+npm run test:visual             # screenshots vs frontend/test/visual/__screenshots__ (Docker)
+npm run test:visual -- -u       # rewrite the references that changed
 npm run dev:editor              # the editors, drawn by HA's own frontend (gallery), :8100
 npm run dev:editor -- --screenshots   # regenerate docs/images/editor-{light,dark}.png
 npm run brand                   # icon, logos, social preview from docs/brand/icon.svg
@@ -48,6 +50,20 @@ timezone to UTC, the browser through Playwright's `timezoneId`, since
 (84% against 91%) for the same tests: Vitest 4 maps V8 coverage through the
 AST, so never-executed lines such as template text no longer count as
 covered.
+
+The visual tests (`frontend/test/visual/`, `vitest.visual.config.ts`) are
+outside `npm test` because they need Docker: `frontend/dev/visual.mjs` runs
+the browser in the Playwright image matching the installed `playwright`, and
+the tests on the host. References written by any other browser only match
+the machine that wrote them, so the config refuses to run without the
+container. Docker is optional for development: the `visual` CI job compares,
+and the "Update screenshots" workflow (`update-screenshots.yml`) regenerates
+the references on a PR branch and commits them. A change to the card's look
+lands with its updated screenshots in the same PR; review them like code.
+They mount through `frontend/test/mount.ts` (shared with the browser
+tests), freeze timers and `Date` for any state that would otherwise tick,
+and `shot()` pauses every animation 3 s in rather than using Playwright's
+disabled mode, which captures the level blob as a square.
 
 `npm run dev` renders the real card and tile against a mocked `hass`, with
 live reload and switches for the states that are painful to reach on a live
@@ -104,9 +120,9 @@ carry a workaround for a release nobody should be on.
 `npx tsc --noEmit` before the card tests, so run it locally too —
 `Array.prototype.at` is ES2022 and must not appear in `frontend/`.
 
-`ci.yml` runs six parallel jobs: `frontend` (tsc, card tests), `bundle`
-(rebuild and stale-bundle check), `python` (integration tests), `ruff`, `mypy`
-and `layout`. `frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
+`ci.yml` runs seven parallel jobs: `frontend` (tsc, card tests), `bundle`
+(rebuild and stale-bundle check), `python` (integration tests), `ruff`, `mypy`,
+`layout` and `visual`. `frontend` and `python` measure coverage (`npm test -- --coverage`; pytest
 `--cov=custom_components/hass_broadcast --cov-branch`) and write it to the job
 summary. There is no coverage floor yet. The coverage flags are in `ci.yml`,
 not `pyproject.toml` or `npm test`, so the local commands above stay unchanged.

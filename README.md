@@ -290,6 +290,7 @@ npm run build                   # bundle the card into custom_components/hass_br
 npm run dev                     # card dev harness on http://localhost:8099
 npm run dev:editor              # the editors, drawn by Home Assistant's own frontend, on :8100
 npm run check:layout            # headless check that nothing moves between card states
+npm run test:visual             # screenshot tests; needs Docker (optional: CI runs them)
 npm run brand                   # regenerate the icon, logos and social preview from docs/brand/icon.svg
 ```
 
@@ -313,11 +314,30 @@ serves that file directly — an uncommitted bundle means every dashboard gets a
 card. Whenever anything under `frontend/src/` changes, run `npm run build` and commit the
 regenerated bundle in the same change. CI fails if the committed bundle is stale.
 
-CI runs four jobs in parallel: `frontend` (type-check and card tests), `bundle` (rebuilds the
-card and fails if the committed bundle differs), `python` (integration tests) and `layout`
-(`npm run check:layout`, which fails if any part of the card moves between states). `frontend`
-and `python` measure coverage and write it to the run's summary page; there is no minimum yet.
-To measure locally:
+### Visual tests
+
+`frontend/test/visual/` screenshots the card in every state and layout, and the tile in both
+shapes, in light and dark themes, and compares them with the reference images in
+`frontend/test/visual/__screenshots__/`. Text renders slightly differently on every OS, so the
+screenshots are only ever taken in one browser: the one in Playwright's Docker image.
+
+**You don't need Docker.** CI's `visual` job runs the comparison on every pull request. When it
+fails, download the `visual-diffs` artifact from the run to see the actual and diff images. If
+the change is intended, update the references from GitHub: **Actions → Update screenshots → Run
+workflow**, choosing your pull request's branch. The workflow regenerates them in the same
+container, commits them to the branch, and the PR shows exactly which pictures changed. That
+commit does not start CI on its own, so re-run the PR's checks afterwards.
+
+With Docker installed, the same works locally and faster: `npm run test:visual` compares, and
+`npm run test:visual -- -u` rewrites the references that changed.
+
+### CI
+
+CI runs seven jobs in parallel: `frontend` (type-check and card tests), `bundle` (rebuilds the
+card and fails if the committed bundle differs), `python` (integration tests), `ruff`, `mypy`,
+`layout` (`npm run check:layout`, which fails if any part of the card moves between states) and
+`visual` (the screenshots above). `frontend` and `python` measure coverage and write it to the
+run's summary page; there is no minimum yet. To measure locally:
 
 ```bash
 npm test -- --coverage

@@ -5,7 +5,7 @@ on:
     branches: [master]
   pull_request:
 
-# Six independent jobs, so a Python failure does not wait on the frontend
+# Seven independent jobs, so a Python failure does not wait on the frontend
 # pipeline and the check that failed names the half that broke.
 jobs:
   frontend:
@@ -172,3 +172,28 @@ jobs:
         with:
           name: layout-screenshots
           path: /tmp/hass-broadcast-layout-*/
+
+  # What the card and the tile look like, state by state, in both themes:
+  # screenshots taken in the Playwright Docker image's Chromium and compared
+  # with frontend/test/visual/__screenshots__/. Docker is what makes them
+  # comparable at all, so this job, not a developer's machine, is the check.
+  # On a failure the actual and diff images are uploaded; if the change is
+  # intended, run the "Update screenshots" workflow on the branch.
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:visual
+
+      - name: Upload the screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs
+          path: .vitest/attachments/

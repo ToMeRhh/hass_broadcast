@@ -30,6 +30,12 @@ export interface RecorderMockOptions {
   useFake: () => boolean;
   /** True when recording should be refused, fake or real. */
   micDenied: () => boolean;
+  /**
+   * The level the fake reports, by seconds into the take. Speech-shaped and
+   * jittered when omitted; the visual tests pass a constant, since a meter
+   * that never holds still can never be screenshotted twice the same.
+   */
+  level?: (elapsedSeconds: number) => number;
 }
 
 /** How often the fake pushes a level, matched roughly to the real worklet. */
@@ -82,7 +88,7 @@ export function installRecorderMock(options: RecorderMockOptions): void {
     sessions.set(this, {
       started,
       timer: window.setInterval(() => {
-        callback?.(speechLevel((Date.now() - started) / 1000));
+        callback?.((options.level ?? speechLevel)((Date.now() - started) / 1000));
       }, LEVEL_INTERVAL_MS),
     });
   };

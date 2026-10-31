@@ -171,6 +171,20 @@ class BroadcastStore:
         await self._async_save()
         return True
 
+    async def async_remove_temporaries(self) -> None:
+        """Delete every temporary recording the store knows of.
+
+        Used on unload: a disabled integration gets no reload, so without it
+        temporary files would outlive their timers until the next load.
+        """
+        temporaries = [m for m in self._messages if m.get("temporary")]
+        for message in temporaries:
+            self._cancel_expiry(message["id"])
+            await self._async_unlink(self._file_path(message))
+            self._messages.remove(message)
+        if temporaries:
+            await self._async_save()
+
     @callback
     def async_shutdown(self) -> None:
         """Cancel every expiry timer."""

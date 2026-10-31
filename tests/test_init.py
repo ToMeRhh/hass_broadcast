@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -12,7 +13,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.hass_broadcast.const import DOMAIN, STORAGE_DIR, STORAGE_KEY
-from custom_components.hass_broadcast.storage import async_get_store
+from custom_components.hass_broadcast.storage import BroadcastStore, async_get_store
 
 
 async def test_setup_and_unload(hass: HomeAssistant) -> None:
@@ -82,22 +83,56 @@ async def test_removing_the_entry_deletes_the_recordings(
     assert STORAGE_KEY not in hass_storage
 
 
-async def test_unload_cancels_expiry_timers(hass: HomeAssistant) -> None:
-    """Unloading leaves no timer: the next load purges, not a stray callback."""
+async def test_unload_deletes_temporary_recordings(hass: HomeAssistant) -> None:
+    """Disabling the integration leaves no temporary recording on disk.
+
+    Unloading is not followed by a reload then, so nothing else would clear
+    them until the next load. Saved recordings stay.
+    """
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     store = entry.runtime_data.store
-    message_id = await store.async_add(
+    temporary = await store.async_add(
         b"t", extension="wav", duration=1, user_id=None, temporary=True
     )
-    path = await store.async_path(message_id)
+    saved = await store.async_add(b"s", extension="wav", duration=1, user_id=None)
+    temporary_path = await store.async_path(temporary)
+    saved_path = await store.async_path(saved)
+    assert temporary_path is not None
+    assert saved_path is not None
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=601))
+
+    assert not temporary_path.exists()
+    assert saved_path.exists()
+    fresh = BroadcastStore(hass, retention=10)
+    await fresh.async_load()
+    assert await fresh.async_get(temporary) is None
+    assert await fresh.async_get(saved) is not None
+
+
+async def test_unload_cancels_expiry_timers(hass: HomeAssistant) -> None:
+    """Unloading leaves no timer: nothing fires at the store after it."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    store = entry.runtime_data.store
+    cancel = MagicMock()
+    with patch(
+        "custom_components.hass_broadcast.storage.async_call_later",
+        return_value=cancel,
+    ):
+        await store.async_add(
+            b"t", extension="wav", duration=1, user_id=None, temporary=True
+        )
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert path is not None
-    assert path.exists()
+    cancel.assert_called_once_with()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=601))
+    await hass.async_block_till_done()

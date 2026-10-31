@@ -82,7 +82,8 @@ edit `speakers`, `selected`, `mode` and the rest there. `check:layout` drives
 the button rows.
 
 Below the card is a **broadcast tile**, in a box the size of its
-sections-view grid cell, with its shape under **Tile config**. Its sends go
+sections-view grid cell, with its shape and that cell's size (columns × rows,
+the sizes a user can drag it to) under **Tile config**. Its sends go
 through the same mocked backend, so the broadcast-result and latency switches
 apply to it too.
 

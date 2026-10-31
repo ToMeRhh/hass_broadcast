@@ -133,8 +133,9 @@ For a one-tap intercom button that sends straight to fixed speakers, see the
 
 The **Voice Broadcast Tile** is a second card for the call you make every
 day: hold it, speak, and let go — the message goes straight to the speakers
-you chose, with no review step and no picker. It shows ✓ when every speaker
-played it, and names any that did not.
+you chose, with no review step and no picker. It names those speakers under
+its label, shows ✓ when every speaker played it, and names any that did not.
+Make a square tile bigger and its button grows with it.
 
 ```yaml
 type: custom:hass-broadcast-tile

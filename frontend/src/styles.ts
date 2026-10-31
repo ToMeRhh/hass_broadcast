@@ -402,7 +402,6 @@ export const cardStyles = [
          is wider than such a wave and pushed the bars out past its end. */
       gap: min(2px, 1.25%);
       min-width: 0;
-      overflow: hidden;
       padding: 0 6px;
       border-radius: 10px;
       background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));

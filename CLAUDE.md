@@ -10,7 +10,7 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (76)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 .venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
-npm test                        # card tests, vitest (222): unit (Node), browser (Chromium)
+npm test                        # card tests, vitest (244): unit (Node), browser (Chromium)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
                                 # /lab: A/B recording-quality presets by ear
@@ -170,6 +170,13 @@ resource brings both). Both drive the microphone through `RecordingController`
 (`recording.ts`) and send through `sendClip` (`sending.ts`); they differ only
 in what they do with a finished take. The tile is push-to-talk regardless of
 config, because its release is what sends.
+
+When designing a UI change, cover every surface it can reach: the card in
+both layouts (`full`, `compact`) and the tile in both shapes (square,
+horizontal), at their default grid sizes as well as larger ones (the dev
+harness has them). The default 3×2 square tile in particular has almost no
+room beside its button. Say explicitly which surfaces a change leaves out
+and why.
 
 The record core (strip, mic, Discard, Send) is not configurable: it is what
 guarantees no layout shift between states. Any

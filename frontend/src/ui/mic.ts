@@ -19,7 +19,25 @@ export interface MicProps {
   /** title/aria-label. Keep it static within a phase — see the card. */
   label: string;
   onPressStart: (event: Event) => void;
-  onPressEnd: () => void;
+  /** The press ended; a pointer event says where it was let go. */
+  onPressEnd: (event?: PointerEvent) => void;
+  /** The held pointer moved, wherever it is on the page. */
+  onPressMove?: (event: PointerEvent) => void;
+}
+
+/**
+ * Keep a push-to-talk press on the button wherever the pointer goes, so only
+ * letting go ends it. Touch does this by itself; a mouse otherwise left the
+ * button the moment it slid off its edge, and that ended the take (on the
+ * tile, sent it).
+ */
+function hold(event: PointerEvent): void {
+  const button = event.currentTarget as Element | null;
+  try {
+    button?.setPointerCapture?.(event.pointerId);
+  } catch {
+    // A pointer the browser no longer considers active: nothing to hold.
+  }
 }
 
 /** How much louder speech grows the blob, as a fraction of the button. */
@@ -52,10 +70,15 @@ export function mic(props: MicProps): TemplateResult {
       <button
         class="mic"
         ?disabled=${props.disabled}
-        @pointerdown=${props.onPressStart}
-        @pointerup=${props.onPressEnd}
-        @pointercancel=${props.onPressEnd}
-        @pointerleave=${props.onPressEnd}
+        @pointerdown=${(event: PointerEvent) => {
+          if (props.recordMode === "push_to_talk") {
+            hold(event);
+          }
+          props.onPressStart(event);
+        }}
+        @pointermove=${(event: PointerEvent) => props.onPressMove?.(event)}
+        @pointerup=${(event: PointerEvent) => props.onPressEnd(event)}
+        @pointercancel=${(event: PointerEvent) => props.onPressEnd(event)}
         @contextmenu=${(event: Event) => event.preventDefault()}
         @keydown=${(event: KeyboardEvent) => {
           // Auto-repeat would otherwise restart the take ~30 times a second.

@@ -181,6 +181,50 @@ describe("RecordingController", () => {
     expect(takes).toHaveLength(1);
   });
 
+  it("throws a take away when the press ends in a discard", async () => {
+    const onDiscard = vi.fn();
+    const { controller, recorder, takes, errors } = makeController("push_to_talk", {
+      onDiscard,
+    });
+
+    await controller.onPressStart(press);
+    await controller.onPressEnd(true);
+
+    expect(takes).toHaveLength(0);
+    expect(errors).toHaveLength(0);
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+    expect(controller.phase).toBe("idle");
+    // The session is still closed, or the microphone stays open.
+    expect(recorder.stopped).toBe(1);
+  });
+
+  it("does not wait for the tail of a take it throws away", async () => {
+    const { controller, recorder } = makeController();
+    recorder.stopImpl = () => new Promise(() => {});
+
+    await controller.onPressStart(press);
+    await controller.onPressEnd(true);
+
+    expect(controller.phase).toBe("idle");
+  });
+
+  it("throws away a press discarded before the microphone opened", async () => {
+    const onDiscard = vi.fn();
+    const { controller, recorder, takes } = makeController("push_to_talk", { onDiscard });
+    let open!: () => void;
+    recorder.startImpl = () => new Promise((resolve) => (open = resolve));
+
+    const pressing = controller.onPressStart(press);
+    await controller.onPressEnd(true);
+    open();
+    await pressing;
+
+    expect(takes).toHaveLength(0);
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+    expect(recorder.stopped).toBe(1);
+    expect(controller.phase).toBe("idle");
+  });
+
   it("hands over the waveform the recorder drew from the audio", async () => {
     const { controller, recorder, takes } = makeController();
     recorder.stopImpl = async () => ({ blob: new Blob(["x"]), duration: 2, peaks: [0.25, 1] });

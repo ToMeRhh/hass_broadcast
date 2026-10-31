@@ -46,6 +46,10 @@ it as a custom repository if needed — then skip to step 3. Or, by hand:
 4. Go to **Settings → Devices & services → Add integration** and add **Voice Broadcast**
    ([open it directly](https://my.home-assistant.io/redirect/config_flow_start/?domain=hass_broadcast)).
 
+To try new versions before their release, open **Voice Broadcast** in HACS,
+choose **⋮ → Redownload**, tick **Show beta versions** and pick the newest. HACS
+then offers you betas as well as releases; untick it to go back to releases only.
+
 ### Manual
 
 Copy `custom_components/hass_broadcast/` into your Home Assistant `config/custom_components/`
@@ -135,6 +139,9 @@ The **Voice Broadcast Tile** is a second card for the call you make every
 day: hold it, speak, and let go — the message goes straight to the speakers
 you chose, with no review step and no picker. It names those speakers under
 its label, shows ✓ when every speaker played it, and names any that did not.
+Changed your mind mid-message? Slide onto the bin that appears while you
+record (under the button on a square tile, at the end of a horizontal one)
+and let go there, or press Escape: the message is discarded, not sent.
 Make a square tile bigger and its button grows with it.
 
 ```yaml

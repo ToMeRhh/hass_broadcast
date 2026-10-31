@@ -34,6 +34,8 @@ export interface RecordingOptions {
   onError: (text: string, sticky: boolean) => void;
   /** A take is starting; the host clears whatever it was saying. */
   onStart?: () => void;
+  /** A press ended in a discard: the take is gone and nothing else happens. */
+  onDiscard?: () => void;
 }
 
 /**
@@ -67,6 +69,8 @@ export class RecordingController implements ReactiveController {
   private disconnected = false;
   /** Set when the button is released before start() has resolved. */
   private stopRequested = false;
+  /** That early release asked for the take to be thrown away. */
+  private discardRequested = false;
 
   constructor(
     private host: ReactiveControllerHost,
@@ -138,24 +142,46 @@ export class RecordingController implements ReactiveController {
       return;
     }
     this.stopRequested = false;
+    this.discardRequested = false;
     await this.startRecording();
     // Released while the microphone was still opening: stop now that there
     // is a session to stop.
     if (this.stopRequested && this.phase === "recording") {
-      await this.stopRecording();
+      await (this.discardRequested ? this.discard() : this.stopRecording());
     }
   }
 
-  /** Pointer up, cancel, or leave. Only push-to-talk cares. */
-  async onPressEnd(): Promise<void> {
+  /**
+   * Pointer up or cancel, or the host calling the press off. Only
+   * push-to-talk cares. `discard` throws the take away instead of handing it
+   * over.
+   */
+  async onPressEnd(discard = false): Promise<void> {
     if (this.options.recordMode() !== "push_to_talk") {
       return;
     }
     if (this.phase !== "recording") {
       this.stopRequested = true;
+      this.discardRequested = discard;
       return;
     }
-    await this.stopRecording();
+    await (discard ? this.discard() : this.stopRecording());
+  }
+
+  /**
+   * End the take and throw it away. Ready at once: nobody wants the tail
+   * that stop() records past the release, so it is not waited for.
+   */
+  private discard(): void {
+    if (this.busy || this.phase !== "recording") {
+      return;
+    }
+    this.clearTimer();
+    this.phase = "idle";
+    this.level = 0;
+    this.release();
+    this.options.onDiscard?.();
+    this.host.requestUpdate();
   }
 
   async startRecording(): Promise<void> {

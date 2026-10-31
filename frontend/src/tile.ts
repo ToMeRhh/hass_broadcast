@@ -15,7 +15,7 @@ import { RecordingController, Take } from "./recording";
 import { Outcome, describeTargets, outcomeStatus, sendClip } from "./sending";
 import { iconStyles, micStyles } from "./styles";
 import { tileForm } from "./forms";
-import { checkIcon, closeIcon, speakerIcon, warnIcon } from "./ui/icons";
+import { binIcon, checkIcon, closeIcon, speakerIcon, warnIcon } from "./ui/icons";
 import { mic } from "./ui/mic";
 import { layers, timerText } from "./ui/strip";
 
@@ -30,9 +30,12 @@ export const RESULT_MS = 2500;
  */
 const SQUARE_MIC = "max(52px, min(100cqw, 100cqh) * 0.6)";
 
+/** How far outside the bin's edge a release still lands on it, in px. */
+const BIN_SLOP = 8;
+
 /** What the tile's second line says once something has happened. */
 interface Result {
-  kind: "sent" | "partial" | "failed";
+  kind: "sent" | "partial" | "failed" | "discarded";
   /** Short enough for a tile. */
   text: string;
   /** The full story, for the tooltip and screen readers. */
@@ -44,6 +47,11 @@ interface Result {
  * speakers. There is no review step and no picker — that is the card's job;
  * this is for the one person or room you call every day.
  *
+ * Letting go is final, so the take can be thrown away instead: while it
+ * records, a bin shows in a spot reserved for it (a square tile's status
+ * line, whose timer moves up into the name's place, or the end of a
+ * horizontal one), and letting go on it, or pressing Escape, discards.
+ *
  * Recording goes through the same RecordingController as the card, and
  * sending through the same upload-once path, so a message left here shows up
  * in the card's recent messages like any other.
@@ -53,6 +61,8 @@ export class HassBroadcastTile extends LitElement {
   @property({ attribute: false }) hass?: any;
   @state() private config: TileConfig = { type: "" };
   @state() private result?: Result;
+  /** The held pointer is on the bin: letting go now discards. */
+  @state() private overBin = false;
 
   private resultTimer?: number;
 
@@ -65,7 +75,16 @@ export class HassBroadcastTile extends LitElement {
     onStart: () => this.showResult(undefined),
     onError: (text) => this.showResult({ kind: "failed", text: shorten(text), detail: text }),
     onTake: (take) => this.send(take),
+    onDiscard: () =>
+      this.showResult({ kind: "discarded", text: "Discarded", detail: "Discarded, not sent." }),
   });
+
+  private onKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape" && this.rec.phase === "recording") {
+      this.overBin = false;
+      void this.rec.onPressEnd(true);
+    }
+  };
 
   static styles = [
     micStyles,
@@ -77,17 +96,36 @@ export class HassBroadcastTile extends LitElement {
         overflow: visible;
       }
       .tile {
+        position: relative;
         display: grid;
         height: 100%;
         box-sizing: border-box;
         align-items: center;
       }
+      /* Button, name, status line. The status line, which the bin covers
+         mid-take, grows with a taller tile so the bin is easier to reach:
+         its 18px at 3×2, 32px at three rows, and 44px from four. Where the
+         tile's height is not fixed (masonry) the percentage cannot resolve
+         and the row is just its content. */
       .tile.square {
-        grid-template-rows: 1fr auto;
+        grid-template-rows: 1fr auto clamp(18px, 18px + (100% - 100px) / 4.5, 44px);
         justify-items: center;
-        gap: 6px;
-        padding: 12px 8px;
+        row-gap: 4px;
+        padding: 12px 8px 8px;
         text-align: center;
+      }
+      .square > .text {
+        display: contents;
+      }
+      .square .tile-name,
+      .square .tile-status {
+        justify-self: stretch;
+        min-width: 0;
+      }
+      /* Placed, since the bin claims the same cell. */
+      .square .tile-status {
+        grid-row: 3;
+        grid-column: 1;
       }
       /* The button's cell is a size container, so the button can follow the
          tile as it is resized; see SQUARE_MIC. */
@@ -97,6 +135,7 @@ export class HassBroadcastTile extends LitElement {
         justify-self: stretch;
         display: grid;
         place-items: center;
+        margin-bottom: 2px;
       }
       .tile.horizontal {
         grid-template-columns: auto 1fr;
@@ -117,7 +156,26 @@ export class HassBroadcastTile extends LitElement {
       }
       .layers {
         display: grid;
+      }
+      .tile-status {
+        min-height: 18px;
+        transition: opacity 180ms ease;
+      }
+      .horizontal .tile-status {
         height: 18px;
+      }
+      /* Under a square tile's bin; the name line shows the timer instead.
+         Hidden, not just covered: a bin still fading in, or one whose
+         background a browser without color-mix() drops, would show it
+         through. */
+      .square[data-recording="true"] .tile-status {
+        opacity: 0;
+        transition: none;
+      }
+      /* A square tile's name line, which turns into the timer mid-take. */
+      .tile-name > .layer {
+        font-size: inherit;
+        color: inherit;
       }
       .layer {
         grid-area: 1 / 1;
@@ -153,8 +211,73 @@ export class HassBroadcastTile extends LitElement {
       .layer-partial {
         color: var(--warning-color, #ff9800);
       }
-      .layer-failed {
+      .layer-failed,
+      .layer-armed {
         color: var(--error-color, #db4437);
+      }
+      /* Reserved in both shapes and only shown mid-take, so nothing moves:
+         over a square tile's status line, at the end of a horizontal one.
+         Opaque, since it covers text. */
+      .bin {
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        box-sizing: border-box;
+        border: 1.5px dashed var(--divider-color, #bdbdbd);
+        background: color-mix(
+          in srgb,
+          var(--secondary-text-color, #727272) 12%,
+          var(--card-background-color, var(--ha-card-background, #fff))
+        );
+        color: var(--secondary-text-color, #727272);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease, background 180ms ease, color 180ms ease;
+      }
+      .bin[data-on="true"] {
+        opacity: 1;
+      }
+      .bin[data-armed="true"] {
+        border-color: transparent;
+        background: var(--error-color, #db4437);
+        color: #fff;
+      }
+      .bin svg {
+        flex: none;
+        width: 18px;
+        height: 18px;
+      }
+      /* The status line's row and 2px past it each way, so its text sits
+         where the line's does and it grows with the row: no further, since
+         the blob around a 3×2 tile's button reaches past the name. */
+      .square > .bin {
+        grid-row: 3;
+        grid-column: 1;
+        align-self: stretch;
+        justify-self: stretch;
+        margin: -2px 0;
+        gap: 3px;
+        border-radius: 24px;
+        font-size: 0.8em;
+        white-space: nowrap;
+      }
+      .square > .bin svg {
+        width: 14px;
+        height: 14px;
+      }
+      .horizontal > .bin {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+        margin-top: -18px;
+        border-radius: 50%;
+      }
+      .tile[data-armed="true"] .mic-wrap {
+        --mic-color: var(--disabled-text-color, #9e9e9e);
       }
       .timer {
         font-weight: 500;
@@ -165,7 +288,9 @@ export class HassBroadcastTile extends LitElement {
         color: var(--warning-color, #ff9800);
       }
       @media (prefers-reduced-motion: reduce) {
-        .layer {
+        .tile-status,
+        .layer,
+        .bin {
           transition: none;
         }
       }
@@ -216,10 +341,41 @@ export class HassBroadcastTile extends LitElement {
     };
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener("keydown", this.onKeyDown);
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    window.removeEventListener("keydown", this.onKeyDown);
     this.clearResultTimer();
     this.result = undefined;
+  }
+
+  /** Whether a pointer event lands on the bin, give or take BIN_SLOP. */
+  private isOverBin(event: PointerEvent): boolean {
+    const bin = this.renderRoot.querySelector(".bin");
+    if (!bin) {
+      return false;
+    }
+    const box = bin.getBoundingClientRect();
+    return (
+      event.clientX >= box.left - BIN_SLOP &&
+      event.clientX <= box.right + BIN_SLOP &&
+      event.clientY >= box.top - BIN_SLOP &&
+      event.clientY <= box.bottom + BIN_SLOP
+    );
+  }
+
+  private onPressMove(event: PointerEvent): void {
+    this.overBin = this.rec.phase === "recording" && this.isOverBin(event);
+  }
+
+  private onPressEnd(event?: PointerEvent): void {
+    const discard = event !== undefined && this.isOverBin(event);
+    this.overBin = false;
+    void this.rec.onPressEnd(discard);
   }
 
   private clearResultTimer(): void {
@@ -308,21 +464,29 @@ export class HassBroadcastTile extends LitElement {
     const { name, maxDuration: limit } = this.resolved;
     const warning =
       recording && limit - this.rec.elapsed <= Math.min(10, limit * 0.25);
-    const view = recording
-      ? "recording"
-      : sending
+    const armed = recording && this.overBin;
+    const view = armed
+      ? "armed"
+      : recording
+        ? "recording"
+        : sending
         ? "sending"
         : this.result?.kind ?? "idle";
     const resultLayer = (icon: unknown) =>
       html`${icon}<span title=${this.result?.detail ?? ""}>${this.result?.text ?? ""}</span>`;
     const label = recording
-      ? "Recording — release to send"
+      ? "Recording — release to send, Escape to discard"
       : this.targets.length
         ? `Hold to talk to ${describeTargets(this.hass, this.targets)}`
         : "Hold to talk";
     return html`
       <ha-card>
-        <div class="tile ${this.shape}" title=${this.rec.supported ? "" : INSECURE_CONTEXT_MESSAGE}>
+        <div
+          class="tile ${this.shape}"
+          data-recording=${recording}
+          data-armed=${armed}
+          title=${this.rec.supported ? "" : INSECURE_CONTEXT_MESSAGE}
+        >
           <div class="slot">
             ${mic({
               size: this.shape === "square" ? SQUARE_MIC : 40,
@@ -333,19 +497,30 @@ export class HassBroadcastTile extends LitElement {
               maxDuration: limit,
               label,
               onPressStart: (event) => void this.rec.onPressStart(event),
-              onPressEnd: () => void this.rec.onPressEnd(),
+              onPressEnd: (event) => this.onPressEnd(event),
+              onPressMove: (event) => this.onPressMove(event),
             })}
           </div>
           <div class="text">
-            <span class="name">${name}</span>
+            ${this.shape === "square"
+              ? layers("tile-name", recording ? "timer" : "name", {
+                  name: html`<span class="name">${name}</span>`,
+                  timer: timerText(formatClock(this.rec.elapsed), warning),
+                })
+              : html`<span class="name">${name}</span>`}
             ${layers("tile-status", view, {
               idle: this.idleText,
               recording: timerText(formatClock(this.rec.elapsed), warning),
+              armed: html`<span>Release to discard</span>`,
               sending: html`<span>Sending…</span>`,
               sent: resultLayer(checkIcon),
               partial: resultLayer(warnIcon),
               failed: resultLayer(closeIcon),
+              discarded: resultLayer(binIcon),
             })}
+          </div>
+          <div class="bin" data-on=${recording} data-armed=${armed} aria-hidden="true">
+            ${this.shape === "square" ? html`${binIcon}<span>Discard</span>` : binIcon}
           </div>
         </div>
         <div class="sr-only" aria-live="polite">${this.result?.detail ?? ""}</div>

@@ -118,9 +118,9 @@ itself pins; bump them together.
 The card's config is flat, one key per editor field: `title`, `layout`
 (`full` | `compact`), `speaker_picker` (`dropdown` | `chips` | `list`),
 `recent_messages` (`off` | `button` | `list`), `volume_control`, `speakers`,
-`selected`, `record_mode`, `max_duration`, `noise_suppression`, `mode`. The
+`selected`, `record_mode`, `max_duration`, `noise_suppression`, `keep_messages`, `mode`. The
 tile's is `name`, `speakers`, `shape`, `max_duration`, `noise_suppression`,
-`mode`. Nothing is ordered: the layouts
+`keep_messages`, `mode`. Nothing is ordered: the layouts
 decide placement. The README's options tables are the reference.
 
 All config interpretation lives in `resolveConfig` in `config.ts` — defaults,

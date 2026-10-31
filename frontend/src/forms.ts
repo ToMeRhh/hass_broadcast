@@ -65,10 +65,20 @@ const timeLimitField = {
 
 const noiseSuppressionField = { name: "noise_suppression", selector: { boolean: {} } };
 
+// The only boolean that is on when absent. `ha-form` hands a non-required
+// field's `default` to the selector as its placeholder, and `ha-selector-boolean`
+// draws that as checked (from 2024.12 on), so a card without the key shows it on.
+const keepMessagesField = {
+  name: "keep_messages",
+  default: true,
+  selector: { boolean: {} },
+};
+
 /** Helper text, only where a field's label cannot carry its meaning. */
 const HELPERS: Record<string, string> = {
   title: "Leave empty for “Voice Broadcast”",
   name: "Leave empty for “Voice Broadcast”",
+  keep_messages: "Adds every message you send to Recent messages.",
   noise_suppression:
     "Filters out background noise such as a TV or fan. Leave it off in a quiet room: it can make a voice sound slightly processed.",
 };
@@ -115,6 +125,7 @@ const LABELS: Record<string, string> = {
   record_mode: "Recording",
   max_duration: "Time limit",
   noise_suppression: "Noise suppression",
+  keep_messages: "Keep sent messages",
   mode: "When it plays",
   shape: "Shape",
 };
@@ -214,6 +225,7 @@ export const cardForm = {
         },
         timeLimitField,
         noiseSuppressionField,
+        keepMessagesField,
       ],
     },
     playbackSection,
@@ -262,7 +274,7 @@ export const tileForm = {
       flatten: true,
       title: "Recording",
       icon: "mdi:microphone",
-      schema: [timeLimitField, noiseSuppressionField],
+      schema: [timeLimitField, noiseSuppressionField, keepMessagesField],
     },
     playbackSection,
   ],

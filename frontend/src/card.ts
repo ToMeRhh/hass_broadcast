@@ -135,6 +135,7 @@ export class HassBroadcastCard extends LitElement {
       selected: [],
       record_mode: "push_to_talk",
       max_duration: 60,
+      keep_messages: true,
       mode: "plain",
     };
   }

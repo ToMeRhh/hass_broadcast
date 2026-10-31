@@ -195,6 +195,7 @@ export class HassBroadcastTile extends LitElement {
       speakers: first ? [first] : [],
       shape: "square",
       max_duration: 60,
+      keep_messages: true,
       mode: "plain",
     };
   }

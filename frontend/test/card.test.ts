@@ -1116,4 +1116,8 @@ describe("card editor", () => {
     expect(stub.selected).toEqual([]);
     expect(HassBroadcastCard.getStubConfig(undefined).speakers).toEqual([]);
   });
+
+  it("writes keep_messages so the editor shows it on", () => {
+    expect(HassBroadcastCard.getStubConfig(undefined).keep_messages).toBe(true);
+  });
 });

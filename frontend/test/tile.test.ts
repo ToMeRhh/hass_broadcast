@@ -194,6 +194,10 @@ describe("broadcast tile", () => {
     expect(HassBroadcastTile.getStubConfig(undefined).speakers).toEqual([]);
   });
 
+  it("writes keep_messages so the editor shows it on", () => {
+    expect(HassBroadcastTile.getStubConfig(undefined).keep_messages).toBe(true);
+  });
+
   it("starts out with a value in every field the editor shows", () => {
     const stub = HassBroadcastTile.getStubConfig(undefined);
     expect(stub.name).toBe("Voice Broadcast");

@@ -7,142 +7,139 @@
 [![CI](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml/badge.svg)](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Record a voice message in your Home Assistant dashboard and play it on your
-speakers — a simple intercom, without leaving the UI.
+Talk into your dashboard, hear it on your speakers. A simple intercom for Home
+Assistant, in two cards:
 
-<p align="center">
-  <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="360">
-</p>
+<div align="center">
 
-- **Hold to talk** (or tap to start, tap to stop), then play it back before sending
-- **Broadcast to several speakers at once** — playback starts on all of them together
-- **Three playback modes**: plain, restore the volume afterwards, or a chime first
-- **Optional broadcast volume**, with each speaker's own volume put back afterwards
-- **Recent messages** to replay or re-send, with automatic retention
-- **A one-tap intercom tile** that sends straight to the speakers you chose
-- **No services, no entities** — installing it adds dashboard cards and nothing else
+| <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="440"> | <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/tile-light.png?raw=true" alt="The broadcast tile while it records: a pulsing record button, a running timer, and a Discard bin to let go on" width="220"> |
+| :---: | :---: |
+| **The card**: record, check, choose who hears it. | **The tile**: hold, speak, let go. Done. |
+
+</div>
+
+|  | Card | Tile |
+| --- | --- | --- |
+| **Best for** | Any message, to anyone | The call you make every day ("Dinner's ready!") |
+| **Speakers** | Picked each time: dropdown, chips or list | Fixed when you set it up |
+| **Before sending** | Play it back, then Send or Discard | Letting go sends it; let go on the bin to discard |
+| **Recording** | Hold to talk, or tap to start and stop | Hold to talk |
+| **Extras** | Recent messages to replay or re-send; broadcast volume | Shows ✓ Sent, or names the speakers that missed it |
+| **Sizes** | Full or compact | Square (grows as you resize it) or horizontal |
+
+Both cards play on several speakers at once, and can ring a chime first or
+pause what was playing and resume it afterwards. Installing adds the two cards
+and nothing else: no entities, no services.
 
 <a id="https-required"></a>
 
 > [!IMPORTANT]
-> **Recording needs HTTPS.** Browsers only allow microphone access on secure pages,
-> so on `http://<ip>:8123` the record button stays disabled. This is a browser rule,
-> not a limitation of this card. Workaround in Chrome: open
-> `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add your Home Assistant
-> URL, enable it and relaunch. Other options are under [Requirements](#hard-requirements).
+> **Recording needs HTTPS.** Browsers only allow the microphone on secure pages,
+> so on plain `http://<ip>:8123` the record button stays disabled. Home Assistant
+> Cloud, Tailscale, a reverse proxy with a certificate and the Companion app all
+> work. See [Requirements](#hard-requirements) for a quick workaround.
 
 ## Installation
 
-### HACS (recommended)
-
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ToMeRhh&repository=hass_broadcast&category=integration)
 
-The button above opens this repository in your own Home Assistant's HACS, adding
-it as a custom repository if needed — then skip to step 3. Or, by hand:
-
-1. In HACS, choose **Integrations → ⋮ → Custom repositories**.
-2. Add `https://github.com/ToMeRhh/hass_broadcast` as an **Integration**.
-3. Install **Voice Broadcast**, then restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration** and add **Voice Broadcast**
+1. Click the button above (or in HACS, add `https://github.com/ToMeRhh/hass_broadcast`
+   under **⋮ → Custom repositories** as an **Integration**).
+2. Install **Voice Broadcast** and restart Home Assistant.
+3. Add the integration under **Settings → Devices & services → Add integration**
    ([open it directly](https://my.home-assistant.io/redirect/config_flow_start/?domain=hass_broadcast)).
+4. Edit a dashboard, **Add card**, and pick **Voice Broadcast** or **Voice Broadcast Tile**.
+
+That's it — the card registers itself with your dashboards; there is no
+resource to add by hand. (Without HACS, copy `custom_components/hass_broadcast/`
+into your `config/custom_components/` and restart.)
 
 To try new versions before their release, open **Voice Broadcast** in HACS,
-choose **⋮ → Redownload**, tick **Show beta versions** and pick the newest. HACS
-then offers you betas as well as releases; untick it to go back to releases only.
+choose **⋮ → Redownload**, tick **Show beta versions** and pick the newest.
+Untick it to go back to releases only.
 
-### Manual
+## The card
 
-Copy `custom_components/hass_broadcast/` into your Home Assistant `config/custom_components/`
-directory and restart, then add the integration as above.
+1. **Hold** the big red button and speak; let go to stop.
+2. **Play** it back if you like, or **Discard** it.
+3. **Pick** one or more speakers.
+4. **Send.**
 
-You do **not** need to add a Lovelace resource by hand — the integration serves the
-card bundle and registers the resource for you, pointing at
-`/api/hass_broadcast/static/hass-broadcast-card.js?v=<version>`. The version query
-string means an upgrade re-fetches the bundle instead of serving a cached copy.
-The resource is deleted again when the integration is removed.
+Recent messages sit behind the history button: tap one to load it back into the
+card, ready to play or re-send. The volume button sets how loud the message
+plays; each speaker goes back to its own volume afterwards.
 
-If your Lovelace runs in **YAML mode**, resources are yours to manage and the
-integration will not write to them. It falls back to loading the card as a frontend
-module, which works in desktop browsers but is not reliably picked up by the Home
-Assistant companion apps. If the card renders as `Custom element doesn't exist:
-hass-broadcast-card.` on mobile, add the resource yourself:
+Every message you send is kept in Recent messages. Turn off **Keep sent
+messages** and they are deleted once they have played; the card's **Save**
+button then keeps the ones you want.
 
-```yaml
-lovelace:
-  mode: yaml
-  resources:
-    - url: /api/hass_broadcast/static/hass-broadcast-card.js
-      type: module
-```
-
-## Usage
-
-Add the **Voice Broadcast** card to any dashboard. Then:
-
-1. Hold the round record button and speak, then let go to stop. (The button
-   defaults to this hold-to-talk behaviour; switch it to tap-to-start,
-   tap-to-stop instead in the card editor's **Recording** section.) While you
-   speak, the button pulses with your voice and a ring on its rim counts down
-   to the length limit.
-2. Optionally press play to hear the recording before sending it, or
-   **Discard** it.
-3. Pick one or more speakers.
-4. Optionally open the volume control and choose the level to broadcast at.
-   Each speaker is set to that level for the message and put back to its own
-   volume afterwards. Left off, the speakers' volume is not touched.
-5. Press **Send**.
-
-Nothing on the card moves while you do this: recording, reviewing and sending
-change what the card shows, never where its buttons are.
-
-### Setting it up
-
-The card's editor is Home Assistant's own form, in four sections:
+Everything is set from the card editor:
 
 <p align="center">
   <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/editor-light.png?raw=true" alt="The card editor: a Name field, then Appearance with picture choices for the layout and the speaker picker, a Recent messages menu and a Volume control switch, then Speakers with the speakers on the card and the ones selected when it opens" width="420">
 </p>
 
-- **Appearance** — the layout, how speakers are picked, where recent messages
-  go, and whether there is a volume control.
-- **Speakers** — the speakers the card offers, and which of them are ticked
-  when it opens. A new card starts with every speaker that can play audio;
-  remove the ones you do not want.
-- **Recording** — hold to talk, or tap to start and stop; the time limit; and
-  noise suppression, for a noisy room.
-- **Playback** — what happens on the speakers: just play the message, play a
-  chime first, or pause what was playing and resume it afterwards.
-
-The card comes in two layouts:
-
-- **Full** — a large record button with Discard and Send beside it, a strip
-  above it for the timer and the recorded waveform, and the speaker picker
-  below: a dropdown, chips, or a list.
-- **Compact** — two rows: the record button on the left, and beside it the
-  status line, a speaker dropdown and Send. Recent messages and volume move
-  into a ⋮ menu.
+Short on space? The **compact** layout fits the card into two rows, with recent
+messages and volume in a ⋮ menu:
 
 <p align="center">
   <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-compact-light.png?raw=true" alt="The compact layout: the record button beside a recorded waveform, a speaker picker and Send" width="360">
 </p>
 
-Recent messages can be a button in the header that opens them in a dialog, a
-list of the last three below the card, or off. The volume control is a header
-button.
+<details>
+<summary>Card options in YAML</summary>
 
-For a one-tap intercom button that sends straight to fixed speakers, see the
-[broadcast tile](#broadcast-tile).
+```yaml
+type: custom:hass-broadcast-card
+title: Intercom
+layout: full
+speaker_picker: chips
+recent_messages: button
+volume_control: true
+speakers:
+  - media_player.kitchen
+  - media_player.living_room
+selected:
+  - media_player.kitchen
+record_mode: start_stop
+max_duration: 60
+mode: restore
+```
 
-### Broadcast tile
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `title` | `Voice Broadcast` | Card heading. Blank restores the default |
+| `layout` | `full` | `full` or `compact` |
+| `speaker_picker` | `dropdown` | `dropdown`, `chips` or `list`. Compact always uses the dropdown |
+| `recent_messages` | `button` | `button` (a header button that opens them in a dialog), `list` (the last three below the card) or `off`. In Compact, anything but `off` puts them in the ⋮ menu |
+| `volume_control` | `true` | Whether the card offers the broadcast volume control |
+| `speakers` | every speaker | The speakers the card offers, in the order listed. Left out, the card offers every media player that supports playback; an empty list offers none. A speaker named here appears even while it is unavailable |
+| `selected` | `[]` | Speakers ticked when the card opens. One that is not in `speakers` is ignored, and never broadcast to |
+| `record_mode` | `push_to_talk` | `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop) |
+| `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to **5–300**; invalid values fall back to 60 |
+| `noise_suppression` | `false` | The browser's noise suppression: filters out a TV, fan or kitchen in the background. Leave it off in a quiet room — it can make a voice sound slightly processed |
+| `keep_messages` | `true` | Adds every message to Recent messages. Off: messages are deleted after they play; the card's Save button keeps one |
+| `mode` | `plain` | What the speakers do: `plain` just plays the message, `chime` plays a chime first, `restore` pauses what was playing and puts it back, volume included — see [Behavioural restrictions](#behavioural-restrictions) |
 
-The **Voice Broadcast Tile** is a second card for the call you make every
-day: hold it, speak, and let go — the message goes straight to the speakers
-you chose, with no review step and no picker. It names those speakers under
-its label, shows ✓ when every speaker played it, and names any that did not.
+</details>
+
+<a id="broadcast-tile"></a>
+
+## The tile
+
+Hold the tile, speak, let go: the message goes straight to the speakers you
+chose, with no review step and no picker. It names those speakers under its
+label, shows ✓ when every speaker played it, and names any that did not. Its
+recordings show up in the card's recent messages like any other.
+
 Changed your mind mid-message? Slide onto the bin that appears while you
-record (under the button on a square tile, at the end of a horizontal one)
-and let go there, or press Escape: the message is discarded, not sent.
-Make a square tile bigger and its button grows with it.
+record and let go there, or press Escape: the message is discarded, not sent.
+
+The tile is always hold-to-talk, since letting go is what sends. Make a square
+tile bigger and its button grows with it.
+
+<details>
+<summary>Tile options in YAML</summary>
 
 ```yaml
 type: custom:hass-broadcast-tile
@@ -165,64 +162,11 @@ max_duration: 30
 | `noise_suppression` | `false` | As for the card |
 | `keep_messages` | `true` | As for the card, except the tile has no Save button |
 
-The tile is always hold-to-talk: release is what sends, so a tap-to-start
-tile would send the moment you tapped to stop. Its recordings appear in the
-card's recent messages like any other.
-
-Broadcasting happens from the card. This integration deliberately registers no
-Home Assistant service and creates no entities — installing it adds the card,
-plus a "Voice Broadcast" folder in the Media panel where past recordings are
-browsable.
-
-The three most recent recordings appear at the bottom of the card, and
-**Show all** opens the full list. Tapping one loads it into the card —
-exactly as if you had just recorded it, ready to play back or send — rather
-than broadcasting it immediately. A recording can be deleted by its owner or
-by an administrator — see [Deletion permissions](#deletion-permissions) below;
-the delete button only appears when the server says you are allowed to use it.
-
-When you broadcast to multiple speakers, playback is dispatched to all of them
-concurrently — they all start together rather than one after another.
-
-### Card options
-
-Everything below is set from the card editor, one field per option. In YAML:
-
-```yaml
-type: custom:hass-broadcast-card
-title: Intercom
-layout: full
-speaker_picker: chips
-recent_messages: button
-volume_control: true
-speakers:
-  - media_player.kitchen
-  - media_player.living_room
-selected:
-  - media_player.kitchen
-record_mode: start_stop
-max_duration: 60
-mode: restore
-```
-
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `title` | `Voice Broadcast` | Card heading. Blank restores the default |
-| `layout` | `full` | `full` or `compact` — see [Setting it up](#setting-it-up) |
-| `speaker_picker` | `dropdown` | `dropdown`, `chips` or `list`. Compact always uses the dropdown |
-| `recent_messages` | `button` | `button` (a header button that opens them in a dialog), `list` (the last three below the card) or `off`. In Compact, anything but `off` puts them in the ⋮ menu |
-| `volume_control` | `true` | Whether the card offers the broadcast volume control |
-| `speakers` | every speaker | The speakers the card offers, in the order listed. Left out, the card offers every media player that supports playback; an empty list offers none. A speaker named here appears even while it is unavailable |
-| `selected` | `[]` | Speakers ticked when the card opens. One that is not in `speakers` is ignored, and never broadcast to |
-| `record_mode` | `push_to_talk` | `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop) |
-| `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to **5–300**; invalid values fall back to 60 |
-| `noise_suppression` | `false` | The browser's noise suppression on the microphone: filters out a TV, fan or kitchen in the background. Leave it off in a quiet room — it can make a voice sound slightly processed |
-| `keep_messages` | `true` | Adds every message to Recent messages. Off: messages are deleted after they play; the card's Save button keeps one |
-| `mode` | `plain` | `plain`, `chime` or `restore` — see [Behavioural restrictions](#behavioural-restrictions) below |
+</details>
 
 ## Requirements and restrictions
 
-Most problems people run into are covered below, so please read this section before
+Most problems people run into are covered here, so please read this before
 filing a bug.
 
 ### Hard requirements
@@ -261,7 +205,9 @@ filing a bug.
 
 - **Recordings aren't encrypted, and they're included in backups.** By default the last
   10 are kept; you can set this anywhere from 1 to 200 under **Configure** on the
-  integration. Removing the integration deletes all recordings.
+  integration. A card or tile with **Keep sent messages** off deletes its messages once
+  they have played. Removing the integration deletes all recordings. Past recordings are also
+  browsable in the Media panel, in a "Voice Broadcast" folder.
 - <a id="deletion-permissions"></a>**Any logged-in user who can see the card can record,
   broadcast and play back every recording.** Only the person who made a recording, or an
   admin, can delete it. Playback URLs are signed and expire after a short time.
@@ -277,90 +223,23 @@ filing a bug.
 | Music does not resume after a broadcast | Expected on Cast — see [Behavioural restrictions](#behavioural-restrictions) |
 | Chime sounds cut off before the message starts | Cast started playback slowly — see [Behavioural restrictions](#behavioural-restrictions) |
 | Delete button is missing on a recording | You are not the owner and not an administrator — see [Storage and privacy](#storage-and-privacy) |
+| `Custom element doesn't exist: hass-broadcast-card` on mobile, with Lovelace in YAML mode | Add the resource yourself — see below |
 
-## Development
+In **YAML mode** your dashboard resources are yours to manage, so the integration
+won't write to them. Its fallback works in desktop browsers but not reliably in
+the Companion apps; add the resource by hand:
 
-Python 3.14 and Node 22. The integration tests run against Home Assistant 2026.10.2, the version
-`requirements_test.txt` pins, which needs Python 3.14. That is the only version tested: the
-2024.12 minimum in `hacs.json` is declared but not tested, and the code keeps its branches for
-older releases.
-
-```bash
-python3.14 -m venv .venv        # or: uv venv --python 3.14 .venv
-.venv/bin/pip install -r requirements_test.txt -r requirements_lint.txt
-.venv/bin/python -m pytest -q   # integration tests; `python -m pytest`, not bare `pytest`,
-                                # so the repo root is on sys.path
-.venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint and format
-.venv/bin/mypy                  # type-check the integration (strict)
-
-npm ci
-npx playwright install chromium # once per machine: the browser tests and check:layout need it
-npm test                        # card tests (vitest): Node, then headless Chromium
-npm run build                   # bundle the card into custom_components/hass_broadcast/www/
-npm run dev                     # card dev harness on http://localhost:8099
-npm run dev:editor              # the editors, drawn by Home Assistant's own frontend, on :8100
-npm run check:layout            # headless check that nothing moves between card states
-npm run test:visual             # screenshot tests; needs Docker (optional: CI runs them)
-npm run brand                   # regenerate the icon, logos and social preview from docs/brand/icon.svg
+```yaml
+lovelace:
+  mode: yaml
+  resources:
+    - url: /api/hass_broadcast/static/hass-broadcast-card.js
+      type: module
 ```
 
-`npm run dev` renders the real card and tile against a mocked Home Assistant,
-with live reload and switches for hard-to-reach states (microphone denied, a
-partly failed broadcast, empty history, latency). The editors are Home
-Assistant's own forms, so `npm run dev:editor` runs Home Assistant's design
-gallery locally to show them; `npm run dev:editor -- --screenshots` regenerates
-the editor images in this README. See
-[`frontend/dev/README.md`](frontend/dev/README.md).
+## Contributing
 
-The icon's source is [`docs/brand/icon.svg`](docs/brand/icon.svg): the card's record button
-mid-take. `npm run brand` renders it into `custom_components/hass_broadcast/brand/`, which Home
-Assistant 2026.3 and later shows instead of a placeholder, and into
-`docs/brand/social-preview.png`, the repository's social preview. GitHub has no API for that one:
-upload it under **Settings → General → Social preview**.
-
-`custom_components/hass_broadcast/www/hass-broadcast-card.js` is a **build output that is
-committed to the repository**, because HACS installs the repository as-is and the integration
-serves that file directly — an uncommitted bundle means every dashboard gets a 404 instead of a
-card. Whenever anything under `frontend/src/` changes, run `npm run build` and commit the
-regenerated bundle in the same change. CI fails if the committed bundle is stale.
-
-### Visual tests
-
-`frontend/test/visual/` screenshots the card in every state and layout, and the tile in both
-shapes, in light and dark themes, and compares them with the reference images in
-`frontend/test/visual/__screenshots__/`. Text renders slightly differently on every OS, so the
-screenshots are only ever taken in one browser: the one in Playwright's Docker image.
-
-**You don't need Docker.** CI's `visual` job runs the comparison on every pull request. When it
-fails, download the `visual-diffs` artifact from the run to see the actual and diff images. If
-the change is intended, update the references from GitHub: **Actions → Update screenshots → Run
-workflow**, choosing your pull request's branch. The workflow regenerates them in the same
-container, commits them to the branch, and the PR shows exactly which pictures changed. That
-commit does not start CI on its own, so re-run the PR's checks afterwards.
-
-With Docker installed, the same works locally and faster: `npm run test:visual` compares, and
-`npm run test:visual -- -u` rewrites the references that changed.
-
-### CI
-
-CI runs seven jobs in parallel: `frontend` (type-check and card tests), `bundle` (rebuilds the
-card and fails if the committed bundle differs), `python` (integration tests), `ruff`, `mypy`,
-`layout` (`npm run check:layout`, which fails if any part of the card moves between states) and
-`visual` (the screenshots above). `frontend` and `python` measure coverage and write it to the
-run's summary page; there is no minimum yet. To measure locally:
-
-```bash
-npm test -- --coverage
-.venv/bin/python -m pytest -q --cov=custom_components/hass_broadcast --cov-branch
-```
-
-Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/)
-(`fix:`, `feat:`, `docs:`, `refactor:`, `chore:`).
-
-Releases are cut with **Actions → Release → Run workflow**, which bumps the version in
-`manifest.json`, tags, and publishes a GitHub release with `hass_broadcast.zip` attached —
-the asset HACS installs, since `hacs.json` sets `zip_release`. The version is also the card's
-cache-busting query string, so a change reaches users only once it is released.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, tests and releases.
 
 ## License
 

@@ -1,6 +1,7 @@
 """Tests for the storage module."""
 
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
@@ -231,8 +232,14 @@ async def test_remove_all_cancels_timers(hass: HomeAssistant) -> None:
     """Removing everything leaves no expiry timer behind."""
     store = BroadcastStore(hass, retention=10)
     await store.async_load()
-    await _add(store, temporary=True)
+    cancel = MagicMock()
+    with patch(
+        "custom_components.hass_broadcast.storage.async_call_later",
+        return_value=cancel,
+    ):
+        await _add(store, temporary=True)
 
     await store.async_remove_all()
 
+    cancel.assert_called_once_with()
     await _advance(hass, 601)

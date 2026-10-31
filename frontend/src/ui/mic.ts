@@ -4,8 +4,11 @@ import { RecordMode } from "../recording";
 import { micIcon, stopIcon } from "./icons";
 
 export interface MicProps {
-  /** Button diameter in px. The blob and arc scale from it. */
-  size: number;
+  /**
+   * Button diameter: px, or any CSS length (the tile's grows with its cell).
+   * The blob and arc scale from it.
+   */
+  size: number | string;
   recording: boolean;
   disabled: boolean;
   recordMode: RecordMode;
@@ -34,12 +37,13 @@ const LEVEL_GAIN = 0.35;
  */
 export function mic(props: MicProps): TemplateResult {
   const level = Math.min(1, Math.max(0, props.level || 0));
+  const size = typeof props.size === "number" ? `${props.size}px` : props.size;
   return html`
     <div
       class="mic-wrap"
       data-recording=${props.recording}
       data-mode=${props.recordMode}
-      style="--mic:${props.size}px;--grow:${(1 + level * LEVEL_GAIN).toFixed(3)};--limit:${props.maxDuration}s"
+      style="--mic:${size};--grow:${(1 + level * LEVEL_GAIN).toFixed(3)};--limit:${props.maxDuration}s"
     >
       <div class="mic-level" aria-hidden="true">
         <span class="blob blob-outer"></span>

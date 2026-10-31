@@ -15,12 +15,20 @@ import { RecordingController, Take } from "./recording";
 import { Outcome, describeTargets, outcomeStatus, sendClip } from "./sending";
 import { iconStyles, micStyles } from "./styles";
 import { tileForm } from "./forms";
-import { checkIcon, closeIcon, warnIcon } from "./ui/icons";
+import { checkIcon, closeIcon, speakerIcon, warnIcon } from "./ui/icons";
 import { mic } from "./ui/mic";
 import { layers, timerText } from "./ui/strip";
 
 /** How long the tile shows how a send went before it is ready again. */
 export const RESULT_MS = 2500;
+
+/**
+ * The square tile's button: most of the space above the text, so it grows
+ * when the tile is resized, and never smaller than at the default 3×2. The
+ * blob around it while recording is wider still and spills into the padding,
+ * hence not all of it.
+ */
+const SQUARE_MIC = "max(52px, min(100cqw, 100cqh) * 0.6)";
 
 /** What the tile's second line says once something has happened. */
 interface Result {
@@ -80,6 +88,15 @@ export class HassBroadcastTile extends LitElement {
         gap: 6px;
         padding: 12px 8px;
         text-align: center;
+      }
+      /* The button's cell is a size container, so the button can follow the
+         tile as it is resized; see SQUARE_MIC. */
+      .tile.square > .slot {
+        container-type: size;
+        align-self: stretch;
+        justify-self: stretch;
+        display: grid;
+        place-items: center;
       }
       .tile.horizontal {
         grid-template-columns: auto 1fr;
@@ -271,11 +288,16 @@ export class HassBroadcastTile extends LitElement {
     }
   }
 
-  private get idleText(): string {
+  /** Where a message goes; "hold to talk" is the button's own label. */
+  private get idleText() {
     if (!this.rec.supported) {
-      return "Needs HTTPS";
+      return html`<span>Needs HTTPS</span>`;
     }
-    return this.targets.length ? "Hold to talk" : "Pick speakers in the card editor";
+    if (!this.targets.length) {
+      return html`<span>Pick speakers in the card editor</span>`;
+    }
+    const speakers = describeTargets(this.hass, this.targets);
+    return html`${speakerIcon}<span title=${speakers}>${speakers}</span>`;
   }
 
   render() {
@@ -303,7 +325,7 @@ export class HassBroadcastTile extends LitElement {
         <div class="tile ${this.shape}" title=${this.rec.supported ? "" : INSECURE_CONTEXT_MESSAGE}>
           <div class="slot">
             ${mic({
-              size: this.shape === "square" ? 52 : 40,
+              size: this.shape === "square" ? SQUARE_MIC : 40,
               recording,
               disabled: !this.rec.supported || sending || this.targets.length === 0,
               recordMode: "push_to_talk",
@@ -317,7 +339,7 @@ export class HassBroadcastTile extends LitElement {
           <div class="text">
             <span class="name">${name}</span>
             ${layers("tile-status", view, {
-              idle: html`<span>${this.idleText}</span>`,
+              idle: this.idleText,
               recording: timerText(formatClock(this.rec.elapsed), warning),
               sending: html`<span>Sending…</span>`,
               sent: resultLayer(checkIcon),

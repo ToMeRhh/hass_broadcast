@@ -3,6 +3,8 @@ import { defineConfig } from "vitest/config";
 
 /** A test that needs a real browser: a rendered card, layout, real DOM. */
 const BROWSER_TESTS = "frontend/test/**/*.browser.test.ts";
+/** Screenshot tests: vitest.visual.config.ts, `npm run test:visual`. */
+const VISUAL_TESTS = "frontend/test/**/*.visual.test.ts";
 
 export default defineConfig({
   test: {
@@ -33,7 +35,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["frontend/test/**/*.test.ts"],
-          exclude: [BROWSER_TESTS],
+          exclude: [BROWSER_TESTS, VISUAL_TESTS],
         },
       },
       {

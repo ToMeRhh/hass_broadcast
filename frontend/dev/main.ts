@@ -29,6 +29,15 @@ const WIDTHS = [
 ];
 
 /**
+ * Tile sizes as sections-view grid cells, columns × rows: each shape's
+ * default first, then the larger sizes a user can drag it to.
+ */
+const TILE_GRIDS: Record<string, [columns: number, rows: number][]> = {
+  square: [[3, 2], [4, 3], [6, 4], [12, 4]],
+  horizontal: [[6, 1], [12, 1]],
+};
+
+/**
  * Off localhost the browser hides getUserMedia, so there is no real recording
  * to be had and the fake is the only way to see the recording UI at all.
  */
@@ -76,6 +85,8 @@ export class DevApp extends LitElement {
     max_duration: 30,
   };
   private tile?: HTMLElement & { setConfig(config: any): void; hass: any };
+  /** The tile's sections-view grid cell, columns × rows. */
+  @state() private tileGrid: [columns: number, rows: number] = [3, 2];
 
   static styles = css`
     :host {
@@ -245,12 +256,11 @@ export class DevApp extends LitElement {
         <div class="frame" style="max-width:${this.width}px">
           ${card}
           <div class="tile-label">Tile</div>
-          <!-- Sized like its sections-view grid cell: 3×2 or 6×1. -->
+          <!-- Sized like its sections-view grid cell: a column pitch of
+               128/3px and a row pitch of 64px, less the 8px gap. -->
           <div
             class="tile-frame"
-            style=${this.tileConfig.shape === "horizontal"
-              ? "width:248px;height:56px"
-              : "width:120px;height:120px"}
+            style="width:${(this.tileGrid[0] * 128) / 3 - 8}px;height:${this.tileGrid[1] * 64 - 8}px"
           >
             ${this.tileElement}
           </div>
@@ -410,8 +420,21 @@ export class DevApp extends LitElement {
           ${this.choice(
             this.tileConfig.shape ?? "square",
             [["square", "Square"], ["horizontal", "Horizontal"]],
-            (shape) => this.setTileConfig({ ...this.tileConfig, shape }),
+            (shape) => {
+              this.tileGrid = TILE_GRIDS[shape][0];
+              this.setTileConfig({ ...this.tileConfig, shape });
+            },
           )}
+          <div style="margin-top:6px">
+            ${this.choice(
+              this.tileGrid.join("×"),
+              TILE_GRIDS[this.tileConfig.shape ?? "square"].map((grid) => [
+                grid.join("×"),
+                grid.join("×"),
+              ]),
+              (size: string) => (this.tileGrid = size.split("×").map(Number) as [number, number]),
+            )}
+          </div>
         </div>
 
         <div class="note">

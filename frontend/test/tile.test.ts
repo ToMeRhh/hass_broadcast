@@ -191,6 +191,14 @@ describe("broadcast tile", () => {
     expect(tile.getCardSize()).toBe(1);
   });
 
+  it("grows the button with a square tile, not a horizontal one", () => {
+    const { tile } = makeTile();
+    expect(renderedText(tile.render())).toContain("--mic:max(52px, min(100cqw, 100cqh) * 0.6)");
+
+    tile.setConfig({ type: "custom:hass-broadcast-tile", shape: "horizontal" });
+    expect(renderedText(tile.render())).toContain("--mic:40px");
+  });
+
   it("accepts every property Lovelace assigns to the cards it hosts", () => {
     const { tile } = makeTile({ shape: "horizontal" });
     expect(() => Object.assign(tile, LOVELACE_ASSIGNS)).not.toThrow();
@@ -221,6 +229,12 @@ describe("broadcast tile", () => {
   it("is called Voice Broadcast when the name is left empty", () => {
     const { tile } = makeTile({ name: " " });
     expect(renderedText(tile.render())).toContain("Voice Broadcast");
+  });
+
+  it("names the speakers it sends to while idle", () => {
+    const { tile } = makeTile();
+    const idle = renderedText(tile.render()).split("layer-idle")[1].split("layer-recording")[0];
+    expect(idle).toContain("media_player.kids, Garage");
   });
 
   it("tells a screen reader which speakers the button talks to", () => {

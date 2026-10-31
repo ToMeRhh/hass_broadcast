@@ -1,3 +1,4 @@
+import { nothing } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LOVELACE_ASSIGNS, renderedText } from "./helpers";
@@ -203,11 +204,14 @@ describe("card broadcasting", () => {
   });
 
   /** A card holding a fresh recording, ready to send to two speakers. */
-  function cardWithClip(response: any): { card: any; calls: any[]; uploads: number } {
+  function cardWithClip(
+    response: any,
+    config: any = {},
+  ): { card: any; calls: any[]; uploads: number } {
     const calls: any[] = [];
     const counter = { uploads: 0 };
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off" });
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off", ...config });
     card.clip = {
       source: { kind: "fresh", blob: new Blob(["x"]) },
       url: "blob:preview",
@@ -257,6 +261,45 @@ describe("card broadcasting", () => {
     await state.card.broadcast();
     expect(state.uploads).toBe(1);
     expect(state.calls[1].message_id).toBe("abc");
+  });
+
+  it("holds a temporary clip when keep_messages is off, and uploads it once", async () => {
+    const state = cardWithClip({ failed: [] }, { keep_messages: false });
+
+    await state.card.broadcast();
+    expect(state.card.clip.source.kind).toBe("temporary");
+    expect(state.card.clip.source.id).toBe("abc");
+    expect(state.card.clip.source.blob).toBeInstanceOf(Blob);
+
+    await state.card.broadcast();
+    expect(state.uploads).toBe(1);
+  });
+
+  it("re-uploads an expired temporary clip instead of calling it deleted", async () => {
+    const state = cardWithClip({ failed: [] }, { keep_messages: false });
+    const blob = new Blob(["x"]);
+    state.card.clip = {
+      ...state.card.clip,
+      source: { kind: "temporary", id: "old", blob },
+    };
+    const ids: string[] = [];
+    let first = true;
+    state.card.hass.connection.sendMessagePromise = async (message: any) => {
+      ids.push(message.message_id);
+      if (first) {
+        first = false;
+        throw { code: "not_found" };
+      }
+      return { failed: [] };
+    };
+
+    await state.card.broadcast();
+
+    expect(state.card.clip).toBeDefined();
+    expect(state.card.status.text).not.toContain("deleted");
+    expect(state.card.status.kind).toBe("info");
+    expect(state.card.clip.source).toEqual({ kind: "temporary", id: "abc", blob });
+    expect(ids).toEqual(["old", "abc"]);
   });
 
   it("does not resurrect a clip cleared mid-upload", async () => {
@@ -375,6 +418,194 @@ describe("card broadcasting", () => {
 
     expect(calls).toHaveLength(0);
     expect(card.rec.phase).toBe("recording");
+  });
+});
+
+describe("card saving", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * A card holding a clip with `keep_messages: false`, so its sends are
+   * temporary and the Save button is offered. Uploads answer "abc".
+   */
+  function cardForSaving(
+    source: any = { kind: "fresh", blob: new Blob(["x"]) },
+    config: any = { keep_messages: false },
+  ): { card: any; calls: any[]; uploads: FormData[] } {
+    const calls: any[] = [];
+    const uploads: FormData[] = [];
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off", ...config });
+    card.clip = { source, url: "blob:preview", duration: 2, peaks: [] };
+    card.selected = ["media_player.kitchen"];
+    card.hass = {
+      auth: { data: { access_token: "tok" } },
+      states: {},
+      connection: {
+        sendMessagePromise: async (message: any) => {
+          calls.push(message);
+          return { failed: [] };
+        },
+      },
+    };
+    vi.stubGlobal("fetch", async (_url: string, init: any) => {
+      uploads.push(init.body);
+      return { ok: true, json: async () => ({ message_id: "abc" }) };
+    });
+    return { card, calls, uploads };
+  }
+
+  /** The button's @click handler: the one function among the template's values. */
+  function clickOf(template: any): () => unknown {
+    return template.values.find((value: unknown) => typeof value === "function");
+  }
+
+  it("offers Save only when the card does not keep messages", () => {
+    expect(renderedText(cardForSaving().card.render())).toContain("Save");
+
+    const keeping = cardForSaving(undefined, {}).card;
+    const text = renderedText(keeping.render());
+    expect(text).not.toContain("Save");
+    expect(text).not.toContain("Saved");
+  });
+
+  it("uploads a fresh clip as a saved recording", async () => {
+    const { card, uploads } = cardForSaving();
+
+    await card.saveClip();
+
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0].get("temporary")).toBeNull();
+    expect(card.clip.source).toEqual({ kind: "stored", id: "abc" });
+    expect(renderedText(card.render())).toContain("Saved");
+  });
+
+  it("promotes a temporary clip without uploading it again", async () => {
+    const { card, calls, uploads } = cardForSaving({
+      kind: "temporary",
+      id: "tmp",
+      blob: new Blob(["x"]),
+    });
+
+    await card.saveClip();
+
+    expect(calls).toContainEqual({ type: "hass_broadcast/save", message_id: "tmp" });
+    expect(uploads).toHaveLength(0);
+    expect(card.clip.source).toEqual({ kind: "stored", id: "tmp" });
+  });
+
+  it("uploads a temporary clip that has already expired", async () => {
+    const { card, uploads } = cardForSaving({
+      kind: "temporary",
+      id: "tmp",
+      blob: new Blob(["x"]),
+    });
+    card.hass.connection.sendMessagePromise = async () => {
+      throw { code: "not_found" };
+    };
+
+    await card.saveClip();
+
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0].get("temporary")).toBeNull();
+    expect(card.clip.source).toEqual({ kind: "stored", id: "abc" });
+  });
+
+  it("reports a failed save and keeps the clip as it was", async () => {
+    const source = { kind: "temporary", id: "tmp", blob: new Blob(["x"]) };
+    const { card } = cardForSaving(source);
+    card.hass.connection.sendMessagePromise = async () => {
+      throw { code: "unknown_error", message: "disk full" };
+    };
+
+    await card.saveClip();
+
+    expect(card.status.kind).toBe("error");
+    expect(card.status.text.startsWith("Could not save:")).toBe(true);
+    expect(card.clip.source).toBe(source);
+    expect(card.saving).toBe(false);
+  });
+
+  it("does not resurrect a clip cleared mid-save", async () => {
+    const { card } = cardForSaving({ kind: "temporary", id: "tmp", blob: new Blob(["x"]) });
+    let resolveSave: (value: unknown) => void = () => {};
+    card.hass.connection.sendMessagePromise = () =>
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      });
+
+    const pending = card.saveClip();
+    card.clearClip();
+    resolveSave({});
+    await pending;
+
+    expect(card.clip).toBeUndefined();
+  });
+
+  it("saves once however often it is tapped, and not mid-send", async () => {
+    const { card, uploads } = cardForSaving();
+
+    const first = card.saveClip();
+    expect(card.saving).toBe(true);
+    await card.saveClip();
+    await first;
+    expect(uploads).toHaveLength(1);
+
+    const sending = cardForSaving().card;
+    sending.rec.phase = "sending";
+    expect(renderedText(sending.parts.save("pill"))).toContain("?disabled=true");
+  });
+
+  it("holds Send while a save is in flight", async () => {
+    const { card, calls } = cardForSaving();
+    let resolveFetch: (value: unknown) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    const pending = card.saveClip();
+    expect(card.canBroadcast).toBe(false);
+    await card.broadcast();
+    expect(calls).toHaveLength(0);
+
+    resolveFetch({ ok: true, json: async () => ({ message_id: "abc" }) });
+    await pending;
+    expect(card.clip.source).toEqual({ kind: "stored", id: "abc" });
+    expect(card.canBroadcast).toBe(true);
+  });
+
+  it("shows a clip from history as already saved, and does nothing on click", async () => {
+    const { card, calls, uploads } = cardForSaving({ kind: "stored", id: "old" });
+
+    const button = card.parts.save("pill");
+    expect(renderedText(button)).toContain("Saved");
+    expect(renderedText(button)).toMatch(/aria-disabled="?true/);
+
+    await clickOf(button)();
+    expect(calls).toHaveLength(0);
+    expect(uploads).toHaveLength(0);
+    expect(card.clip.source).toEqual({ kind: "stored", id: "old" });
+  });
+
+  it("keeps Saved enabled while sending", () => {
+    const { card } = cardForSaving({ kind: "stored", id: "old" });
+    card.rec.phase = "sending";
+
+    expect(renderedText(card.parts.save("pill"))).toContain("?disabled=false");
+  });
+
+  it("offers nothing to save with no clip loaded", () => {
+    const { card } = cardForSaving();
+    card.clip = undefined;
+
+    expect(card.parts.save("pill")).toBe(nothing);
+    expect(card.parts.save("icon")).toBe(nothing);
   });
 });
 
@@ -1115,5 +1346,9 @@ describe("card editor", () => {
     expect(stub.speakers).toEqual(["media_player.a", "media_player.b"]);
     expect(stub.selected).toEqual([]);
     expect(HassBroadcastCard.getStubConfig(undefined).speakers).toEqual([]);
+  });
+
+  it("writes keep_messages so the editor shows it on", () => {
+    expect(HassBroadcastCard.getStubConfig(undefined).keep_messages).toBe(true);
   });
 });

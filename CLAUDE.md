@@ -7,10 +7,10 @@ Lovelace card and play it on media players. Python integration in
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest -q   # integration tests (76)
+.venv/bin/python -m pytest -q   # integration tests (95)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 .venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
-npm test                        # card tests, vitest (251): unit (Node), browser (Chromium)
+npm test                        # card tests, vitest (281): unit (Node), browser (Chromium)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
                                 # /lab: A/B recording-quality presets by ear
@@ -134,10 +134,11 @@ itself pins; bump them together.
 The card's config is flat, one key per editor field: `title`, `layout`
 (`full` | `compact`), `speaker_picker` (`dropdown` | `chips` | `list`),
 `recent_messages` (`off` | `button` | `list`), `volume_control`, `speakers`,
-`selected`, `record_mode`, `max_duration`, `noise_suppression`, `mode`. The
-tile's is `name`, `speakers`, `shape`, `max_duration`, `noise_suppression`,
-`mode`. Nothing is ordered: the layouts
-decide placement. The README's options tables are the reference.
+`selected`, `record_mode`, `max_duration`, `noise_suppression`,
+`keep_messages`, `mode`. The tile's is `name`, `speakers`, `shape`,
+`max_duration`, `noise_suppression`, `keep_messages`, `mode`. Nothing is
+ordered: the layouts decide placement. The README's options tables are the
+reference.
 
 All config interpretation lives in `resolveConfig` in `config.ts` — defaults,
 compact forcing the dropdown, and `speakers` absent (every speaker) versus `[]`

@@ -36,8 +36,8 @@ function makeTile(config: any = {}, failed: string[] = []) {
   vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: async () => ({}) } });
   vi.stubGlobal("AudioWorkletNode", class {});
   const uploads: any[] = [];
-  vi.stubGlobal("fetch", async () => {
-    uploads.push(1);
+  vi.stubGlobal("fetch", async (_url: string, init: any) => {
+    uploads.push(init?.body);
     return { ok: true, json: async () => ({ message_id: "abc" }) };
   });
   const tile: any = new HassBroadcastTile();
@@ -92,6 +92,20 @@ describe("broadcast tile", () => {
     });
     expect(tile.result.kind).toBe("sent");
     expect(tile.rec.phase).toBe("idle");
+  });
+
+  it("uploads temporarily when keep_messages is off", async () => {
+    const { tile, uploads } = makeTile({ keep_messages: false });
+    await tile.rec.onPressStart(press);
+    await tile.rec.onPressEnd();
+    expect(uploads[0].get("temporary")).toBe("1");
+  });
+
+  it("uploads a kept message when keep_messages is absent", async () => {
+    const { tile, uploads } = makeTile();
+    await tile.rec.onPressStart(press);
+    await tile.rec.onPressEnd();
+    expect(uploads[0].get("temporary")).toBeNull();
   });
 
   it("shows the message as sending from the moment the button is released", async () => {
@@ -216,6 +230,10 @@ describe("broadcast tile", () => {
     });
     expect(stub.speakers).toEqual(["media_player.a"]);
     expect(HassBroadcastTile.getStubConfig(undefined).speakers).toEqual([]);
+  });
+
+  it("writes keep_messages so the editor shows it on", () => {
+    expect(HassBroadcastTile.getStubConfig(undefined).keep_messages).toBe(true);
   });
 
   it("starts out with a value in every field the editor shows", () => {

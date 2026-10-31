@@ -15,6 +15,7 @@ describe("resolveConfig defaults", () => {
       recordMode: "push_to_talk",
       maxDuration: 60,
       noiseSuppression: false,
+      keepMessages: true,
       mode: "plain",
     });
   });
@@ -33,6 +34,7 @@ describe("resolveConfig defaults", () => {
         record_mode: "start_stop",
         max_duration: 120,
         noise_suppression: true,
+        keep_messages: false,
         mode: "restore",
       }),
     ).toEqual({
@@ -46,6 +48,7 @@ describe("resolveConfig defaults", () => {
       recordMode: "start_stop",
       maxDuration: 120,
       noiseSuppression: true,
+      keepMessages: false,
       mode: "restore",
     });
   });
@@ -124,6 +127,7 @@ describe("resolveTileConfig", () => {
       shape: "square",
       maxDuration: 60,
       noiseSuppression: false,
+      keepMessages: true,
       mode: "plain",
     });
   });
@@ -137,6 +141,7 @@ describe("resolveTileConfig", () => {
         shape: "horizontal",
         max_duration: 30,
         noise_suppression: true,
+        keep_messages: false,
         mode: "chime",
       }),
     ).toEqual({
@@ -145,6 +150,7 @@ describe("resolveTileConfig", () => {
       shape: "horizontal",
       maxDuration: 30,
       noiseSuppression: true,
+      keepMessages: false,
       mode: "chime",
     });
   });
@@ -170,5 +176,16 @@ describe("clampMaxDuration", () => {
     [999, 300],
   ])("clamps %s to %s", (value, expected) => {
     expect(clampMaxDuration(value)).toBe(expected);
+  });
+});
+
+describe.each([
+  ["card", (c: object) => resolveConfig({ type: "custom:hass-broadcast-card", ...c })],
+  ["tile", (c: object) => resolveTileConfig({ type: "custom:hass-broadcast-tile", ...c })],
+])("keep_messages on the %s", (_, resolve) => {
+  it("keeps unless it is explicitly false", () => {
+    expect(resolve({}).keepMessages).toBe(true);
+    expect(resolve({ keep_messages: true }).keepMessages).toBe(true);
+    expect(resolve({ keep_messages: false }).keepMessages).toBe(false);
   });
 });

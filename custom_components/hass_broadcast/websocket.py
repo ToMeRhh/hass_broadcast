@@ -77,6 +77,49 @@ async def ws_delete(
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): "hass_broadcast/save",
+        vol.Required("message_id"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_save(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Keep a temporary recording in the history.
+
+    Not a Home Assistant service, for the reason `ws_send` gives: card RPC on
+    an opaque storage id belongs on the websocket beside list and delete.
+    """
+    store = async_get_store(hass)
+    if store is None:
+        connection.send_error(msg["id"], "not_setup", "Voice Broadcast is not set up")
+        return
+    message = await store.async_get(msg["message_id"])
+    if message is None:
+        connection.send_error(
+            msg["id"], "not_found", f"Unknown recording {msg['message_id']}"
+        )
+        return
+    if not (connection.user.is_admin or connection.user.id == message.get("user_id")):
+        connection.send_error(
+            msg["id"],
+            "not_authorized",
+            "You do not have permission to save this recording",
+        )
+        return
+    # The recording may have expired since the lookup.
+    if not await store.async_keep(msg["message_id"]):
+        connection.send_error(
+            msg["id"], "not_found", f"Unknown recording {msg['message_id']}"
+        )
+        return
+    connection.send_result(msg["id"], {"saved": True})
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): "hass_broadcast/send",
         vol.Required("message_id"): str,
         vol.Required("targets"): [cv.entity_id],
@@ -112,6 +155,8 @@ async def ws_send(
         )
         return
 
+    # Playing it is use, so a temporary recording gets its full TTL again.
+    await store.async_touch(msg["message_id"])
     failed = await async_broadcast(
         hass, message, msg["targets"], msg["mode"], msg.get("volume")
     )
@@ -123,4 +168,5 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     """Register the websocket commands."""
     websocket_api.async_register_command(hass, ws_list)
     websocket_api.async_register_command(hass, ws_delete)
+    websocket_api.async_register_command(hass, ws_save)
     websocket_api.async_register_command(hass, ws_send)

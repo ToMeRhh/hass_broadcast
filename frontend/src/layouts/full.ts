@@ -13,7 +13,8 @@ import { CardParts } from "./parts";
  *   [ recent messages, when shown as a list      ]
  *
  * The mic never moves. Discard fades in beside it while reviewing; Send is
- * always there and only enabled once there is something to send.
+ * always there and only enabled once there is something to send. When sends
+ * are temporary, Save ends the strip's review and status layers.
  */
 export function fullLayout(parts: CardParts): TemplateResult {
   return html`
@@ -31,9 +32,11 @@ export function fullLayout(parts: CardParts): TemplateResult {
         recording: timerText(parts.timer, parts.timerWarning),
         review: html`
           ${parts.play()} ${parts.waveform("wave-strip")}
-          <span class="clip-length">${parts.clipLength}</span>
+          <span class="clip-length">${parts.clipLength}</span>${parts.save("pill")}
         `,
-        status: statusText(parts.status),
+        // Save is in both layers, at the same right edge, so a send's status
+        // does not take away the way to keep what was just sent.
+        status: html`${statusText(parts.status)}${parts.save("pill")}`,
       })}
 
       <div class="core">

@@ -1,8 +1,15 @@
 """Tests for the websocket commands."""
 
+from datetime import timedelta
+from unittest.mock import patch
+
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.hass_broadcast.const import DOMAIN
 
@@ -164,3 +171,100 @@ async def test_admin_can_delete_any_recording(
     assert msg["success"] is True
     assert msg["result"]["deleted"] is True
     assert await store.async_list() == []
+
+
+async def test_save_keeps_a_temporary_recording(
+    hass: HomeAssistant, setup_entry, hass_ws_client, admin_user
+) -> None:
+    """Saving turns a temporary recording into a listed one."""
+    store = setup_entry.runtime_data.store
+    message_id = await store.async_add(
+        b"a", extension="wav", duration=1, user_id=admin_user, temporary=True
+    )
+    assert await store.async_list() == []
+
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {"id": 1, "type": "hass_broadcast/save", "message_id": message_id}
+    )
+    msg = await client.receive_json()
+
+    assert msg["success"] is True
+    assert msg["result"] == {"saved": True}
+    assert [m["id"] for m in await store.async_list()] == [message_id]
+
+
+async def test_save_unknown_is_not_found(
+    hass: HomeAssistant, setup_entry, hass_ws_client
+) -> None:
+    """Saving an unknown recording is an error."""
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {"id": 1, "type": "hass_broadcast/save", "message_id": "nope"}
+    )
+    msg = await client.receive_json()
+
+    assert msg["success"] is False
+    assert msg["error"]["code"] == "not_found"
+
+
+async def test_non_owner_cannot_save(
+    hass: HomeAssistant, setup_entry, hass_ws_client, hass_read_only_access_token
+) -> None:
+    """Non-admin, non-owner cannot save someone else's recording."""
+    store = setup_entry.runtime_data.store
+    message_id = await store.async_add(
+        b"a",
+        extension="wav",
+        duration=1,
+        user_id="some_other_user_id",
+        temporary=True,
+    )
+
+    client = await hass_ws_client(hass, hass_read_only_access_token)
+    await client.send_json(
+        {"id": 1, "type": "hass_broadcast/save", "message_id": message_id}
+    )
+    msg = await client.receive_json()
+
+    assert msg["success"] is False
+    assert msg["error"]["code"] == "not_authorized"
+    assert await store.async_list() == []
+    stored = await store.async_get(message_id)
+    assert stored is not None
+    assert stored["temporary"] is True
+    store.async_shutdown()
+
+
+async def test_send_extends_a_temporary_deadline(
+    hass: HomeAssistant, setup_entry, hass_ws_client, freezer: FrozenDateTimeFactory
+) -> None:
+    """Sending restarts a temporary recording's TTL, so a replay still works."""
+    store = setup_entry.runtime_data.store
+    message_id = await store.async_add(
+        b"a", extension="wav", duration=1, user_id=None, temporary=True
+    )
+
+    client = await hass_ws_client(hass)
+    with patch(
+        "custom_components.hass_broadcast.websocket.async_broadcast",
+        return_value=[],
+    ):
+        freezer.tick(timedelta(seconds=500))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        await client.send_json(
+            {
+                "id": 1,
+                "type": "hass_broadcast/send",
+                "message_id": message_id,
+                "targets": ["media_player.kitchen"],
+            }
+        )
+        assert (await client.receive_json())["success"] is True
+
+    freezer.tick(timedelta(seconds=400))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert await store.async_get(message_id) is not None
+    store.async_shutdown()

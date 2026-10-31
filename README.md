@@ -163,6 +163,7 @@ max_duration: 30
 | `mode` | `plain` | As for the card |
 | `max_duration` | `60` | As for the card |
 | `noise_suppression` | `false` | As for the card |
+| `keep_messages` | `true` | As for the card, except the tile has no Save button |
 
 The tile is always hold-to-talk: release is what sends, so a tap-to-start
 tile would send the moment you tapped to stop. Its recordings appear in the
@@ -216,6 +217,7 @@ mode: restore
 | `record_mode` | `push_to_talk` | `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop) |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to **5–300**; invalid values fall back to 60 |
 | `noise_suppression` | `false` | The browser's noise suppression on the microphone: filters out a TV, fan or kitchen in the background. Leave it off in a quiet room — it can make a voice sound slightly processed |
+| `keep_messages` | `true` | Adds every message to Recent messages. Off: messages are deleted after they play; the card's Save button keeps one |
 | `mode` | `plain` | `plain`, `chime` or `restore` — see [Behavioural restrictions](#behavioural-restrictions) below |
 
 ## Requirements and restrictions

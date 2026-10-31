@@ -298,6 +298,10 @@ export const cardStyles = [
       pointer-events: auto;
     }
     .status {
+      /* Takes the row, so a Save beside it sits at the same right edge as
+         in the review layer. */
+      flex: 1;
+      min-width: 0;
       overflow: hidden;
       font-size: 0.85em;
       text-overflow: ellipsis;
@@ -334,13 +338,69 @@ export const cardStyles = [
       color: var(--secondary-text-color);
     }
 
+    /* --- save ---------------------------------------------------------- */
+    /* One fixed box whatever it says, so Save turning into Saved moves
+       nothing. */
+    .save {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex: none;
+      box-sizing: border-box;
+      padding: 0;
+      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+      background: none;
+      color: var(--primary-text-color);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+    }
+    .save svg {
+      width: 18px;
+      height: 18px;
+      flex: none;
+    }
+    .save-pill {
+      width: 84px;
+      height: 32px;
+      border-radius: 16px;
+      font-size: 0.85em;
+    }
+    .save-icon {
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 50%;
+    }
+    .save:hover:not([disabled]):not([data-saved="true"]) {
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    }
+    .save[data-saved="true"] {
+      border-color: color-mix(in srgb, var(--primary-color, #03a9f4) 45%, transparent);
+      color: var(--primary-color, #03a9f4);
+      cursor: default;
+    }
+    .save[disabled] {
+      color: var(--disabled-text-color, #bdbdbd);
+      cursor: default;
+    }
+    .save:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
     /* --- waveform ----------------------------------------------------- */
     .wave {
       display: flex;
       flex: 1;
       align-items: center;
       justify-content: space-between;
-      gap: 2px;
+      /* Narrows with the wave, so all of its bars still fit where Save
+         leaves it little room (compact on a phone): a fixed 2px gap alone
+         is wider than such a wave and pushed the bars out past its end. */
+      gap: min(2px, 1.25%);
       min-width: 0;
       padding: 0 6px;
       border-radius: 10px;
@@ -361,7 +421,7 @@ export const cardStyles = [
     }
     .bar {
       flex: 1;
-      min-width: 1px;
+      min-width: 0;
       border-radius: 2px;
       background: var(--divider-color, #ddd);
     }
@@ -483,6 +543,9 @@ export const cardStyles = [
     .full .strip .layer-recording,
     .full .strip .layer-status {
       justify-content: center;
+    }
+    .full .strip .status {
+      text-align: center;
     }
     .full .strip .play {
       width: 36px;

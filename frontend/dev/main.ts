@@ -394,6 +394,11 @@ export class DevApp extends LitElement {
             [["push_to_talk", "Hold to talk"], ["start_stop", "Tap start/stop"]],
             (record_mode) => this.setCardConfig({ ...this.config, record_mode }),
           )}
+          ${this.choice(
+            this.config.keep_messages !== false,
+            [[true, "Keep sent"], [false, "Temporary"]],
+            (keep_messages) => this.setCardConfig({ ...this.config, keep_messages }),
+          )}
         </div>
         <textarea
           aria-label="Card config (JSON)"

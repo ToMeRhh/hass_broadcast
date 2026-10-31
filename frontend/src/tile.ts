@@ -337,6 +337,7 @@ export class HassBroadcastTile extends LitElement {
       speakers: first ? [first] : [],
       shape: "square",
       max_duration: 60,
+      keep_messages: true,
       mode: "plain",
     };
   }
@@ -418,6 +419,7 @@ export class HassBroadcastTile extends LitElement {
         },
         targets: this.targets,
         mode: this.resolved.mode,
+        keep: this.resolved.keepMessages,
       });
       this.showResult(this.describe(outcome));
     } catch (err: any) {

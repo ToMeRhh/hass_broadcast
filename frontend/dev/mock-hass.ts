@@ -3,7 +3,7 @@
  * the card touches:
  *
  *   hass.states                         — entity list, for the speaker picker
- *   hass.connection.sendMessagePromise  — hass_broadcast/list, /delete and /send
+ *   hass.connection.sendMessagePromise  — hass_broadcast/list, /delete, /send and /save
  *   hass.auth.data.access_token         — the bearer token the upload sends
  *   fetch /api/hass_broadcast/upload    — stores the blob, returns an id
  *   fetch /api/hass_broadcast/media/... — serves a stored blob back
@@ -142,6 +142,7 @@ function seedHistory(size: HistorySize): BroadcastMessage[] {
 /** Backing store shared by the fake websocket calls and the fake HTTP endpoints. */
 export class MockBackend {
   messages: BroadcastMessage[] = [];
+  private temporary = new Map<string, BroadcastMessage>();
   private audio = new Map<string, Blob>();
   private counter = 0;
 
@@ -168,18 +169,39 @@ export class MockBackend {
     return new Promise((resolve) => setTimeout(resolve, this.scenario.latency));
   }
 
-  async upload(blob: Blob, duration: number): Promise<string> {
+  async upload(blob: Blob, duration: number, temporary = false): Promise<string> {
     await this.delay();
     if (this.scenario.uploadFails) {
       throw new Error("upload-failed");
     }
     const id = `rec-${++this.counter}`;
     this.audio.set(id, blob);
-    this.messages = [
-      { id, created: new Date().toISOString(), duration, can_delete: true, extension: "wav" },
-      ...this.messages,
-    ];
+    const message: BroadcastMessage = {
+      id,
+      created: new Date().toISOString(),
+      duration,
+      can_delete: true,
+      extension: "wav",
+    };
+    // Temporary uploads stay out of history until saved. The real server
+    // also expires them after playback; here they simply wait.
+    if (temporary) {
+      this.temporary.set(id, message);
+    } else {
+      this.messages = [message, ...this.messages];
+    }
     return id;
+  }
+
+  async save(id: string): Promise<void> {
+    await this.delay();
+    const message = this.temporary.get(id);
+    if (message) {
+      this.temporary.delete(id);
+      this.messages = [message, ...this.messages];
+    } else if (!this.messages.some((m) => m.id === id)) {
+      throw { code: "not_found", message: "not found" };
+    }
   }
 
   mediaFor(id: string): Blob | undefined {
@@ -241,6 +263,10 @@ export function createMockHass(backend: MockBackend): any {
         if (message.type === "hass_broadcast/send") {
           return backend.send(message.targets ?? []);
         }
+        if (message.type === "hass_broadcast/save") {
+          await backend.save(message.message_id);
+          return {};
+        }
         throw new Error(`mock hass: unhandled websocket message ${message.type}`);
       },
     },
@@ -262,6 +288,7 @@ export function installFetchMock(backend: MockBackend, scenario: Scenario): void
         const id = await backend.upload(
           body.get("file") as Blob,
           Number(body.get("duration")),
+          body.get("temporary") !== null,
         );
         return new Response(JSON.stringify({ message_id: id }), {
           status: 200,

@@ -32,17 +32,18 @@ describe("sendClip", () => {
       json: async () => ({ message_id: "abc" }),
     }));
     const calls: any[] = [];
-    const stored: string[] = [];
+    const stored: any[] = [];
 
     const outcome = await sendClip({
       hass: hass([], calls),
       clip: fresh(),
       targets: ["media_player.kitchen"],
       mode: "plain",
-      onStored: (id) => stored.push(id),
+      keep: true,
+      onStored: (source) => stored.push(source),
     });
 
-    expect(stored).toEqual(["abc"]);
+    expect(stored).toEqual([{ kind: "stored", id: "abc" }]);
     expect(calls[0].message_id).toBe("abc");
     expect(outcome).toEqual({ kind: "sent", targets: ["media_player.kitchen"] });
   });
@@ -57,6 +58,7 @@ describe("sendClip", () => {
       clip: { ...fresh(), source: { kind: "stored", id: "old" } },
       targets: ["media_player.kitchen"],
       mode: "chime",
+      keep: true,
       volume: 0.5,
     });
 
@@ -69,11 +71,104 @@ describe("sendClip", () => {
     const targets = ["media_player.kitchen", "media_player.garage"];
 
     expect(
-      await sendClip({ hass: hass(["media_player.garage"]), clip, targets, mode: "plain" }),
+      await sendClip({ hass: hass(["media_player.garage"]), clip, targets, mode: "plain", keep: true }),
     ).toEqual({ kind: "partial", failed: ["media_player.garage"] });
-    expect(await sendClip({ hass: hass(targets), clip, targets, mode: "plain" })).toEqual({
+    expect(await sendClip({ hass: hass(targets), clip, targets, mode: "plain", keep: true })).toEqual({
       kind: "failed",
       failed: targets,
+    });
+  });
+
+  describe("when not keeping", () => {
+    const uploadBodies: FormData[] = [];
+    const stubUpload = (ids: string[]) => {
+      uploadBodies.length = 0;
+      vi.stubGlobal("fetch", async (_url: string, init: any) => {
+        uploadBodies.push(init.body);
+        return { ok: true, json: async () => ({ message_id: ids.shift() }) };
+      });
+    };
+
+    it("uploads temporarily and reports the temporary source", async () => {
+      stubUpload(["abc"]);
+      const clip = fresh();
+      const reported: any[] = [];
+
+      await sendClip({
+        hass: hass([]),
+        clip,
+        targets: ["media_player.kitchen"],
+        mode: "plain",
+        keep: false,
+        onStored: (source) => reported.push(source),
+      });
+
+      expect(uploadBodies[0].get("temporary")).toBe("1");
+      expect(reported).toEqual([
+        { kind: "temporary", id: "abc", blob: (clip.source as any).blob },
+      ]);
+    });
+
+    it("does not mark an upload temporary when keeping", async () => {
+      stubUpload(["abc"]);
+      await sendClip({
+        hass: hass([]),
+        clip: fresh(),
+        targets: ["media_player.kitchen"],
+        mode: "plain",
+        keep: true,
+      });
+      expect(uploadBodies[0].get("temporary")).toBeNull();
+    });
+
+    it("re-uploads a temporary clip the server has forgotten, once", async () => {
+      stubUpload(["new"]);
+      const blob = new Blob(["x"]);
+      const calls: any[] = [];
+      const reported: any[] = [];
+      const h = hass([], calls);
+      let first = true;
+      h.connection.sendMessagePromise = async (message: any) => {
+        calls.push(message);
+        if (first) {
+          first = false;
+          throw { code: "not_found" };
+        }
+        return { failed: [] };
+      };
+
+      const outcome = await sendClip({
+        hass: h,
+        clip: { ...fresh(), source: { kind: "temporary", id: "old", blob } },
+        targets: ["media_player.kitchen"],
+        mode: "plain",
+        keep: false,
+        onStored: (source) => reported.push(source),
+      });
+
+      expect(uploadBodies).toHaveLength(1);
+      expect(uploadBodies[0].get("temporary")).toBe("1");
+      expect(reported).toEqual([{ kind: "temporary", id: "new", blob }]);
+      expect(calls.map((c) => c.message_id)).toEqual(["old", "new"]);
+      expect(outcome).toEqual({ kind: "sent", targets: ["media_player.kitchen"] });
+    });
+
+    it("still rejects when a stored clip is not found", async () => {
+      stubUpload([]);
+      const h = hass([]);
+      h.connection.sendMessagePromise = async () => {
+        throw { code: "not_found" };
+      };
+      await expect(
+        sendClip({
+          hass: h,
+          clip: { ...fresh(), source: { kind: "stored", id: "gone" } },
+          targets: ["media_player.kitchen"],
+          mode: "plain",
+          keep: false,
+        }),
+      ).rejects.toEqual({ code: "not_found" });
+      expect(uploadBodies).toHaveLength(0);
     });
   });
 });

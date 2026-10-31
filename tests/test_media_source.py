@@ -97,3 +97,22 @@ async def test_browse_survives_a_corrupt_timestamp(
     titles = {child.identifier: child.title for child in browse.children}
     assert titles[bad_id] == bad_id
     assert titles[good_id] != good_id
+
+
+async def test_temporary_resolves_but_is_not_browsed(
+    hass: HomeAssistant, setup_entry
+) -> None:
+    """A temporary recording can be played, yet never appears in the browser."""
+    store = setup_entry.runtime_data.store
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=1, user_id=None, temporary=True
+    )
+
+    item = await media_source.async_resolve_media(
+        hass, f"media-source://{DOMAIN}/{message_id}", None
+    )
+    assert item.url == f"/api/hass_broadcast/media/{message_id}.wav"
+
+    browse = await media_source.async_browse_media(hass, f"media-source://{DOMAIN}")
+    assert browse.children == []
+    store.async_shutdown()

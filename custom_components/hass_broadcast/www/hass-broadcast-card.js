@@ -1387,7 +1387,7 @@ var li=Object.defineProperty;var ci=Object.getOwnPropertyDescriptor;var m=(t,e,i
         `},save:a=>{let c=this.clip;if(n.keepMessages||!c)return d;let p=c.source.kind==="stored",h=p?"Saved to history":"Save to history";return l`
           <button
             class="save save-${a}"
-            ?disabled=${this.saving||r}
+            ?disabled=${!p&&(this.saving||r)}
             aria-disabled=${p?"true":"false"}
             data-saved=${p}
             title=${h}

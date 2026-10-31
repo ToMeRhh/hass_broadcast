@@ -593,6 +593,13 @@ describe("card saving", () => {
     expect(card.clip.source).toEqual({ kind: "stored", id: "old" });
   });
 
+  it("keeps Saved enabled while sending", () => {
+    const { card } = cardForSaving({ kind: "stored", id: "old" });
+    card.rec.phase = "sending";
+
+    expect(renderedText(card.parts.save("pill"))).toContain("?disabled=false");
+  });
+
   it("offers nothing to save with no clip loaded", () => {
     const { card } = cardForSaving();
     card.clip = undefined;

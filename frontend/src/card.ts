@@ -650,7 +650,7 @@ export class HassBroadcastCard extends LitElement {
         return html`
           <button
             class="save save-${variant}"
-            ?disabled=${this.saving || sending}
+            ?disabled=${!saved && (this.saving || sending)}
             aria-disabled=${saved ? "true" : "false"}
             data-saved=${saved}
             title=${label}

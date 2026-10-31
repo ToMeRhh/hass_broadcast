@@ -128,9 +128,15 @@ export class HassBroadcastTile extends LitElement {
         grid-column: 1;
       }
       /* The button's cell is a size container, so the button can follow the
-         tile as it is resized; see SQUARE_MIC. */
+         tile as it is resized; see SQUARE_MIC. A size container has no
+         height of its own, so where the tile's is not fixed (the card
+         picker's preview, masonry) the cell would collapse to nothing and
+         the button spill over the name. The floor sits a little under the
+         button's least size, which a 3×2 tile's cell already about matches
+         (50 to 52px, by font), so a tile in a grid is untouched. */
       .tile.square > .slot {
         container-type: size;
+        min-height: 48px;
         align-self: stretch;
         justify-self: stretch;
         display: grid;

@@ -152,6 +152,17 @@ describe("square tile", () => {
     await settleUntil(tile, () => status(tile) === "Sent");
     expect(nameLine()).toBe(before);
   });
+
+  // The card picker's preview, and a masonry dashboard, give the tile no
+  // height of its own.
+  it("keeps the button above the name when its height is not fixed", async () => {
+    const tile = await mountTile({ speakers: ["media_player.kitchen"], shape: "square" }, { width: 360 });
+    const box = (selector: string) => tile.shadowRoot.querySelector(selector)!.getBoundingClientRect();
+
+    expect(mic(tile).getBoundingClientRect().height).toBeGreaterThanOrEqual(52);
+    expect(mic(tile).getBoundingClientRect().bottom).toBeLessThanOrEqual(box(".tile-name").top);
+    expect(box("ha-card").top).toBeLessThanOrEqual(mic(tile).getBoundingClientRect().top);
+  });
 });
 
 describe("square tile, any size", () => {

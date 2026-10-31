@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 from pathlib import Path
 from typing import Any
 import uuid
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, STORAGE_DIR, STORAGE_KEY, STORAGE_VERSION
+from .const import DOMAIN, STORAGE_DIR, STORAGE_KEY, STORAGE_VERSION, TEMPORARY_TTL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,11 +57,23 @@ class BroadcastStore:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._messages: list[dict[str, Any]] = []
         self._dir = Path(hass.config.path(STORAGE_DIR))
+        # Cancel handles for the expiry timers of temporary recordings.
+        self._expiry: dict[str, CALLBACK_TYPE] = {}
 
     async def async_load(self) -> None:
-        """Load metadata and ensure the directory exists."""
+        """Load metadata and ensure the directory exists.
+
+        Temporary recordings do not survive a restart: their timers did not,
+        so nothing would ever expire them.
+        """
         data = await self._store.async_load()
-        self._messages = list(data["messages"]) if data else []
+        messages = list(data["messages"]) if data else []
+        self._messages = [m for m in messages if not m.get("temporary")]
+        leftovers = [m for m in messages if m.get("temporary")]
+        for message in leftovers:
+            await self._async_unlink(self._file_path(message))
+        if leftovers:
+            await self._async_save()
         await self.hass.async_add_executor_job(
             lambda: self._dir.mkdir(parents=True, exist_ok=True)
         )
@@ -79,8 +93,13 @@ class BroadcastStore:
         extension: str,
         duration: float,
         user_id: str | None,
+        temporary: bool = False,
     ) -> str:
-        """Store a recording and return its id."""
+        """Store a recording and return its id.
+
+        A temporary recording is hidden from the list and expires after
+        `TEMPORARY_TTL` unless it is kept first.
+        """
         message_id = uuid.uuid4().hex
         message = {
             "id": message_id,
@@ -89,18 +108,84 @@ class BroadcastStore:
             "user_id": user_id,
             "extension": extension,
         }
+        # Absent on saved entries, so stored data stays version 1.
+        if temporary:
+            message["temporary"] = True
         path = self._file_path(message)
         await self.hass.async_add_executor_job(path.write_bytes, data)
 
         self._messages.append(message)
+        if temporary:
+            self._schedule_expiry(message_id)
         await self._async_prune()
         await self._async_save()
         return message_id
 
+    def _schedule_expiry(self, message_id: str) -> None:
+        """(Re)start the expiry timer for a temporary recording."""
+        self._cancel_expiry(message_id)
+
+        # @callback, or Home Assistant would run it in the executor, where
+        # creating a task is not allowed.
+        @callback
+        def _expire(_now: datetime) -> None:
+            self.hass.async_create_task(self._async_expire(message_id))
+
+        self._expiry[message_id] = async_call_later(self.hass, TEMPORARY_TTL, _expire)
+
+    def _cancel_expiry(self, message_id: str) -> None:
+        """Cancel a recording's expiry timer, if it has one."""
+        if cancel := self._expiry.pop(message_id, None):
+            cancel()
+
+    async def _async_expire(self, message_id: str) -> None:
+        """Delete a recording whose timer ran out, if it is still temporary."""
+        self._expiry.pop(message_id, None)
+        message = await self.async_get(message_id)
+        if message is not None and message.get("temporary"):
+            await self.async_delete(message_id)
+
+    async def async_touch(self, message_id: str) -> None:
+        """Restart a temporary recording's TTL; a no-op for anything else."""
+        message = await self.async_get(message_id)
+        if message is not None and message.get("temporary"):
+            self._schedule_expiry(message_id)
+
+    async def async_keep(self, message_id: str) -> bool:
+        """Save a temporary recording as the newest one.
+
+        Returns False for an unknown id. Keeping a recording that is already
+        saved changes nothing and returns True.
+        """
+        message = await self.async_get(message_id)
+        if message is None:
+            return False
+        if not message.get("temporary"):
+            return True
+        self._cancel_expiry(message_id)
+        del message["temporary"]
+        # Newest position, as if it had been recorded just now.
+        self._messages.remove(message)
+        self._messages.append(message)
+        await self._async_prune()
+        await self._async_save()
+        return True
+
+    @callback
+    def async_shutdown(self) -> None:
+        """Cancel every expiry timer."""
+        for cancel in self._expiry.values():
+            cancel()
+        self._expiry.clear()
+
     async def _async_prune(self) -> None:
-        """Drop the oldest recordings beyond the retention limit."""
-        while len(self._messages) > self.retention:
-            oldest = self._messages.pop(0)
+        """Drop the oldest saved recordings beyond the retention limit.
+
+        Temporaries neither count nor get dropped: they have their own timer.
+        """
+        saved = [m for m in self._messages if not m.get("temporary")]
+        for oldest in saved[: max(0, len(saved) - self.retention)]:
+            self._messages.remove(oldest)
             await self._async_unlink(self._file_path(oldest))
 
     async def _async_unlink(self, path: Path) -> None:
@@ -117,8 +202,8 @@ class BroadcastStore:
         await self.hass.async_add_executor_job(_unlink)
 
     async def async_list(self) -> list[dict[str, Any]]:
-        """Return metadata, newest first."""
-        return list(reversed(self._messages))
+        """Return saved metadata, newest first; temporaries are not listed."""
+        return [m for m in reversed(self._messages) if not m.get("temporary")]
 
     async def async_get(self, message_id: str) -> dict[str, Any] | None:
         """Return one metadata entry."""
@@ -134,6 +219,7 @@ class BroadcastStore:
         message = await self.async_get(message_id)
         if message is None:
             return False
+        self._cancel_expiry(message_id)
         await self._async_unlink(self._file_path(message))
         self._messages.remove(message)
         await self._async_save()
@@ -147,6 +233,7 @@ class BroadcastStore:
         `<config>/hass_broadcast/` and its metadata in
         `.storage/hass_broadcast` -- and therefore in every subsequent backup.
         """
+        self.async_shutdown()
         for message in list(self._messages):
             await self._async_unlink(self._file_path(message))
         self._messages = []

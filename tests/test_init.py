@@ -1,10 +1,15 @@
 """Tests for hass_broadcast setup."""
 
+from datetime import timedelta
 from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.hass_broadcast.const import DOMAIN, STORAGE_DIR, STORAGE_KEY
 from custom_components.hass_broadcast.storage import async_get_store
@@ -75,3 +80,24 @@ async def test_removing_the_entry_deletes_the_recordings(
     # shared with the rest of the session.)
     assert not recording.exists()
     assert STORAGE_KEY not in hass_storage
+
+
+async def test_unload_cancels_expiry_timers(hass: HomeAssistant) -> None:
+    """Unloading leaves no timer: the next load purges, not a stray callback."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    store = entry.runtime_data.store
+    message_id = await store.async_add(
+        b"t", extension="wav", duration=1, user_id=None, temporary=True
+    )
+    path = await store.async_path(message_id)
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=601))
+    await hass.async_block_till_done()
+
+    assert path is not None
+    assert path.exists()

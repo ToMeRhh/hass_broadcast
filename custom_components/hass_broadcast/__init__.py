@@ -166,6 +166,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: BroadcastConfigEntry) ->
 
 async def async_unload_entry(hass: HomeAssistant, entry: BroadcastConfigEntry) -> bool:
     """Unload a config entry; Home Assistant drops its runtime_data."""
+    # Expiry timers live on the event loop, not in runtime_data, so dropping
+    # the store would leave them firing at a store nobody uses.
+    entry.runtime_data.store.async_shutdown()
     return True
 
 

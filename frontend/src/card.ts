@@ -342,7 +342,10 @@ export class HassBroadcastCard extends LitElement {
     return (
       this.clip !== undefined &&
       this.targets.length > 0 &&
-      this.rec.phase === "idle"
+      this.rec.phase === "idle" &&
+      // A send started mid-save swaps in a temporary source, so the save's
+      // result would be dropped and the clip saved twice on a second tap.
+      !this.saving
     );
   }
 
@@ -353,7 +356,7 @@ export class HassBroadcastCard extends LitElement {
     // phase to "sending" and then "idle" while the recorder is still active,
     // and every stop path is gated on phase === "recording" — the recorder
     // would never be told to stop.
-    if (this.rec.phase !== "idle") {
+    if (this.rec.phase !== "idle" || this.saving) {
       return;
     }
     const clip = this.clip;

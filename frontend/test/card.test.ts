@@ -558,6 +558,28 @@ describe("card saving", () => {
     expect(renderedText(sending.parts.save("pill"))).toContain("?disabled=true");
   });
 
+  it("holds Send while a save is in flight", async () => {
+    const { card, calls } = cardForSaving();
+    let resolveFetch: (value: unknown) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    const pending = card.saveClip();
+    expect(card.canBroadcast).toBe(false);
+    await card.broadcast();
+    expect(calls).toHaveLength(0);
+
+    resolveFetch({ ok: true, json: async () => ({ message_id: "abc" }) });
+    await pending;
+    expect(card.clip.source).toEqual({ kind: "stored", id: "abc" });
+    expect(card.canBroadcast).toBe(true);
+  });
+
   it("shows a clip from history as already saved, and does nothing on click", async () => {
     const { card, calls, uploads } = cardForSaving({ kind: "stored", id: "old" });
 

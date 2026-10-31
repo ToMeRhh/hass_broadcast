@@ -10,7 +10,7 @@ Lovelace card and play it on media players. Python integration in
 .venv/bin/python -m pytest -q   # integration tests (95)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .   # Python lint, format
 .venv/bin/mypy                  # strict, over custom_components/hass_broadcast/
-npm test                        # card tests, vitest (289): unit (Node), browser (Chromium)
+npm test                        # card tests, vitest (281): unit (Node), browser (Chromium)
 npm run build                   # bundle the card into custom_components/hass_broadcast/www/
 npm run dev                     # card dev harness, all interfaces :8099 (frontend/dev/README.md)
                                 # /lab: A/B recording-quality presets by ear

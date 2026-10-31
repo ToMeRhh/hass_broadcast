@@ -60,7 +60,7 @@ export interface VolumeButtonProps extends VolumeControlProps {
  */
 export function volumeButton(props: VolumeButtonProps): TemplateResult {
   return html`
-    <div class="popover-wrap">
+    <div class="popover-wrap" data-popover="volume">
       <button
         class="icon"
         data-active=${props.enabled}

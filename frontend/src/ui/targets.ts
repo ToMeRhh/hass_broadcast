@@ -113,7 +113,7 @@ export function targetList(props: TargetProps): TemplateResult {
 
   if (props.style === "dropdown") {
     return html`
-      <div class="pill-wrap">
+      <div class="pill-wrap" data-popover="picker">
         <button
           class="pill"
           aria-expanded=${props.open}

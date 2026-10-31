@@ -160,7 +160,62 @@ export class HassBroadcastCard extends LitElement {
     void this.refreshHistory();
   }
 
+  /**
+   * Light dismiss for the popovers: a press anywhere outside the open one —
+   * elsewhere on the card or on the dashboard — closes it, as Escape does.
+   * The press is not swallowed, so tapping Send or the mic with the speaker
+   * dropdown open still sends or records. Each wrap carries `data-popover`;
+   * a press inside one leaves that one alone, so its own button still
+   * toggles it and its rows and slider still work.
+   */
+  private onDocumentPointerDown = (event: PointerEvent): void => {
+    const hit = event
+      .composedPath()
+      .map((node) => (node as HTMLElement).dataset?.popover)
+      .find((name) => name !== undefined);
+    if (hit !== "picker") {
+      this.pickerOpen = false;
+    }
+    if (hit !== "volume") {
+      this.volumeOpen = false;
+    }
+    if (hit !== "menu") {
+      this.menuOpen = false;
+    }
+  };
+
+  private onDocumentKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      this.closePopovers();
+    }
+  };
+
+  private listening = false;
+
+  private closePopovers(): void {
+    this.pickerOpen = false;
+    this.volumeOpen = false;
+    this.menuOpen = false;
+  }
+
+  /** The document listeners, attached only while a popover is open. */
+  private listen(on: boolean): void {
+    if (on === this.listening) {
+      return;
+    }
+    this.listening = on;
+    // Capture, so a handler that stops propagation cannot keep a menu open.
+    if (on) {
+      document.addEventListener("pointerdown", this.onDocumentPointerDown, true);
+      document.addEventListener("keydown", this.onDocumentKeyDown, true);
+    } else {
+      document.removeEventListener("pointerdown", this.onDocumentPointerDown, true);
+      document.removeEventListener("keydown", this.onDocumentKeyDown, true);
+    }
+  }
+
   protected updated(): void {
+    this.listen(this.pickerOpen || this.volumeOpen || this.menuOpen);
     // `historyOpen` renders the <dialog> element; showModal() is what puts it
     // in the top layer and brings the backdrop, Escape and focus trap with it.
     // A bare `open` attribute renders the same markup inline instead, so the
@@ -187,8 +242,8 @@ export class HassBroadcastCard extends LitElement {
     // Same reason: a dialog left open would showModal() itself back onto the
     // screen the next time connectedCallback runs on this instance.
     this.historyOpen = false;
-    this.menuOpen = false;
-    this.volumeOpen = false;
+    this.closePopovers();
+    this.listen(false);
   }
 
   private async refreshHistory(): Promise<void> {

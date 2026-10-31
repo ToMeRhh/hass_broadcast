@@ -5,6 +5,9 @@ import { LOVELACE_ASSIGNS, renderedText } from "./helpers";
 // Same Node-only setup as card.test.ts: the module registers itself on
 // `window`, and nothing here needs a real DOM.
 (globalThis as any).window = globalThis;
+// The tile listens on window for Escape; Node's globalThis has no events.
+(globalThis as any).addEventListener ??= () => {};
+(globalThis as any).removeEventListener ??= () => {};
 
 const { HassBroadcastTile, RESULT_MS } = await import("../src/tile");
 
@@ -150,6 +153,19 @@ describe("broadcast tile", () => {
     expect(tile.result).toMatchObject({ kind: "failed", text: "Not sent" });
     expect(tile.result.detail).toMatch(/500/);
     expect(tile.rec.phase).toBe("idle");
+  });
+
+  it("sends nothing when the take is discarded, and says so", async () => {
+    const { tile, calls, uploads } = makeTile();
+
+    await tile.rec.onPressStart(press);
+    await tile.rec.onPressEnd(true);
+
+    expect(uploads).toHaveLength(0);
+    expect(calls).toHaveLength(0);
+    expect(tile.result).toMatchObject({ kind: "discarded", text: "Discarded" });
+    vi.advanceTimersByTime(RESULT_MS);
+    expect(tile.result).toBeUndefined();
   });
 
   it("does not send a tap", async () => {

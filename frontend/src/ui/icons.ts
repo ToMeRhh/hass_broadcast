@@ -31,6 +31,9 @@ export const speakerIcon = icon(
 );
 export const checkIcon = icon("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
 export const warnIcon = icon("M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z");
+export const binIcon = icon(
+  "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5z",
+);
 export const chevronIcon = icon("M7 10l5 5 5-5z");
 export const bookmarkIcon = icon("M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z");
 export const bookmarkOutlineIcon = icon(

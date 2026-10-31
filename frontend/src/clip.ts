@@ -5,10 +5,12 @@ import { BAR_COUNT, normalize, peaksOf, resample } from "./levels";
  * Where a loaded clip's audio came from, which is the only thing that
  * differs between a message just recorded and one picked from history: a
  * fresh one has to be uploaded before it can be broadcast, a stored one is
- * already on the server and must never be uploaded again.
+ * already on the server and must never be uploaded again. A temporary one is
+ * uploaded but expires on the server, so it keeps its blob to upload again.
  */
 export type ClipSource =
   | { kind: "fresh"; blob: Blob }
+  | { kind: "temporary"; id: string; blob: Blob }
   | { kind: "stored"; id: string };
 
 /** The single recording the card currently holds. */
@@ -35,9 +37,14 @@ export function freshClip(
   };
 }
 
-/** The message id a stored clip broadcasts directly, or undefined if fresh. */
+/** The message id a stored clip broadcasts directly, or undefined if not stored. */
 export function storedId(clip: Clip): string | undefined {
   return clip.source.kind === "stored" ? clip.source.id : undefined;
+}
+
+/** The id of a clip that is on the server, saved or temporary. */
+export function uploadedId(clip: Clip): string | undefined {
+  return clip.source.kind === "fresh" ? undefined : clip.source.id;
 }
 
 export type PeakDecoder = (blob: Blob, count: number) => Promise<number[]>;

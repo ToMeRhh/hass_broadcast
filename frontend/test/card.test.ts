@@ -203,11 +203,14 @@ describe("card broadcasting", () => {
   });
 
   /** A card holding a fresh recording, ready to send to two speakers. */
-  function cardWithClip(response: any): { card: any; calls: any[]; uploads: number } {
+  function cardWithClip(
+    response: any,
+    config: any = {},
+  ): { card: any; calls: any[]; uploads: number } {
     const calls: any[] = [];
     const counter = { uploads: 0 };
     const card = newCard();
-    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off" });
+    card.setConfig({ type: "custom:hass-broadcast-card", recent_messages: "off", ...config });
     card.clip = {
       source: { kind: "fresh", blob: new Blob(["x"]) },
       url: "blob:preview",
@@ -257,6 +260,45 @@ describe("card broadcasting", () => {
     await state.card.broadcast();
     expect(state.uploads).toBe(1);
     expect(state.calls[1].message_id).toBe("abc");
+  });
+
+  it("holds a temporary clip when keep_messages is off, and uploads it once", async () => {
+    const state = cardWithClip({ failed: [] }, { keep_messages: false });
+
+    await state.card.broadcast();
+    expect(state.card.clip.source.kind).toBe("temporary");
+    expect(state.card.clip.source.id).toBe("abc");
+    expect(state.card.clip.source.blob).toBeInstanceOf(Blob);
+
+    await state.card.broadcast();
+    expect(state.uploads).toBe(1);
+  });
+
+  it("re-uploads an expired temporary clip instead of calling it deleted", async () => {
+    const state = cardWithClip({ failed: [] }, { keep_messages: false });
+    const blob = new Blob(["x"]);
+    state.card.clip = {
+      ...state.card.clip,
+      source: { kind: "temporary", id: "old", blob },
+    };
+    const ids: string[] = [];
+    let first = true;
+    state.card.hass.connection.sendMessagePromise = async (message: any) => {
+      ids.push(message.message_id);
+      if (first) {
+        first = false;
+        throw { code: "not_found" };
+      }
+      return { failed: [] };
+    };
+
+    await state.card.broadcast();
+
+    expect(state.card.clip).toBeDefined();
+    expect(state.card.status.text).not.toContain("deleted");
+    expect(state.card.status.kind).toBe("info");
+    expect(state.card.clip.source).toEqual({ kind: "temporary", id: "abc", blob });
+    expect(ids).toEqual(["old", "abc"]);
   });
 
   it("does not resurrect a clip cleared mid-upload", async () => {

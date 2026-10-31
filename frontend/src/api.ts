@@ -15,10 +15,14 @@ export async function uploadRecording(
   hass: any,
   blob: Blob,
   duration: number,
+  temporary = false,
 ): Promise<string> {
   const body = new FormData();
   body.append("file", blob, "recording.wav");
   body.append("duration", String(duration));
+  if (temporary) {
+    body.append("temporary", "1");
+  }
 
   const response = await fetch("/api/hass_broadcast/upload", {
     method: "POST",
@@ -52,6 +56,18 @@ export async function deleteMessage(hass: any, id: string): Promise<boolean> {
     message_id: id,
   });
   return result.deleted;
+}
+
+/**
+ * Promotes a temporary recording to a saved one. Rejects with the websocket
+ * error object (e.g. `{ code: "not_found" }` once it has expired), as
+ * `deleteMessage` does.
+ */
+export async function saveRecording(hass: any, id: string): Promise<void> {
+  await hass.connection.sendMessagePromise({
+    type: "hass_broadcast/save",
+    message_id: id,
+  });
 }
 
 /** Per-target outcome of one broadcast. `failed` lists the entity ids that

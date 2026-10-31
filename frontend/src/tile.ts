@@ -246,6 +246,7 @@ export class HassBroadcastTile extends LitElement {
         },
         targets: this.targets,
         mode: this.resolved.mode,
+        keep: this.resolved.keepMessages,
       });
       this.showResult(this.describe(outcome));
     } catch (err: any) {

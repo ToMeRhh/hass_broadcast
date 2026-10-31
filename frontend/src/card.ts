@@ -363,13 +363,14 @@ export class HassBroadcastCard extends LitElement {
         targets,
         mode: this.resolved.mode,
         volume: this.volumeOverride ? this.volume : undefined,
-        onStored: (id) => {
+        keep: this.resolved.keepMessages,
+        onStored: (source) => {
           // The upload can outlive the clip it was for: a Discard tap
           // mid-upload runs clearClip() before this resolves. Only rewrite
           // the source if this is still the clip the card is holding, or a
           // cleared clip comes back holding an already-revoked object URL.
           if (this.clip === clip) {
-            this.clip = { ...clip, source: { kind: "stored", id } };
+            this.clip = { ...clip, source };
           }
         },
       });

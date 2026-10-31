@@ -254,15 +254,32 @@ integration must not write to them. See `tests/test_card_resource.py`.
 
 ## Releases and HACS
 
-HACS reads the version from `manifest.json`. GitHub releases are optional: with
-none published, HACS serves the repository's default branch, so a version bump on
-`master` is what makes HACS offer an update. A bare git tag is not a release and
-HACS does not see it — `v0.1.0` is one such orphan tag, predating any release.
+HACS offers the newest GitHub release; it falls back to the default branch only
+for a repository with none, which this one no longer is. So merging to `master`
+reaches no one, and `master` is the staging branch: there is no `next` or
+`develop`. A bare git tag is not a release and HACS does not see it — `v0.1.0`
+is one such orphan tag, predating any release.
 
 To cut a release: **Actions → Release → Run workflow**, choose `patch`/`minor`/
-`major`. It runs both test suites, rebuilds the bundle, bumps `manifest.json`,
-commits `chore: release vX.Y.Z`, pushes an annotated tag, and publishes a GitHub
-release with generated notes and `hass_broadcast.zip` attached.
+`major` and a channel, `stable` or `beta`. It runs both test suites, rebuilds
+the bundle, bumps `manifest.json`, commits `chore: release vX.Y.Z`, pushes an
+annotated tag, and publishes a GitHub release with `hass_broadcast.zip` attached
+and notes generated since the last stable release.
+
+The process: feature branch → PR → `master`; then a beta, installed on the
+maintainer's own Home Assistant through HACS and lived with; fixes go through
+PRs into further betas; then the stable release. A beta is a GitHub
+pre-release, versioned `X.Y.ZbN`, and HACS offers it only to those who ticked
+**Show beta versions** in the integration's Redownload dialog. They are offered
+stable releases too, since HACS picks the newest release of either kind, so
+beta users are never behind stable.
+
+The workflow computes the version from the tags, not from `manifest.json`:
+`bump` applies to the last stable release, so the betas of 0.9.0 and 0.9.0
+itself are all run with `minor`. It refuses a run that would release something
+older than a beta already out (the wrong `bump`), and lets a larger `bump`
+supersede a pending beta (0.8.3b1 → 0.9.0b1). Every beta changes the version and
+so the card's `?v=` URL, so cache busting works for betas as for releases.
 
 `hacs.json` sets `zip_release`, so HACS installs that zip (the contents of
 `custom_components/hass_broadcast/`, at the zip root) instead of the repository

@@ -33,7 +33,7 @@ export function compactLayout(parts: CardParts): TemplateResult {
           })}
           ${menu
             ? html`
-                <div class="popover-wrap slot">
+                <div class="popover-wrap slot" data-popover="menu">
                   <button
                     class="icon"
                     title="More"

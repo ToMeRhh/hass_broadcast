@@ -77,8 +77,30 @@ export function historyDialog(
   now: Date = props.now ?? new Date(),
 ): TemplateResult {
   const close = () => props.onDialogOpenChange?.(false);
+  // A click on the backdrop targets the dialog itself, but so does one on its
+  // padding, hence the box check.
+  const onClick = (event: MouseEvent) => {
+    const dialog = event.currentTarget as HTMLDialogElement;
+    if (event.target !== dialog) {
+      return;
+    }
+    const box = dialog.getBoundingClientRect();
+    if (
+      event.clientX < box.left ||
+      event.clientX > box.right ||
+      event.clientY < box.top ||
+      event.clientY > box.bottom
+    ) {
+      close();
+    }
+  };
   return html`
-    <dialog class="history-dialog" @close=${close} @cancel=${close}>
+    <dialog
+      class="history-dialog"
+      @close=${close}
+      @cancel=${close}
+      @click=${onClick}
+    >
       <div class="dialog-head">
         <span>Recent messages</span>
         <button class="icon" title="Close" aria-label="Close" @click=${close}>✕</button>

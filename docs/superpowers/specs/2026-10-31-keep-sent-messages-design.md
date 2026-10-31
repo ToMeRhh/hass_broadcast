@@ -58,8 +58,19 @@ rejected.
 
 - `resolveConfig` / `resolveTileConfig`: `keepMessages = config.keep_messages
   !== false`. If the key is absent, messages are kept, as they are today.
-- `getStubConfig` for both cards writes `keep_messages: false`, so any card
-  added after this release starts with history off.
+- `getStubConfig` for both cards writes `keep_messages: true`. New cards keep
+  messages, like existing ones; turning history off is a deliberate choice
+  per card. Writing `true` rather than leaving the key out follows the stubs'
+  existing habit of spelling out on-by-default values (`volume_control: true`,
+  `mode: plain`), so the YAML shows the setting exists. Behaviour is the same
+  either way: absent and `true` both resolve to keep.
+- So every path resolves to keep unless someone switches it off: existing
+  cards (absent), new cards (`true`), and old cached bundles (no `temporary`
+  field on upload). Only an explicit `false`, which the editor writes when the
+  switch is turned off, changes anything.
+- Rolling back to an older release is safe: `setConfig` does no key
+  validation, so an older card ignores `keep_messages` and saves, as it
+  always did.
 - Server: the upload takes an optional `temporary` form field. If it's
   absent, the upload is a normal saved recording. That keeps old cached
   bundles working. The Android WebView can keep serving the previous bundle
@@ -205,7 +216,7 @@ Nothing else changes.
   - an upload without the field is saved, so old bundles still work.
 - Card tests:
   - `resolveConfig` defaults (absent → keep, `false` → don't);
-  - stub configs write `false`;
+  - stub configs write `true`;
   - the temporary flag is sent;
   - the Save/Saved states;
   - save on a fresh, temporary and expired clip;

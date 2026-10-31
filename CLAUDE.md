@@ -65,6 +65,15 @@ tests), freeze timers and `Date` for any state that would otherwise tick,
 and `shot()` pauses every animation 3 s in rather than using Playwright's
 disabled mode, which captures the level blob as a square.
 
+`frontend/test/a11y.browser.test.ts` runs axe over the card and tile in each
+state and theme, and fails on any `serious` or `critical` violation not in
+its `KNOWN` list; an entry there names the element exactly and the issue that
+decides it, so a new violation of the same rule still fails. It also drives
+the record controls from the keyboard alone. Recording is announced by the
+record button's name changing ("Recording — release to stop"), deliberately
+not by a live region: a screen reader speaking "Recording" while the
+microphone is open would land in the message.
+
 `npm run dev` renders the real card and tile against a mocked `hass`, with
 live reload and switches for the states that are painful to reach on a live
 install (mic denied, partial broadcast failure, empty history, latency). Real

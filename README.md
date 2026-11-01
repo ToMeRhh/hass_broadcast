@@ -12,7 +12,7 @@ Assistant, in two cards:
 
 <div align="center">
 
-| <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="440"> | <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/tile-light.png?raw=true" alt="The broadcast tile while it records: a pulsing record button, a running timer, and a Discard bin to let go on" width="220"> |
+| <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/card-light.png?raw=true" alt="The Voice Broadcast card: a recorded message's waveform above a large record button, with Discard and Send beside it and a speaker picker below" width="440"> | <img src="https://github.com/ToMeRhh/hass_broadcast/blob/master/docs/images/tile-light.png?raw=true" alt="The broadcast tile, idle: a large record button above its name and the speakers it plays on" width="220"> |
 | :---: | :---: |
 | **The card**: record, check, choose who hears it. | **The tile**: hold, speak, let go. Done. |
 

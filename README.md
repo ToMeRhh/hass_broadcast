@@ -2,7 +2,7 @@
 
 # Voice Broadcast for Home Assistant
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz/)
 [![Home Assistant 2024.12+](https://img.shields.io/badge/Home%20Assistant-2024.12%2B-41BDF5.svg)](https://www.home-assistant.io/)
 [![CI](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml/badge.svg)](https://github.com/ToMeRhh/hass_broadcast/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -43,8 +43,7 @@ and nothing else: no entities, no services.
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ToMeRhh&repository=hass_broadcast&category=integration)
 
-1. Click the button above (or in HACS, add `https://github.com/ToMeRhh/hass_broadcast`
-   under **⋮ → Custom repositories** as an **Integration**).
+1. Click the button above, or search HACS for **Voice Broadcast**.
 2. Install **Voice Broadcast** and restart Home Assistant.
 3. Add the integration under **Settings → Devices & services → Add integration**
    ([open it directly](https://my.home-assistant.io/redirect/config_flow_start/?domain=hass_broadcast)).

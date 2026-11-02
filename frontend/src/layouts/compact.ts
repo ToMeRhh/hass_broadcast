@@ -60,14 +60,18 @@ export function compactLayout(parts: CardParts): TemplateResult {
   `;
 }
 
+/**
+ * What the ⋮ button discloses. Not an ARIA menu: a menu may hold only menu
+ * items, and this one holds the volume toggle and slider, so its buttons stay
+ * plain buttons and the ⋮ button says it is open with aria-expanded.
+ */
 function menuPanel(parts: CardParts): TemplateResult {
   return html`
-    <div class="popover menu" role="menu">
+    <div class="popover menu">
       ${parts.recentMessages !== "off"
         ? html`
             <button
               class="menu-item"
-              role="menuitem"
               @click=${() => {
                 parts.onMenuOpenChange(false);
                 parts.onOpenHistory();

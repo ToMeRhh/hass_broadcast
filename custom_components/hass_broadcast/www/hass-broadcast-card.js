@@ -1266,11 +1266,10 @@ var di=Object.defineProperty;var pi=Object.getOwnPropertyDescriptor;var m=(t,e,i
       ${t.historyDialog()}
     </div>
   `}function Yi(t){return l`
-    <div class="popover menu" role="menu">
+    <div class="popover menu">
       ${t.recentMessages!=="off"?l`
             <button
               class="menu-item"
-              role="menuitem"
               @click=${()=>{t.onMenuOpenChange(!1),t.onOpenHistory()}}
             >
               ${$e}<span>Recent messages</span>

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import fields
+from pathlib import Path
 from typing import Any
 
 from homeassistant.components.media_player import MediaClass, MediaType
@@ -18,6 +20,26 @@ from homeassistant.util import dt as dt_util
 from .const import CHIME_ID, CHIME_URL, DOMAIN
 from .http import CONTENT_TYPES
 from .storage import async_get_store
+
+CHIME_PATH = Path(__file__).parent / "chime.wav"
+
+# `PlayMedia.path` is Home Assistant 2025.10+. Older releases reject the
+# keyword, and their players only ever fetch the URL anyway.
+_PLAY_MEDIA_HAS_PATH = any(field.name == "path" for field in fields(PlayMedia))
+
+
+def _play_media(url: str, mime_type: str, path: Path) -> PlayMedia:
+    """Return a PlayMedia that also names the file on disk, where supported.
+
+    The Apple TV integration (2026.6+), which is how HomePods are reached,
+    streams `path` from disk when it is set. Without it, pyatv downloads the
+    URL from Home Assistant itself and verifies TLS against the system's CA
+    store, so on an install served over https with a locally issued
+    certificate nothing plays. Every other player ignores `path`.
+    """
+    if _PLAY_MEDIA_HAS_PATH:
+        return PlayMedia(url, mime_type, path=path)
+    return PlayMedia(url, mime_type)
 
 
 def _title(message: dict[str, Any]) -> str:
@@ -53,7 +75,7 @@ class BroadcastMediaSource(MediaSource):
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve a recording, or the chime, to a playable URL."""
         if item.identifier == CHIME_ID:
-            return PlayMedia(CHIME_URL, "audio/wav")
+            return _play_media(CHIME_URL, "audio/wav", CHIME_PATH)
 
         store = async_get_store(self.hass)
         if store is None:
@@ -63,10 +85,15 @@ class BroadcastMediaSource(MediaSource):
         if message is None:
             raise Unresolvable(f"Unknown recording {item.identifier}")
 
+        path = await store.async_path(message["id"])
+        if path is None:
+            raise Unresolvable(f"Unknown recording {item.identifier}")
+
         extension = message["extension"]
-        return PlayMedia(
+        return _play_media(
             f"/api/hass_broadcast/media/{message['id']}.{extension}",
             CONTENT_TYPES.get(extension, "audio/wav"),
+            path,
         )
 
     async def async_browse_media(self, item: MediaSourceItem) -> BrowseMediaSource:

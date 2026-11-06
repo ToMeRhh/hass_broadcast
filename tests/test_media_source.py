@@ -38,6 +38,30 @@ async def test_resolves_to_signable_relative_url(
     assert item.mime_type == "audio/wav"
 
 
+async def test_resolves_with_the_file_on_disk(hass: HomeAssistant, setup_entry) -> None:
+    """Resolution also names the stored file, so a player can skip the URL.
+
+    The Apple TV integration (HomePods included) streams `path` straight
+    from disk when it is set, and otherwise has pyatv download the URL from
+    Home Assistant itself. That download verifies TLS against the system's
+    CA store, so on an install served over https with a locally issued
+    certificate it fails with CERTIFICATE_VERIFY_FAILED and nothing plays,
+    while local media, which sets `path`, plays fine.
+    """
+    store = setup_entry.runtime_data.store
+    message_id = await store.async_add(
+        b"RIFFdata", extension="wav", duration=1, user_id=None
+    )
+
+    item = await media_source.async_resolve_media(
+        hass, f"media-source://{DOMAIN}/{message_id}", None
+    )
+
+    assert item.path == await store.async_path(message_id)
+    assert item.path is not None
+    assert item.path.is_file()
+
+
 async def test_resolve_unknown_id_raises(hass: HomeAssistant, setup_entry) -> None:
     """An unknown id is unresolvable."""
     with pytest.raises(media_source.Unresolvable):
@@ -60,6 +84,10 @@ async def test_resolves_the_chime(hass: HomeAssistant, setup_entry) -> None:
 
     assert item.url == "/api/hass_broadcast/static/chime.wav"
     assert item.mime_type == "audio/wav"
+    # For the Apple TV integration, as a recording's (above).
+    assert item.path is not None
+    assert item.path.name == "chime.wav"
+    assert item.path.is_file()
 
 
 async def test_browse_lists_recordings(hass: HomeAssistant, setup_entry) -> None:

@@ -67,7 +67,16 @@ const reloadPlugin = {
 };
 
 const ctx = await esbuild.context({
-  entryPoints: { dev: join(DEV_DIR, "main.ts"), lab: join(DEV_DIR, "lab.ts") },
+  entryPoints: {
+    dev: join(DEV_DIR, "main.ts"),
+    lab: join(DEV_DIR, "lab.ts"),
+    voice: join(DEV_DIR, "voice.ts"),
+  },
+  define: { VOICE_SAMPLES: "undefined", VOICE_NEURAL: "undefined" },
+  // Signalsmith Stretch builds its AudioWorklet by stringifying its own
+  // functions; lowered class fields would call an esbuild helper that does
+  // not exist in the worklet scope. Every AudioWorklet browser has them.
+  supported: { "class-field": true, "class-static-field": true },
   bundle: true,
   format: "esm",
   target: "es2021",
@@ -123,6 +132,10 @@ createServer(async (req, res) => {
   }
   if (path === "/lab") {
     await serveFile(res, join(DEV_DIR, "lab.html"));
+    return;
+  }
+  if (path === "/voice") {
+    await serveFile(res, join(DEV_DIR, "voice.html"));
     return;
   }
   if (path === "/lab/mp3" && req.method === "POST") {

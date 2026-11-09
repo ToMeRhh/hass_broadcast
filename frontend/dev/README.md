@@ -147,3 +147,23 @@ deploying to Home Assistant and broadcasting.
 - **On a phone**, the lab needs a secure context like real capture does. Over
   USB: `adb reverse tcp:8099 tcp:8099`, then open `http://localhost:8099/lab`
   in Chrome on the phone.
+
+## Voice changer lab — `/voice`
+
+`http://localhost:8099/voice` is the voice-changer exploration
+(`docs/superpowers/specs/2026-10-23-voice-changer-exploration.md`). Record a
+take or open an audio file, then tap a voice in the concept card to hear it;
+the right-hand column renders every preset in `voice/presets.ts`, with its
+engine, its render time and a WAV download, and an engine comparison that makes
+the same change by each method.
+
+- **Engines** are in `voice/`: `vocoder.ts` (source-filter analysis and
+  resynthesis), `stretch.ts` (Signalsmith Stretch, offline), `fx.ts` (Web Audio
+  effect chains). `render.ts` runs a preset; the vocoder analysis is computed
+  once per take and shared.
+- **Presets** are data: an engine with its parameters plus an effects chain.
+  Edit or add freely; the page renders whatever is there.
+- **Noise suppression** in the concept card is the card's `noise_suppression`
+  setting, applied the same way (the browser's, on an otherwise raw mic). It
+  affects mic takes only; each take's facts say what the browser granted.
+- Nothing here is in the shipped bundle.

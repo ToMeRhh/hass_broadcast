@@ -1348,6 +1348,10 @@ describe("card editor", () => {
     expect(HassBroadcastCard.getStubConfig(undefined).speakers).toEqual([]);
   });
 
+  it("starts a new card on chips", () => {
+    expect(HassBroadcastCard.getStubConfig(undefined).speaker_picker).toBe("chips");
+  });
+
   it("writes keep_messages so the editor shows it on", () => {
     expect(HassBroadcastCard.getStubConfig(undefined).keep_messages).toBe(true);
   });

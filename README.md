@@ -109,7 +109,7 @@ mode: restore
 | --- | --- | --- |
 | `title` | `Voice Broadcast` | Card heading. Blank restores the default |
 | `layout` | `full` | `full` or `compact` |
-| `speaker_picker` | `dropdown` | `dropdown`, `chips` or `list`. Compact always uses the dropdown |
+| `speaker_picker` | `dropdown` | `dropdown`, `chips` or `list`. A card added from the dashboard editor starts on `chips`. Compact always uses the dropdown |
 | `recent_messages` | `button` | `button` (a header button that opens them in a dialog), `list` (the last three below the card) or `off`. In Compact, anything but `off` puts them in the ⋮ menu |
 | `volume_control` | `true` | Whether the card offers the broadcast volume control |
 | `speakers` | every speaker | The speakers the card offers, in the order listed. Left out, the card offers every media player that supports playback; an empty list offers none. A speaker named here appears even while it is unavailable |

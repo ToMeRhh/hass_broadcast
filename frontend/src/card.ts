@@ -134,13 +134,15 @@ export class HassBroadcastCard extends LitElement {
 
   /**
    * A new card offers every speaker, so the editor starts from the full list
-   * and the user removes the ones they do not want.
+   * and the user removes the ones they do not want. It picks speakers with
+   * chips, though an absent `speaker_picker` still means the dropdown, so
+   * cards saved before this keep theirs.
    */
   static getStubConfig(hass?: any): CardConfig {
     return {
       type: "custom:hass-broadcast-card",
       layout: "full",
-      speaker_picker: "dropdown",
+      speaker_picker: "chips",
       recent_messages: "button",
       volume_control: true,
       speakers: discoverPlayers(hass),

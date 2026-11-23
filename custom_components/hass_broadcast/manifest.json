@@ -1,6 +1,7 @@
 {
   "domain": "hass_broadcast",
   "name": "Voice Broadcast",
+  "categories": ["messaging_notifications", "media_entertainment.speakers_audio"],
   "codeowners": ["@ToMeRhh"],
   "config_flow": true,
   "dependencies": ["http", "media_source", "media_player", "websocket_api", "frontend", "lovelace"],

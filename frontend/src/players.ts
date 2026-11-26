@@ -18,6 +18,43 @@ export function discoverPlayers(hass: any): string[] {
 }
 
 /**
+ * What to call a speaker: its friendly name, led by its area when the name
+ * does not already say it.
+ *
+ * Home Assistant's naming guidance keeps the room in the area, not in the
+ * device name, so a house named that way has friendly names like "Chromecast"
+ * three times over. Its own cards add the area back as context; a speaker
+ * picker needs it most of all, since the room is what a broadcast is aimed at.
+ *
+ * The friendly name stays the base rather than being rebuilt from the device
+ * and entity registries, so whatever composed it (a renamed device, an entity
+ * name, a customize override) is kept. The area comes from the entity, else
+ * its device, as Home Assistant resolves it. A name that mentions the area
+ * anywhere, as a whole word in any case, is left alone, so a house named the
+ * older way ("Kitchen speaker") sees nothing change; so does anything before
+ * the registries load, or an entity with no state to name it by.
+ */
+export function speakerName(hass: any, entityId: string): string {
+  const friendly: unknown = hass?.states?.[entityId]?.attributes?.friendly_name;
+  if (typeof friendly !== "string" || !friendly) {
+    return entityId;
+  }
+  const entry = hass?.entities?.[entityId];
+  const areaId = entry?.area_id || hass?.devices?.[entry?.device_id]?.area_id;
+  const area: unknown = areaId ? hass?.areas?.[areaId]?.name : undefined;
+  if (typeof area !== "string" || !area.trim() || mentions(friendly, area.trim())) {
+    return friendly;
+  }
+  return `${area.trim()} ${friendly}`;
+}
+
+/** Whether `phrase` appears in `text` as whole words, ignoring case. */
+function mentions(text: string, phrase: string): boolean {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "iu").test(text);
+}
+
+/**
  * The speakers the card should offer.
  *
  * A configured `speakers` list replaces discovery outright rather than

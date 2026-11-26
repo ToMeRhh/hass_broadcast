@@ -120,6 +120,11 @@ mode: restore
 | `keep_messages` | `true` | Adds every message to Recent messages. Off: messages are deleted after they play; the card's Save button keeps one |
 | `mode` | `plain` | What the speakers do: `plain` just plays the message, `chime` plays a chime first, `restore` pauses what was playing and puts it back, volume included — see [Behavioural restrictions](#behavioural-restrictions) |
 
+Speakers are named by their friendly name, led by their area when the name
+does not already mention it: a Chromecast in the Kitchen area shows as
+"Kitchen Chromecast", while one named "Kitchen speaker" stays as it is. Both
+cards name speakers this way, in the picker and in what they report.
+
 </details>
 
 <a id="broadcast-tile"></a>

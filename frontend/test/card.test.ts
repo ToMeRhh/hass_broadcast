@@ -800,6 +800,25 @@ describe("card speaker filtering", () => {
     expect(card.players).toEqual([]);
   });
 
+  it("names same-named speakers apart by their areas", () => {
+    const card = newCard();
+    card.setConfig({ type: "custom:hass-broadcast-card", speaker_picker: "chips" });
+    const chromecast = { attributes: { supported_features: 512, friendly_name: "Chromecast" } };
+    card.hass = {
+      states: { "media_player.a": chromecast, "media_player.b": chromecast },
+      entities: {
+        "media_player.a": { entity_id: "media_player.a", device_id: "a" },
+        "media_player.b": { entity_id: "media_player.b", device_id: "b" },
+      },
+      devices: { a: { area_id: "kitchen" }, b: { area_id: "hall" } },
+      areas: { kitchen: { name: "Kitchen" }, hall: { name: "Hallway" } },
+    };
+
+    const text = renderedText(card.parts.speakers());
+    expect(text).toContain("Kitchen Chromecast");
+    expect(text).toContain("Hallway Chromecast");
+  });
+
   it("does not broadcast to a selected speaker the card does not offer", async () => {
     const calls: any[] = [];
     const card = cardWithSpeakers({

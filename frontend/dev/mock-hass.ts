@@ -3,6 +3,7 @@
  * the card touches:
  *
  *   hass.states                         — entity list, for the speaker picker
+ *   hass.entities, .devices, .areas     — the registries, for speakers' areas
  *   hass.connection.sendMessagePromise  — hass_broadcast/list, /delete, /send and /save
  *   hass.auth.data.access_token         — the bearer token the upload sends
  *   fetch /api/hass_broadcast/upload    — stores the blob, returns an id
@@ -88,10 +89,40 @@ export const FAKE_ENTITIES: FakeEntity[] = [
   entity("media_player.bathroom", "Bathroom", "unavailable", SUPPORT_PLAY_MEDIA),
   entity("media_player.garage", "Garage", "idle", SUPPORT_PLAY_MEDIA),
   entity("media_player.balcony", "Balcony", "idle", SUPPORT_PLAY_MEDIA),
+  // Named the way Home Assistant now recommends, the room in the area rather
+  // than the device name (FAKE_AREAS): two read "Chromecast" until the card
+  // adds the area, and one already says it and must not get it twice.
+  entity("media_player.chromecast", "Chromecast", "idle", SUPPORT_PLAY_MEDIA),
+  entity("media_player.chromecast_2", "Chromecast", "idle", SUPPORT_PLAY_MEDIA),
+  entity("media_player.study_speaker", "Study speaker", "idle", SUPPORT_PLAY_MEDIA),
   // No play_media support: these must never appear in the picker.
   entity("media_player.tv_remote", "Living Room TV", "on", SUPPORT_VOLUME_SET),
   entity("media_player.old_receiver", "Hi-Fi Receiver", "off", 0),
 ];
+
+/**
+ * The registries behind the area-named speakers, as `hass.entities`,
+ * `hass.devices` and `hass.areas` carry them. One area is on the device and
+ * one on the entity itself, since Home Assistant lets either hold it. The
+ * older speakers have no registry entries, so their names are unchanged.
+ */
+const FAKE_AREAS = {
+  entities: {
+    "media_player.chromecast": { entity_id: "media_player.chromecast", device_id: "cc1", area_id: null },
+    "media_player.chromecast_2": { entity_id: "media_player.chromecast_2", device_id: "cc2", area_id: "hallway" },
+    "media_player.study_speaker": { entity_id: "media_player.study_speaker", device_id: "nest", area_id: null },
+  },
+  devices: {
+    cc1: { id: "cc1", name: "Chromecast", name_by_user: null, area_id: "dining_room" },
+    cc2: { id: "cc2", name: "Chromecast", name_by_user: null, area_id: null },
+    nest: { id: "nest", name: "Study speaker", name_by_user: null, area_id: "study" },
+  },
+  areas: {
+    dining_room: { area_id: "dining_room", name: "Dining room" },
+    hallway: { area_id: "hallway", name: "Hallway" },
+    study: { area_id: "study", name: "Study" },
+  },
+};
 
 /**
  * Synthetic audio for anything the harness has to invent: seeded history
@@ -248,6 +279,7 @@ export function createMockHass(backend: MockBackend): any {
   }
   return {
     states,
+    ...FAKE_AREAS,
     themes: {},
     language: "en",
     locale: { language: "en" },

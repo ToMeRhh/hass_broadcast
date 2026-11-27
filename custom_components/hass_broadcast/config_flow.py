@@ -17,7 +17,7 @@ from .const import CONF_RETENTION, DEFAULT_RETENTION, DOMAIN
 OPTIONS_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_RETENTION, default=DEFAULT_RETENTION): vol.All(
-            int, vol.Range(min=1, max=200)
+            int, vol.Range(min=0, max=200)
         ),
     }
 )

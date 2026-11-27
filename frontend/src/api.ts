@@ -11,12 +11,22 @@ export interface BroadcastMessage {
 
 export type BroadcastMode = "plain" | "restore" | "chime";
 
+/** What the server stored. */
+export interface Upload {
+  id: string;
+  /**
+   * The server's answer, not the request's: at retention 0 it stores every
+   * upload temporarily, including one asked to be kept.
+   */
+  temporary: boolean;
+}
+
 export async function uploadRecording(
   hass: any,
   blob: Blob,
   duration: number,
   temporary = false,
-): Promise<string> {
+): Promise<Upload> {
   const body = new FormData();
   body.append("file", blob, "recording.wav");
   body.append("duration", String(duration));
@@ -33,14 +43,21 @@ export async function uploadRecording(
   if (!response.ok) {
     throw new Error(`Upload failed (${response.status})`);
   }
-  return (await response.json()).message_id;
+  const result = await response.json();
+  return { id: result.message_id, temporary: result.temporary ?? temporary };
 }
 
-export async function listMessages(hass: any): Promise<BroadcastMessage[]> {
+export interface MessageList {
+  messages: BroadcastMessage[];
+  /** How many recordings the integration keeps; 0 means none, and no Save. */
+  retention: number;
+}
+
+export async function listMessages(hass: any): Promise<MessageList> {
   const result = await hass.connection.sendMessagePromise({
     type: "hass_broadcast/list",
   });
-  return result.messages;
+  return { messages: result.messages, retention: result.retention };
 }
 
 /**
@@ -60,8 +77,8 @@ export async function deleteMessage(hass: any, id: string): Promise<boolean> {
 
 /**
  * Promotes a temporary recording to a saved one. Rejects with the websocket
- * error object (e.g. `{ code: "not_found" }` once it has expired), as
- * `deleteMessage` does.
+ * error object (e.g. `{ code: "not_found" }` once it has expired, or
+ * `saving_disabled` at retention 0), as `deleteMessage` does.
  */
 export async function saveRecording(hass: any, id: string): Promise<void> {
   await hass.connection.sendMessagePromise({

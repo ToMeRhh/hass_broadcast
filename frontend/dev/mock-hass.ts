@@ -40,6 +40,11 @@ export interface Scenario {
   /** GET /media answers 404, so a history entry cannot be loaded. */
   mediaFails: boolean;
   history: HistorySize;
+  /**
+   * The integration's retention is 0: nothing is listed, every upload is
+   * temporary and Save is refused, as on a live install set to keep none.
+   */
+  keepNone: boolean;
   /** Milliseconds of fake latency on every call, to see pending states. */
   latency: number;
 }
@@ -53,6 +58,7 @@ export const DEFAULT_SCENARIO: Scenario = {
   deleteForbidden: false,
   mediaFails: false,
   history: "seeded",
+  keepNone: false,
   latency: 250,
 };
 
@@ -200,8 +206,13 @@ export class MockBackend {
     return new Promise((resolve) => setTimeout(resolve, this.scenario.latency));
   }
 
-  async upload(blob: Blob, duration: number, temporary = false): Promise<string> {
+  async upload(
+    blob: Blob,
+    duration: number,
+    asked = false,
+  ): Promise<{ id: string; temporary: boolean }> {
     await this.delay();
+    const temporary = asked || this.scenario.keepNone;
     if (this.scenario.uploadFails) {
       throw new Error("upload-failed");
     }
@@ -221,11 +232,14 @@ export class MockBackend {
     } else {
       this.messages = [message, ...this.messages];
     }
-    return id;
+    return { id, temporary };
   }
 
   async save(id: string): Promise<void> {
     await this.delay();
+    if (this.scenario.keepNone) {
+      throw { code: "saving_disabled", message: "keeps no recordings" };
+    }
     const message = this.temporary.get(id);
     if (message) {
       this.temporary.delete(id);
@@ -239,9 +253,11 @@ export class MockBackend {
     return this.audio.get(id);
   }
 
-  async list(): Promise<BroadcastMessage[]> {
+  async list(): Promise<{ messages: BroadcastMessage[]; retention: number }> {
     await this.delay();
-    return this.messages;
+    return this.scenario.keepNone
+      ? { messages: [], retention: 0 }
+      : { messages: this.messages, retention: 10 };
   }
 
   async remove(id: string): Promise<boolean> {
@@ -287,7 +303,7 @@ export function createMockHass(backend: MockBackend): any {
     connection: {
       sendMessagePromise: async (message: any) => {
         if (message.type === "hass_broadcast/list") {
-          return { messages: await backend.list() };
+          return backend.list();
         }
         if (message.type === "hass_broadcast/delete") {
           return { deleted: await backend.remove(message.message_id) };
@@ -317,12 +333,12 @@ export function installFetchMock(backend: MockBackend, scenario: Scenario): void
     if (url.includes("/api/hass_broadcast/upload")) {
       const body = init?.body as FormData;
       try {
-        const id = await backend.upload(
+        const { id, temporary } = await backend.upload(
           body.get("file") as Blob,
           Number(body.get("duration")),
           body.get("temporary") !== null,
         );
-        return new Response(JSON.stringify({ message_id: id }), {
+        return new Response(JSON.stringify({ message_id: id, temporary }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });

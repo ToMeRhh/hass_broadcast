@@ -61,7 +61,9 @@ describe.each([
     expect(field).toMatchObject({ default: true, selector: { boolean: {} } });
     expect(field.required).toBeUndefined();
     expect(form.computeLabel(field)).toBe("Keep sent messages");
-    expect(form.computeHelper(field)).toBe("Adds every message you send to Recent messages.");
+    expect(form.computeHelper(field)).toBe(
+      "Adds every message you send to Recent messages. Has no effect when Voice Broadcast is set to keep 0 recordings.",
+    );
   });
 
   it("only offers media players for speakers", () => {

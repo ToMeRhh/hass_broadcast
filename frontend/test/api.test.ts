@@ -27,9 +27,9 @@ describe("api", () => {
 
   it("uploads with a bearer token and returns the message id", async () => {
     const hass = fakeHass();
-    const id = await uploadRecording(hass, new Blob(["x"]), 2.5);
+    const upload = await uploadRecording(hass, new Blob(["x"]), 2.5);
 
-    expect(id).toBe("abc");
+    expect(upload).toEqual({ id: "abc", temporary: false });
     const [url, options] = (fetch as any).mock.calls[0];
     expect(url).toBe("/api/hass_broadcast/upload");
     expect(options.headers.Authorization).toBe("Bearer tok");
@@ -43,6 +43,21 @@ describe("api", () => {
     const calls = (fetch as any).mock.calls;
     expect(calls[0][1].body.get("temporary")).toBe("1");
     expect(calls[1][1].body.get("temporary")).toBeNull();
+  });
+
+  it("reports how the server stored the upload, not how it was asked", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ message_id: "abc", temporary: true }),
+      }),
+    );
+
+    expect(await uploadRecording(fakeHass(), new Blob(["x"]), 1)).toEqual({
+      id: "abc",
+      temporary: true,
+    });
   });
 
   it("saves a recording by id", async () => {
@@ -83,9 +98,15 @@ describe("api", () => {
         { id: "abc", created: "2026-08-21T00:00:00Z", duration: 2.5, can_delete: true, extension: "wav" },
       ],
     });
-    const messages = await listMessages(hass);
+    const { messages } = await listMessages(hass);
     expect(messages[0].can_delete).toBe(true);
     expect((messages[0] as any).user_id).toBeUndefined();
+  });
+
+  it("returns the integration's retention with the list", async () => {
+    const hass = fakeHass();
+    hass.connection.sendMessagePromise.mockResolvedValue({ messages: [], retention: 0 });
+    expect(await listMessages(hass)).toEqual({ messages: [], retention: 0 });
   });
 
   it("deletes a message over the websocket", async () => {

@@ -285,6 +285,9 @@ describe("card broadcasting", () => {
     const ids: string[] = [];
     let first = true;
     state.card.hass.connection.sendMessagePromise = async (message: any) => {
+      if (message.type === "hass_broadcast/list") {
+        return { messages: [], retention: 10 };
+      }
       ids.push(message.message_id);
       if (first) {
         first = false;
@@ -513,6 +516,53 @@ describe("card saving", () => {
     expect(card.clip.source).toEqual({ kind: "stored", id: "abc" });
   });
 
+  it("offers no Save when the integration keeps no recordings", () => {
+    const { card } = cardForSaving();
+    card.keepsRecordings = false;
+
+    const text = renderedText(card.render());
+    expect(text).not.toContain("Save");
+    expect(card.parts.save("pill")).toBe(nothing);
+  });
+
+  it("stops offering Save when the server refuses one", async () => {
+    const source = { kind: "temporary", id: "tmp", blob: new Blob(["x"]) };
+    const { card } = cardForSaving(source);
+    card.hass.connection.sendMessagePromise = async () => {
+      throw { code: "saving_disabled" };
+    };
+
+    await card.saveClip();
+
+    expect(card.keepsRecordings).toBe(false);
+    expect(card.status.text).toBe("Voice Broadcast is set to keep 0 recordings.");
+    expect(card.clip.source).toBe(source);
+    expect(card.saving).toBe(false);
+  });
+
+  it("holds a saved upload as temporary when the server did not keep it", async () => {
+    const { card } = cardForSaving();
+    vi.stubGlobal("fetch", async () => ({
+      ok: true,
+      json: async () => ({ message_id: "abc", temporary: true }),
+    }));
+
+    await card.saveClip();
+
+    expect(card.keepsRecordings).toBe(false);
+    expect(card.clip.source).toMatchObject({ kind: "temporary", id: "abc" });
+    expect(card.status.text).toBe("Voice Broadcast is set to keep 0 recordings.");
+  });
+
+  it("uploads temporarily when the integration keeps no recordings", async () => {
+    const { card, uploads } = cardForSaving(undefined, {});
+    card.keepsRecordings = false;
+
+    await card.broadcast();
+
+    expect(uploads[0].get("temporary")).toBe("1");
+  });
+
   it("reports a failed save and keeps the clip as it was", async () => {
     const source = { kind: "temporary", id: "tmp", blob: new Blob(["x"]) };
     const { card } = cardForSaving(source);
@@ -531,10 +581,12 @@ describe("card saving", () => {
   it("does not resurrect a clip cleared mid-save", async () => {
     const { card } = cardForSaving({ kind: "temporary", id: "tmp", blob: new Blob(["x"]) });
     let resolveSave: (value: unknown) => void = () => {};
-    card.hass.connection.sendMessagePromise = () =>
-      new Promise((resolve) => {
-        resolveSave = resolve;
-      });
+    card.hass.connection.sendMessagePromise = (message: any) =>
+      message.type === "hass_broadcast/list"
+        ? Promise.resolve({ messages: [], retention: 10 })
+        : new Promise((resolve) => {
+            resolveSave = resolve;
+          });
 
     const pending = card.saveClip();
     card.clearClip();
@@ -1344,6 +1396,30 @@ describe("card layouts", () => {
     await card.refreshHistory();
 
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it("learns the retention even without a list, when it offers Save", async () => {
+    const card = configured({ recent_messages: "off", keep_messages: false });
+    card.hass = {
+      connection: { sendMessagePromise: async () => ({ messages: [], retention: 0 }) },
+    };
+
+    await card.refreshHistory();
+
+    expect(card.keepsRecordings).toBe(false);
+  });
+
+  it("says why Recent messages is empty when nothing is kept", async () => {
+    const card = configured({ recent_messages: "list" });
+    card.hass = {
+      connection: { sendMessagePromise: async () => ({ messages: [], retention: 0 }) },
+    };
+
+    await card.refreshHistory();
+
+    expect(renderedText(card.render())).toContain(
+      "Not kept: Voice Broadcast is set to keep 0 recordings",
+    );
   });
 });
 

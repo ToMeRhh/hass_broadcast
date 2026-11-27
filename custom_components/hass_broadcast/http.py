@@ -149,7 +149,16 @@ class BroadcastUploadView(HomeAssistantView):
             # failing loudly.
             user_id=(user.id if (user := request.get(KEY_HASS_USER)) else None),
         )
-        return web.json_response({"message_id": message_id})
+        # The store decides, not the request: at retention 0 an upload asked
+        # to be kept is stored temporarily, and the card has to know that to
+        # upload it again once it expires.
+        message = await store.async_get(message_id)
+        return web.json_response(
+            {
+                "message_id": message_id,
+                "temporary": bool(message and message.get("temporary")),
+            }
+        )
 
 
 CONTENT_TYPES = {"wav": "audio/wav", "mp3": "audio/mpeg"}

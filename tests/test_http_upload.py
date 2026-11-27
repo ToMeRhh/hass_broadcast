@@ -202,7 +202,9 @@ async def test_upload_can_be_temporary(
         data={"file": io.BytesIO(_wav_bytes()), "duration": "1", "temporary": "1"},
     )
     assert resp.status == HTTPStatus.OK
-    message_id = (await resp.json())["message_id"]
+    body = await resp.json()
+    message_id = body["message_id"]
+    assert body["temporary"] is True
 
     store = setup_entry.runtime_data.store
     stored = await store.async_get(message_id)
@@ -221,7 +223,33 @@ async def test_upload_without_the_field_is_saved(
         "/api/hass_broadcast/upload",
         data={"file": io.BytesIO(_wav_bytes()), "duration": "1"},
     )
-    message_id = (await resp.json())["message_id"]
+    body = await resp.json()
+    message_id = body["message_id"]
+    assert body["temporary"] is False
 
     store = setup_entry.runtime_data.store
     assert [m["id"] for m in await store.async_list()] == [message_id]
+
+
+async def test_upload_is_temporary_when_retention_is_zero(
+    hass: HomeAssistant, hass_client
+) -> None:
+    """At 0 the server keeps nothing, and says so to the card that asked to."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={"retention": 0})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    client = await hass_client()
+    resp = await client.post(
+        "/api/hass_broadcast/upload",
+        data={"file": io.BytesIO(_wav_bytes()), "duration": "1"},
+    )
+    assert resp.status == HTTPStatus.OK
+    body = await resp.json()
+    assert body["temporary"] is True
+
+    store = entry.runtime_data.store
+    assert await store.async_get(body["message_id"]) is not None
+    assert await store.async_list() == []
+    store.async_shutdown()

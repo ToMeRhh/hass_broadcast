@@ -153,6 +153,29 @@ describe("sendClip", () => {
       expect(outcome).toEqual({ kind: "sent", targets: ["media_player.kitchen"] });
     });
 
+    it("holds a clip as temporary when the server would not keep it", async () => {
+      // Retention 0: the card asked to keep it, the server stored it temporarily.
+      vi.stubGlobal("fetch", async () => ({
+        ok: true,
+        json: async () => ({ message_id: "abc", temporary: true }),
+      }));
+      const clip = fresh();
+      const reported: any[] = [];
+
+      await sendClip({
+        hass: hass([]),
+        clip,
+        targets: ["media_player.kitchen"],
+        mode: "plain",
+        keep: true,
+        onStored: (source) => reported.push(source),
+      });
+
+      expect(reported).toEqual([
+        { kind: "temporary", id: "abc", blob: (clip.source as any).blob },
+      ]);
+    });
+
     it("still rejects when a stored clip is not found", async () => {
       stubUpload([]);
       const h = hass([]);

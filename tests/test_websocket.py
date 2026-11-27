@@ -47,6 +47,17 @@ async def test_list_returns_recordings_newest_first(
     assert [m["id"] for m in msg["result"]["messages"]] == [second, first]
 
 
+async def test_list_reports_the_retention(
+    hass: HomeAssistant, setup_entry, hass_ws_client
+) -> None:
+    """The card reads retention from the list, to hide Save when it is 0."""
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "hass_broadcast/list"})
+    msg = await client.receive_json()
+
+    assert msg["result"]["retention"] == setup_entry.runtime_data.store.retention
+
+
 async def test_delete_removes_a_recording(
     hass: HomeAssistant, setup_entry, hass_ws_client
 ) -> None:
@@ -267,4 +278,29 @@ async def test_send_extends_a_temporary_deadline(
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert await store.async_get(message_id) is not None
+    store.async_shutdown()
+
+
+async def test_save_is_refused_when_retention_is_zero(
+    hass: HomeAssistant, hass_ws_client, admin_user
+) -> None:
+    """At 0 nothing is kept, so Save is an error rather than a silent no-op."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={"retention": 0})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    store = entry.runtime_data.store
+    message_id = await store.async_add(
+        b"a", extension="wav", duration=1, user_id=admin_user, temporary=True
+    )
+
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {"id": 1, "type": "hass_broadcast/save", "message_id": message_id}
+    )
+    msg = await client.receive_json()
+
+    assert msg["success"] is False
+    assert msg["error"]["code"] == "saving_disabled"
+    assert await store.async_list() == []
     store.async_shutdown()

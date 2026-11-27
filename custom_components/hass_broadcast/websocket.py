@@ -36,7 +36,10 @@ async def ws_list(
         can_delete = connection.user.is_admin or connection.user.id == user_id
         result_msg["can_delete"] = can_delete
         result_messages.append(result_msg)
-    connection.send_result(msg["id"], {"messages": result_messages})
+    # The card hides Save, and says why Recent messages is empty, at 0.
+    connection.send_result(
+        msg["id"], {"messages": result_messages, "retention": store.retention}
+    )
 
 
 @websocket_api.websocket_command(
@@ -107,6 +110,13 @@ async def ws_save(
             msg["id"],
             "not_authorized",
             "You do not have permission to save this recording",
+        )
+        return
+    if not store.keeps_recordings:
+        connection.send_error(
+            msg["id"],
+            "saving_disabled",
+            "Voice Broadcast is set to keep no recordings",
         )
         return
     # The recording may have expired since the lookup.

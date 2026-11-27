@@ -172,6 +172,10 @@ export class DevApp extends LitElement {
       backend.reseed();
       this.remount();
     }
+    // The card reads the retention when it fetches the list, on connect.
+    if (patch.keepNone !== undefined) {
+      this.remount();
+    }
   }
 
   private get tileElement(): HTMLElement {
@@ -355,6 +359,7 @@ export class DevApp extends LitElement {
           <option value="empty">No recordings</option>
           <option value="many">12 recordings</option>
         </select>
+        ${this.toggle("keepNone", "Integration keeps 0 recordings")}
 
         <h2>Latency — ${this.scenario.latency} ms</h2>
         <input

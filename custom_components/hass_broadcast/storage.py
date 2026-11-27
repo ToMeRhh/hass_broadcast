@@ -72,11 +72,20 @@ class BroadcastStore:
         leftovers = [m for m in messages if m.get("temporary")]
         for message in leftovers:
             await self._async_unlink(self._file_path(message))
-        if leftovers:
+        # Changing options reloads the entry, so this is where a lowered
+        # retention takes effect. Left to the next save, a limit of 0 would
+        # never apply: nothing is saved again.
+        pruned = await self._async_prune()
+        if leftovers or pruned:
             await self._async_save()
         await self.hass.async_add_executor_job(
             lambda: self._dir.mkdir(parents=True, exist_ok=True)
         )
+
+    @property
+    def keeps_recordings(self) -> bool:
+        """Whether anything is saved at all; retention 0 keeps nothing."""
+        return self.retention > 0
 
     def _file_path(self, message: dict[str, Any]) -> Path:
         """Return the path for a metadata entry."""
@@ -98,8 +107,11 @@ class BroadcastStore:
         """Store a recording and return its id.
 
         A temporary recording is hidden from the list and expires after
-        `TEMPORARY_TTL` unless it is kept first.
+        `TEMPORARY_TTL` unless it is kept first. At retention 0 every
+        recording is temporary, whatever the caller asked: the speaker still
+        has to fetch it, so it cannot be pruned on arrival.
         """
+        temporary = temporary or not self.keeps_recordings
         message_id = uuid.uuid4().hex
         message = {
             "id": message_id,
@@ -154,11 +166,12 @@ class BroadcastStore:
     async def async_keep(self, message_id: str) -> bool:
         """Save a temporary recording as the newest one.
 
-        Returns False for an unknown id. Keeping a recording that is already
-        saved changes nothing and returns True.
+        Returns False for an unknown id, and when nothing is kept (retention
+        0): saving it would prune it on the spot. Keeping a recording that is
+        already saved changes nothing and returns True.
         """
         message = await self.async_get(message_id)
-        if message is None:
+        if message is None or not self.keeps_recordings:
             return False
         if not message.get("temporary"):
             return True
@@ -192,15 +205,18 @@ class BroadcastStore:
             cancel()
         self._expiry.clear()
 
-    async def _async_prune(self) -> None:
+    async def _async_prune(self) -> bool:
         """Drop the oldest saved recordings beyond the retention limit.
 
         Temporaries neither count nor get dropped: they have their own timer.
+        Returns whether anything was dropped.
         """
         saved = [m for m in self._messages if not m.get("temporary")]
-        for oldest in saved[: max(0, len(saved) - self.retention)]:
+        excess = saved[: max(0, len(saved) - self.retention)]
+        for oldest in excess:
             self._messages.remove(oldest)
             await self._async_unlink(self._file_path(oldest))
+        return bool(excess)
 
     async def _async_unlink(self, path: Path) -> None:
         """Delete a file, tolerating its absence."""

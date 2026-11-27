@@ -70,7 +70,8 @@ plays; each speaker goes back to its own volume afterwards.
 
 Every message you send is kept in Recent messages. Turn off **Keep sent
 messages** and they are deleted once they have played; the card's **Save**
-button then keeps the ones you want.
+button then keeps the ones you want. To keep nothing on any card, set the
+integration to keep 0 recordings (see [Storage and privacy](#storage-and-privacy)).
 
 Everything is set from the card editor:
 
@@ -117,7 +118,7 @@ mode: restore
 | `record_mode` | `push_to_talk` | `push_to_talk` (hold to record, release to stop) or `start_stop` (tap to start, tap again to stop) |
 | `max_duration` | `60` | Recording stops automatically after this many seconds. Clamped to **5–300**; invalid values fall back to 60 |
 | `noise_suppression` | `false` | The browser's noise suppression: filters out a TV, fan or kitchen in the background. Leave it off in a quiet room — it can make a voice sound slightly processed |
-| `keep_messages` | `true` | Adds every message to Recent messages. Off: messages are deleted after they play; the card's Save button keeps one |
+| `keep_messages` | `true` | Adds every message to Recent messages. Off: messages are deleted after they play; the card's Save button keeps one. No effect when the integration keeps 0 recordings |
 | `mode` | `plain` | What the speakers do: `plain` just plays the message, `chime` plays a chime first, `restore` pauses what was playing and puts it back, volume included — see [Behavioural restrictions](#behavioural-restrictions) |
 
 Speakers are named by their friendly name, led by their area when the name
@@ -208,10 +209,15 @@ filing a bug.
 ### Storage and privacy
 
 - **Recordings aren't encrypted, and they're included in backups.** By default the last
-  10 are kept; you can set this anywhere from 1 to 200 under **Configure** on the
+  10 are kept; you can set this anywhere from 0 to 200 under **Configure** on the
   integration. A card or tile with **Keep sent messages** off deletes its messages once
   they have played. Removing the integration deletes all recordings. Past recordings are also
   browsable in the Media panel, in a "Voice Broadcast" folder.
+- **At 0, nothing is kept, from any card or tile.** Each message is deleted 10 minutes
+  after it was last sent, and on restart, so it never reaches a backup; the Media panel
+  folder stays empty, and cards offer no Save. A message stays on the card that recorded
+  it until you record another or reload the page, so you can still play or re-send it.
+  Lowering the number deletes the oldest recordings straight away.
 - <a id="deletion-permissions"></a>**Any logged-in user who can see the card can record,
   broadcast and play back every recording.** Only the person who made a recording, or an
   admin, can delete it. Playback URLs are signed and expire after a short time.

@@ -23,6 +23,7 @@ import { cardForm } from "./forms";
 import "./tile";
 import {
   Clip,
+  ClipSource,
   freshClip,
   loadStoredClip,
   revokeClip,
@@ -82,6 +83,12 @@ export class HassBroadcastCard extends LitElement {
   @state() private volume = 1;
   /** A Save is in flight, so its button holds still until it lands. */
   @state() private saving = false;
+  /**
+   * False once the server says it keeps no recordings (retention 0): no Save,
+   * and Recent messages says why it is empty. Assumed true until the list
+   * says otherwise, and the server enforces it either way.
+   */
+  @state() private keepsRecordings = true;
 
   private audio?: HTMLAudioElement;
   private statusTimer?: number;
@@ -254,14 +261,25 @@ export class HassBroadcastCard extends LitElement {
   }
 
   private async refreshHistory(): Promise<void> {
-    if (!this.hass || this.resolved.recentMessages === "off") {
+    const config = this.resolved;
+    // Without a list to show, the retention is still needed where Save is
+    // offered, to hide it.
+    if (!this.hass || (config.recentMessages === "off" && config.keepMessages)) {
       return;
     }
     try {
-      this.history = await listMessages(this.hass);
+      const list = await listMessages(this.hass);
+      this.history = list.messages;
+      this.keepsRecordings = list.retention !== 0;
     } catch {
       this.history = [];
     }
+  }
+
+  /** The server keeps nothing: stop offering Save and say so. */
+  private notKept(): void {
+    this.keepsRecordings = false;
+    this.fail("Voice Broadcast is set to keep 0 recordings.");
   }
 
   private get players(): string[] {
@@ -440,7 +458,7 @@ export class HassBroadcastCard extends LitElement {
         targets,
         mode: this.resolved.mode,
         volume: this.volumeOverride ? this.volume : undefined,
-        keep: this.resolved.keepMessages,
+        keep: this.resolved.keepMessages && this.keepsRecordings,
         onStored: (source) => {
           // The upload can outlive the clip it was for: a Discard tap
           // mid-upload runs clearClip() before this resolves. Only rewrite
@@ -485,23 +503,31 @@ export class HassBroadcastCard extends LitElement {
     const source = clip.source;
     this.saving = true;
     try {
-      let id: string;
+      let saved: ClipSource;
       if (source.kind === "temporary") {
         try {
           await saveRecording(this.hass, source.id);
-          id = source.id;
+          saved = { kind: "stored", id: source.id };
         } catch (err: any) {
+          if (err?.code === "saving_disabled") {
+            this.notKept();
+            return;
+          }
           if (err?.code !== "not_found") {
             throw err;
           }
-          id = await uploadRecording(this.hass, source.blob, clip.duration);
+          saved = await this.uploadToKeep(source.blob, clip.duration);
         }
       } else {
-        id = await uploadRecording(this.hass, source.blob, clip.duration);
+        saved = await this.uploadToKeep(source.blob, clip.duration);
       }
       // As in broadcast(): a Discard tap mid-save must not bring the clip back.
       if (this.clip === clip) {
-        this.clip = { ...clip, source: { kind: "stored", id } };
+        this.clip = { ...clip, source: saved };
+      }
+      if (saved.kind === "temporary") {
+        this.notKept();
+        return;
       }
       await this.refreshHistory();
     } catch (err: any) {
@@ -509,6 +535,15 @@ export class HassBroadcastCard extends LitElement {
     } finally {
       this.saving = false;
     }
+  }
+
+  /**
+   * Upload a clip to be kept. The server may store it temporarily instead
+   * (retention 0), and the clip then holds on to its blob to send again.
+   */
+  private async uploadToKeep(blob: Blob, duration: number): Promise<ClipSource> {
+    const { id, temporary } = await uploadRecording(this.hass, blob, duration);
+    return temporary ? { kind: "temporary", id, blob } : { kind: "stored", id };
   }
 
   // --- history -------------------------------------------------------------
@@ -597,6 +632,7 @@ export class HassBroadcastCard extends LitElement {
       messages: this.history,
       loadedId: this.clip ? storedId(this.clip) : undefined,
       loadingId: this.loadingId,
+      kept: this.keepsRecordings,
       onLoad: (message: BroadcastMessage) => void this.loadMessage(message),
       onDelete: (id: string) => void this.deleteRecording(id),
       onDialogOpenChange: (open: boolean) => {
@@ -701,7 +737,7 @@ export class HassBroadcastCard extends LitElement {
       },
       save: (variant) => {
         const clip = this.clip;
-        if (config.keepMessages || !clip) {
+        if (config.keepMessages || !this.keepsRecordings || !clip) {
           return nothing;
         }
         // "Saved" stays focusable and announced, hence aria-disabled rather

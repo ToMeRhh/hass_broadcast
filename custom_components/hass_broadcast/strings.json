@@ -17,7 +17,7 @@
           "retention": "Number of recordings to keep"
         },
         "data_description": {
-          "retention": "Older recordings are deleted automatically when this limit is exceeded."
+          "retention": "Older recordings are deleted automatically when this limit is exceeded. At 0, nothing is kept: each message is deleted 10 minutes after it was last sent, and cards hide Save."
         }
       }
     }

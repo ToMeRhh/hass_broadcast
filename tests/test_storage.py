@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
+import pytest
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.hass_broadcast.storage import BroadcastStore
@@ -243,3 +244,77 @@ async def test_remove_all_cancels_timers(hass: HomeAssistant) -> None:
 
     cancel.assert_called_once_with()
     await _advance(hass, 601)
+
+
+async def test_retention_zero_stores_every_recording_temporarily(
+    hass: HomeAssistant,
+) -> None:
+    """Keeping 0 means nothing is saved, whatever the uploader asked for.
+
+    The recording still has to exist until the speaker has fetched it, so it
+    is stored as a temporary one, hidden and on its expiry timer, rather than
+    pruned on arrival.
+    """
+    store = BroadcastStore(hass, retention=0)
+    await store.async_load()
+
+    message_id = await _add(store)
+
+    message = await store.async_get(message_id)
+    assert message is not None
+    assert message["temporary"] is True
+    path = await store.async_path(message_id)
+    assert path is not None
+    assert path.exists()
+    assert await store.async_list() == []
+
+    await _advance(hass, 601)
+    assert await store.async_get(message_id) is None
+    assert not path.exists()
+
+
+async def test_retention_zero_refuses_to_keep(hass: HomeAssistant) -> None:
+    """Saving is off at 0: a temporary recording stays temporary."""
+    store = BroadcastStore(hass, retention=0)
+    await store.async_load()
+    message_id = await _add(store, temporary=True)
+
+    assert store.keeps_recordings is False
+    assert await store.async_keep(message_id) is False
+
+    message = await store.async_get(message_id)
+    assert message is not None
+    assert message["temporary"] is True
+    assert await store.async_list() == []
+    store.async_shutdown()
+
+
+@pytest.mark.parametrize("retention", [0, 1])
+async def test_load_applies_a_lowered_retention(
+    hass: HomeAssistant, retention: int
+) -> None:
+    """Lowering retention deletes the excess at once, not at the next save.
+
+    Changing options reloads the entry, which loads a new store. Pruning only
+    on save would leave every recording in place at 0, where nothing is ever
+    saved again.
+    """
+    first = BroadcastStore(hass, retention=10)
+    await first.async_load()
+    a = await _add(first, b"a")
+    b = await _add(first, b"b")
+    paths = [await first.async_path(a), await first.async_path(b)]
+    first.async_shutdown()
+
+    second = BroadcastStore(hass, retention=retention)
+    await second.async_load()
+
+    assert [m["id"] for m in await second.async_list()] == [b][:retention]
+    assert paths[0] is not None
+    assert not paths[0].exists()
+    assert paths[1] is not None
+    assert paths[1].exists() is (retention == 1)
+
+    third = BroadcastStore(hass, retention=10)
+    await third.async_load()
+    assert [m["id"] for m in await third.async_list()] == [b][:retention]

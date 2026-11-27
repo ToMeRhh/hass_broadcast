@@ -89,11 +89,11 @@ async def test_options_form_suggests_the_saved_retention(hass: HomeAssistant) ->
     assert key.default() == DEFAULT_RETENTION
 
 
-@pytest.mark.parametrize("retention", [0, 201, -5])
+@pytest.mark.parametrize("retention", [-1, 201, -5])
 async def test_options_flow_rejects_retention_out_of_range(
     hass: HomeAssistant, retention: int
 ) -> None:
-    """Retention must be 1..200; anything else is refused and nothing is saved."""
+    """Retention must be 0..200; anything else is refused and nothing is saved."""
     entry = await _set_up_entry(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -105,11 +105,11 @@ async def test_options_flow_rejects_retention_out_of_range(
     assert entry.options == {}
 
 
-@pytest.mark.parametrize("retention", [1, 200])
+@pytest.mark.parametrize("retention", [0, 1, 200])
 async def test_options_flow_accepts_the_range_bounds(
     hass: HomeAssistant, retention: int
 ) -> None:
-    """Both ends of 1..200 are valid."""
+    """Both ends of 0..200 are valid; 0 keeps nothing once a message has played."""
     entry = await _set_up_entry(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)

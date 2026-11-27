@@ -25,8 +25,17 @@ export interface HistoryProps {
   /** Whether the full-list dialog is showing. State lives in the card. */
   dialogOpen?: boolean;
   onDialogOpenChange?: (open: boolean) => void;
+  /** False when the integration keeps no recordings (retention 0). */
+  kept?: boolean;
   /** Injectable for tests; production reads the clock. */
   now?: Date;
+}
+
+/** What an empty list says: nothing yet, or nothing ever, and why. */
+function emptyText(props: HistoryProps): string {
+  return props.kept === false
+    ? "Not kept: Voice Broadcast is set to keep 0 recordings"
+    : "Nothing recorded yet";
 }
 
 /**
@@ -107,7 +116,7 @@ export function historyDialog(
       </div>
       <div class="dialog-list">
         ${props.messages.length === 0
-          ? html`<div class="empty">Nothing recorded yet</div>`
+          ? html`<div class="empty">${emptyText(props)}</div>`
           : props.messages.map((message) => historyRow(message, props, now))}
       </div>
     </dialog>
@@ -140,7 +149,7 @@ export function historySection(props: HistoryProps): TemplateResult {
               ${shown[index]
                 ? historyRow(shown[index], props, now)
                 : index === 0 && empty
-                  ? html`<div class="empty">Nothing recorded yet</div>`
+                  ? html`<div class="empty">${emptyText(props)}</div>`
                   : nothing}
             </div>
           `,

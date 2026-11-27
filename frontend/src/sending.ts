@@ -41,8 +41,10 @@ export interface SendOptions {
 export async function sendClip(options: SendOptions): Promise<Outcome> {
   const { hass, clip, targets, keep } = options;
   const upload = async (blob: Blob): Promise<string> => {
-    const id = await uploadRecording(hass, blob, clip.duration, !keep);
-    options.onStored?.(keep ? { kind: "stored", id } : { kind: "temporary", id, blob });
+    // The server's answer decides: at retention 0 it keeps nothing, so a clip
+    // asked to be kept comes back temporary and must hold on to its blob.
+    const { id, temporary } = await uploadRecording(hass, blob, clip.duration, !keep);
+    options.onStored?.(temporary ? { kind: "temporary", id, blob } : { kind: "stored", id });
     return id;
   };
   const play = (id: string) =>

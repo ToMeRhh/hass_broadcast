@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { renderedText } from "./helpers";
-import { historySection } from "../src/ui/history";
+import { historyDialog, historySection } from "../src/ui/history";
 
 const now = new Date("2026-08-22T14:30:00Z");
 
@@ -54,6 +54,16 @@ describe("historySection", () => {
     const html = renderedText(historySection({ ...base, loadingId: "one" }));
 
     expect(html).toContain('data-loading="true"');
+  });
+
+  it("says why it is empty when the integration keeps nothing", () => {
+    const section = renderedText(historySection({ ...base, messages: [], kept: false }));
+    const dialog = renderedText(historyDialog({ ...base, messages: [], kept: false }));
+
+    for (const html of [section, dialog]) {
+      expect(html).toContain("Not kept: Voice Broadcast is set to keep 0 recordings");
+      expect(html).not.toContain("Nothing recorded yet");
+    }
   });
 
   it("keeps its height with nothing recorded yet", () => {

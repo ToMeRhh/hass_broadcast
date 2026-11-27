@@ -10,7 +10,12 @@ import {
   uploadRecording,
 } from "./api";
 import { INSECURE_CONTEXT_MESSAGE } from "./errors";
-import { allowedTargets, discoverPlayers, visiblePlayers } from "./players";
+import {
+  allowedTargets,
+  discoverPlayers,
+  speakerName,
+  visiblePlayers,
+} from "./players";
 import { CardConfig, ResolvedConfig, resolveConfig } from "./config";
 import { cardForm } from "./forms";
 // One bundle defines both cards, so the single Lovelace resource the
@@ -727,8 +732,7 @@ export class HassBroadcastCard extends LitElement {
         targetList({
           players: this.players.map((entityId) => ({
             entityId,
-            name:
-              this.hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
+            name: speakerName(this.hass, entityId),
             available: this.hass?.states?.[entityId]?.state !== "unavailable",
           })),
           selected: this.selected,

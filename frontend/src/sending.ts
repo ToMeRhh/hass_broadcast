@@ -5,6 +5,7 @@ import {
   uploadRecording,
 } from "./api";
 import { Clip, ClipSource } from "./clip";
+import { speakerName } from "./players";
 
 /** How a broadcast went, from the user's point of view. */
 export type Outcome =
@@ -75,12 +76,7 @@ export async function sendClip(options: SendOptions): Promise<Outcome> {
 
 /** Name entity ids the way the picker does, so a warning is readable. */
 export function describeTargets(hass: any, entityIds: string[]): string {
-  return entityIds
-    .map(
-      (entityId) =>
-        hass?.states?.[entityId]?.attributes?.friendly_name ?? entityId,
-    )
-    .join(", ");
+  return entityIds.map((entityId) => speakerName(hass, entityId)).join(", ");
 }
 
 export function outcomeStatus(hass: any, outcome: Outcome): Status {

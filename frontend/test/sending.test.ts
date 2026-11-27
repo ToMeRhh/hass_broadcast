@@ -187,4 +187,22 @@ describe("outcomeStatus", () => {
       /Could not play on any speaker: media_player.x/,
     );
   });
+
+  it("names speakers with their area, as the picker does", () => {
+    const h = {
+      states: {
+        "media_player.a": { attributes: { friendly_name: "Chromecast" } },
+        "media_player.b": { attributes: { friendly_name: "Chromecast" } },
+      },
+      entities: {
+        "media_player.a": { entity_id: "media_player.a", device_id: "a", area_id: null },
+        "media_player.b": { entity_id: "media_player.b", device_id: "b", area_id: null },
+      },
+      devices: { a: { area_id: "kitchen" }, b: { area_id: "hall" } },
+      areas: { kitchen: { name: "Kitchen" }, hall: { name: "Hallway" } },
+    };
+    expect(
+      outcomeStatus(h, { kind: "sent", targets: ["media_player.a", "media_player.b"] }).text,
+    ).toBe("Sent to Kitchen Chromecast, Hallway Chromecast");
+  });
 });
